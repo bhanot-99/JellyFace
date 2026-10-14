@@ -12,3 +12,6 @@ native/jellyface-applet/target/
 Bugs/
 __pycache__/
 *.pyc
+.greeter-data/
+.greeter-root.tar
+.greeter-export.err

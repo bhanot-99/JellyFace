@@ -292,6 +292,13 @@ def update_cosmic_theme():
         print(f"theme: could not update COSMIC's theme: {getattr(e, 'stderr', b'') or e}", file=sys.stderr)
 
 
+def sync_greeter():
+    """Keep the login screen (greeter/) in step with the theme and wallpaper. Does nothing unless it is installed."""
+    data = "/var/lib/jellyface-greeter/data"
+    if os.access(data, os.W_OK):
+        subprocess.run([os.path.join(ROOT, "greeter", "stage.sh"), data], capture_output=True, timeout=30, check=False)
+
+
 def write_scheme(scheme):
     """Returns False (and touches nothing) when the shell already shows exactly this scheme."""
     text = json.dumps(scheme, indent=1)
@@ -308,6 +315,7 @@ def write_scheme(scheme):
         f.flush()
         os.fsync(f.fileno())
     update_cosmic_theme()
+    sync_greeter()
     return True
 
 

@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for a JellyFace greeter failure signal
+
+[Path]
+PathExists=/var/lib/jellyface-greeter/run/heal-request
+Unit=jellyface-greeter-heal.service
+
+[Install]
+WantedBy=multi-user.target

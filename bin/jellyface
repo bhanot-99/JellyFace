@@ -119,6 +119,7 @@ JellyFace -- a Caelestia-based shell for COSMIC (Pop!_OS)
   jellyface theme apply|match|list|auto|status   wallpaper-driven colour themes (see: jellyface theme --help)
   jellyface fix-icons             create icon aliases from config/icon-aliases.txt (e.g. Flatpak VLC tray icon)
   jellyface cosmic-tweaks [--revert]   auto-hide COSMIC's own top panel (backs it up first)
+  jellyface greeter test|window|install|status|...   JellyFace as the login screen (self-healing; see greeter/)
   jellyface doctor                check that everything is in place
 USAGE
 }
@@ -144,6 +145,7 @@ case "${1:-help}" in
     theme)         shift; exec python3 -I "$JF_ROOT/scripts/theme.py" "$@" ;;
     fix-icons)     shift; exec "$JF_ROOT/scripts/fix-icons.sh" "$@" ;;
     cosmic-tweaks) shift; exec "$JF_ROOT/scripts/cosmic-tweaks.sh" "$@" ;;
+    greeter)       shift; exec "$JF_ROOT/scripts/greeter.sh" "$@" ;;
     doctor)        cmd_doctor ;;
     help|-h|--help) usage ;;
     *) usage; exit 1 ;;

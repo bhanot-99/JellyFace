@@ -1,0 +1,10 @@
+[Unit]
+Description=JellyFace greeter self-heal
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/jellyface-greeter/heal auto
+
+[Install]
+WantedBy=multi-user.target

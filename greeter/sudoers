@@ -1,0 +1,4 @@
+# The greeter user may run exactly one root helper, with no arguments.
+Defaults:cosmic-greeter env_keep += "WAYLAND_DISPLAY XDG_RUNTIME_DIR GREETD_SOCK"
+Defaults:cosmic-greeter !requiretty
+cosmic-greeter ALL=(root) NOPASSWD: /usr/local/lib/jellyface-greeter/enter
