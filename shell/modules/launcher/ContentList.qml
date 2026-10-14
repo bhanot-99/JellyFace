@@ -24,7 +24,7 @@ Item {
     property string animState: showWallpapers ? "wallpapers" : "apps"
 
     anchors.horizontalCenter: parent.horizontalCenter
-    anchors.bottom: parent.bottom
+    anchors.top: parent.top
 
     clip: true
     state: animState

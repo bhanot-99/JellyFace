@@ -15,6 +15,11 @@ Item {
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
+        hoverEnabled: true
+        onEntered: {
+            if (GlobalConfig.launcher.showOnHover)
+                ShellState.forActive().launcher = true;
+        }
         onClicked: {
             const screenState = ShellState.forActive();
             screenState.launcher = !screenState.launcher;

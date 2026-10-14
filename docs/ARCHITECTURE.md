@@ -105,3 +105,8 @@ on hover. Apps are listed in `~/.config/caelestia/dock.json` (default: `config/d
 Brave web apps use `name`, `command`, `icon` (relative to the project) and `match` (a substring of the window class).
 A dot under a tile means the app has a window; a wide pill means it is focused. Clicking a running app focuses its
 window (again: the next one) through `wind`'s `activate <id>` command; otherwise it is launched on the host.
+
+The launcher (app drawer) slides out of the bar at the left-centre of the screen. Hover (or click) the ghost button in the
+bar to open it; it closes when the cursor leaves it. Its search box is at the top and keeps its place while the list
+changes. Edits: `drawers/Panels.qml`, `drawers/Regions.qml`, `drawers/ContentWindow.qml`, `drawers/Interactions.qml`,
+`launcher/Wrapper.qml`, `launcher/Content.qml`, `bar/components/OsIcon.qml`.

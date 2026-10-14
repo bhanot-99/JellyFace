@@ -103,8 +103,7 @@ Item {
         screenState: root.screenState
         panels: root
 
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
+        anchors.left: parent.left
     }
 
     Dashboard.Wrapper {

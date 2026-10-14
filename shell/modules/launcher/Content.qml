@@ -20,17 +20,17 @@ Item {
     readonly property int rounding: Tokens.rounding.extraLarge
 
     implicitWidth: listWrapper.width + padding * 2
-    implicitHeight: search.height + listWrapper.height + padding + search.anchors.bottomMargin
+    implicitHeight: search.height + listWrapper.height + padding * 3
 
     Item {
         id: listWrapper
 
         implicitWidth: list.width
-        implicitHeight: list.height + root.padding
+        implicitHeight: list.height
 
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: search.top
-        anchors.bottomMargin: root.padding
+        anchors.top: search.bottom
+        anchors.topMargin: root.padding
 
         ContentList {
             id: list
@@ -52,9 +52,8 @@ Item {
 
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        anchors.top: parent.top
         anchors.margins: root.padding
-        anchors.bottomMargin: CUtils.clamp(root.padding - Config.border.thickness, 0, root.padding)
 
         topPadding: Math.round((Tokens.padding.medium + Tokens.padding.large) / 2)
         bottomPadding: Math.round((Tokens.padding.medium + Tokens.padding.large) / 2)

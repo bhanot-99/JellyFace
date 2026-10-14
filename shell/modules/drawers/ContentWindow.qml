@@ -198,8 +198,13 @@ StyledWindow {
         PanelBg {
             id: launcherBg
 
+            // Extra width on the bar side so the sideways slide never detaches the panel from the bar
+            readonly property real extraWidth: 0.2
+
             panel: panels.launcher
             deformAmount: 0.1
+            x: panels.launcher.x + bar.implicitWidth - panels.launcher.width * extraWidth
+            implicitWidth: panels.launcher.width * (1 + extraWidth)
         }
 
         PanelBg {
