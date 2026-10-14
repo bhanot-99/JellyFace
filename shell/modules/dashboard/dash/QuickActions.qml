@@ -19,7 +19,7 @@ RowLayout {
     }
 
     anchors.fill: parent
-    anchors.margins: Tokens.padding.large
+    anchors.margins: Tokens.padding.medium
     spacing: Tokens.spacing.medium
 
     Action {
@@ -70,7 +70,6 @@ RowLayout {
 
         Layout.fillWidth: true
         Layout.fillHeight: true
-        Layout.minimumHeight: content.implicitHeight + Tokens.padding.medium * 2
         radius: Tokens.rounding.large
         color: active ? Colours.palette.m3secondaryContainer : Colours.layer(Colours.palette.m3surfaceContainerHighest, 1)
 

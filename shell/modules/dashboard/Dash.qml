@@ -101,9 +101,9 @@ GridLayout {
     Rect {
         Layout.row: 2
         Layout.column: 0
-        Layout.columnSpan: 5
+        Layout.columnSpan: 6
         Layout.fillWidth: true
-        Layout.preferredHeight: 96
+        Layout.preferredHeight: 92
 
         radius: Tokens.rounding.extraLarge
 
