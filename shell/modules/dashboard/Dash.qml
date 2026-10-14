@@ -98,6 +98,20 @@ GridLayout {
         }
     }
 
+    Rect {
+        Layout.row: 2
+        Layout.column: 0
+        Layout.columnSpan: 5
+        Layout.fillWidth: true
+        Layout.preferredHeight: 72
+
+        radius: Tokens.rounding.extraLarge
+
+        QuickActions {
+            screenState: root.screenState
+        }
+    }
+
     component Rect: StyledRect {
         color: Colours.tPalette.m3surfaceContainer
     }
