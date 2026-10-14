@@ -44,7 +44,7 @@ def main(argv):
             sys.exit("usage: glass.py on [0.5-1.0]")
         if not 0.5 <= base <= 1.0:
             sys.exit("opacity must be between 0.5 and 1.0")
-        t.update(enabled=True, base=base, layers=min(1.0, round(base - 0.05, 2)))
+        t.update(enabled=True, base=base, layers=base)  # the main surfaces use "layers", so keep both equal
     else:
         sys.exit(__doc__)
     save(d)

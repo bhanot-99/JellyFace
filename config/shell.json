@@ -60,7 +60,7 @@
     "transparency": {
       "enabled": true,
       "base": 0.9,
-      "layers": 0.85
+      "layers": 0.9
     }
   }
 }
