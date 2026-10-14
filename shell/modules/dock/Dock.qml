@@ -90,9 +90,8 @@ Scope {
             // 64px tiles, shrunk when there are so many apps that the row would not fit on the screen
             readonly property real tile: Math.max(32, Math.min(64, Math.floor(((win.screen?.width ?? 1920) * 0.9 - pad * 2 - (count - 1) * gap) / count)))
             readonly property real fullWidth: count * tile + (count - 1) * gap + pad * 2
-            readonly property real fullHeight: tile + pad * 2 + footer.implicitHeight + gap
+            readonly property real fullHeight: tile + pad * 2
             property bool expanded
-            property string hovered
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
@@ -173,18 +172,6 @@ Scope {
                         }
                     }
                 }
-
-                StyledText {
-                    id: footer
-
-                    anchors.bottom: parent.bottom
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: panel.hovered || "JellyFace"
-                    color: Colours.palette.m3onSurfaceVariant
-                    elide: Text.ElideRight
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                }
             }
         }
     }
@@ -194,7 +181,6 @@ Scope {
 
         property var app
         readonly property var entry: app?.id ? DesktopEntries.heuristicLookup(app.id) : null
-        readonly property string label: app?.name ?? entry?.name ?? app?.id ?? ""
         readonly property var windows: app ? root.windowsOf(app) : []
         readonly property bool running: windows.length > 0
         readonly property bool focused: windows.some(w => w.id === CosmicWindows.activeId)
@@ -210,7 +196,6 @@ Scope {
             radius: tile.radius
             color: Colours.palette.m3onSurface
             onClicked: root.open(tile.app)
-            onContainsMouseChanged: panel.hovered = containsMouse ? tile.label : (panel.hovered === tile.label ? "" : panel.hovered)
         }
 
         IconImage {
