@@ -1,6 +1,7 @@
 // Prints COSMIC's windows (ext-foreign-toplevel-list + cosmic-toplevel-info) as JSON lines whenever anything changes:
 //   {"active":2,"fullscreen":false,"windows":[{"id":1,"app_id":"firefox","title":"...","activated":false,
-//     "fullscreen":false,"maximized":false,"minimized":false,"workspace_active":true}, ...]}
+//     "fullscreen":false,"maximized":false,"minimized":false,"workspace_active":true,"x":0,"y":0,"w":800,"h":600}, ...]}
+// x/y/w/h: the window's rectangle on its output, in logical pixels (0x0 until COSMIC has sent it).
 // "active" is the id of the focused window on the workspace you are looking at (0 = none); "fullscreen" is true when a
 // window on that workspace is fullscreen. Windows on other workspaces never count.
 // Read-only except for two commands on stdin: "activate <id>" focuses a window, "close <id>" asks it to close. Exits when its parent goes away or the compositor connection breaks.
@@ -10,6 +11,7 @@
 #include <sys/prctl.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -28,6 +30,7 @@ struct win {
     uint32_t state;  // bit n set = state n active (0 maximized, 1 minimized, 2 activated, 3 fullscreen)
     struct ext_workspace_handle_v1 *wsh[4];  // the workspaces this window is on (usually one)
     int nws;
+    int x, y, w, h;  // geometry on its output (cosmic-toplevel-info v2)
 };
 
 // workspaces and whether each is the one currently shown
@@ -90,9 +93,10 @@ static void emit(void) {
         json_str(w->app_id);
         fputs(",\"title\":", out);
         json_str(w->title);
-        fprintf(out, ",\"activated\":%s,\"fullscreen\":%s,\"maximized\":%s,\"minimized\":%s,\"workspace_active\":%s}",
+        fprintf(out, ",\"activated\":%s,\"fullscreen\":%s,\"maximized\":%s,\"minimized\":%s,\"workspace_active\":%s",
                (w->state >> 2) & 1 ? "true" : "false", (w->state >> 3) & 1 ? "true" : "false",
                (w->state >> 0) & 1 ? "true" : "false", (w->state >> 1) & 1 ? "true" : "false", on_current_ws(w) ? "true" : "false");
+        fprintf(out, ",\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}", w->x, w->y, w->w, w->h);
     }
     fputs("]}\n", out);
     fclose(out);
@@ -102,6 +106,12 @@ static void emit(void) {
     free(last_buf);
     last_buf = out_buf;
     last_len = out_len;
+}
+
+static long long now_ms(void) {
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return t.tv_sec * 1000LL + t.tv_nsec / 1000000;
 }
 
 static void win_remove(struct win *w) {
@@ -150,7 +160,10 @@ static void c_ext_ws_leave(void *d, struct zcosmic_toplevel_handle_v1 *h, struct
     for (int i = 0; i < w->nws; i++)
         if (w->wsh[i] == ws) { w->wsh[i] = w->wsh[--w->nws]; dirty = 1; return; }
 }
-static void c_geometry(void *d, struct zcosmic_toplevel_handle_v1 *h, struct wl_output *o, int32_t x, int32_t y, int32_t w, int32_t hh) {}
+static void c_geometry(void *d, struct zcosmic_toplevel_handle_v1 *h, struct wl_output *o, int32_t x, int32_t y, int32_t w, int32_t hh) {
+    struct win *wn = d;
+    if (wn->x != x || wn->y != y || wn->w != w || wn->h != hh) { wn->x = x; wn->y = y; wn->w = w; wn->h = hh; dirty = 1; }
+}
 static void c_state(void *d, struct zcosmic_toplevel_handle_v1 *h, struct wl_array *arr) {
     struct win *w = d;
     uint32_t mask = 0, *s;
@@ -217,6 +230,9 @@ static const struct zcosmic_toplevel_manager_v1_listener mg_listener = { .capabi
 static void reg(void *d, struct wl_registry *r, uint32_t name, const char *iface, uint32_t ver) {
     if (!strcmp(iface, wl_seat_interface.name) && !seat) {
         seat = wl_registry_bind(r, name, &wl_seat_interface, 1);
+    } else if (!strcmp(iface, wl_output_interface.name)) {
+        // never used directly, but COSMIC only sends a window's geometry for outputs this client has bound
+        wl_registry_bind(r, name, &wl_output_interface, 1);
     } else if (!strcmp(iface, zcosmic_toplevel_manager_v1_interface.name)) {
         mgmt = wl_registry_bind(r, name, &zcosmic_toplevel_manager_v1_interface, ver < 2 ? ver : 2);
         zcosmic_toplevel_manager_v1_add_listener(mgmt, &mg_listener, NULL);
@@ -266,6 +282,10 @@ int main(void) {
     emit();
     dirty = 0;
     int stdin_ok = 1;
+    // a window being dragged or resized sends geometry every frame: write at most one line per EMIT_MS (the last
+    // state always goes out, via the poll timeout), so the shell is not re-parsing the window list 60 times a second
+    enum { EMIT_MS = 80 };
+    long long last_emit = 0;
     const pid_t parent = getppid();  // exit when whoever started us goes away (no orphans), without periodic wake-ups
     prctl(PR_SET_PDEATHSIG, SIGTERM);
     if (getppid() != parent) return 0;
@@ -273,7 +293,8 @@ int main(void) {
         while (wl_display_prepare_read(dpy) != 0) wl_display_dispatch_pending(dpy);
         if (wl_display_flush(dpy) < 0 && errno != EAGAIN) return 1;
         struct pollfd pp[2] = { { wl_display_get_fd(dpy), POLLIN, 0 }, { stdin_ok ? 0 : -1, POLLIN, 0 } };
-        poll(pp, 2, -1);
+        int timeout = dirty ? (int)(last_emit + EMIT_MS - now_ms()) : -1;
+        poll(pp, 2, dirty && timeout < 0 ? 0 : timeout);
         struct pollfd p = pp[0];
         if (p.revents & POLLIN) { if (wl_display_read_events(dpy) < 0) return 1; } else wl_display_cancel_read(dpy);
         if (wl_display_dispatch_pending(dpy) < 0 || wl_display_get_error(dpy)) return 1;
@@ -296,6 +317,6 @@ int main(void) {
                 if (have == sizeof cmd - 1) have = 0;  // overlong garbage line: drop it
             }
         }
-        if (dirty) { dirty = 0; emit(); }
+        if (dirty && now_ms() - last_emit >= EMIT_MS) { dirty = 0; emit(); last_emit = now_ms(); }
     }
 }

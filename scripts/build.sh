@@ -8,7 +8,6 @@ need gcc "Install it with: sudo apt install build-essential libwayland-dev libwa
 need wayland-scanner "Install it with: sudo apt install libwayland-bin"
 "$JF_ROOT/helpers/cosmic-ws/build.sh"
 "$JF_ROOT/helpers/cosmic-windows/build.sh"
-"$JF_ROOT/helpers/gestures/build.sh"
 
 if [ "${JF_SKIP_RUST:-0}" != 1 ]; then
     log "building the COSMIC theme tool (installs a project-local Rust toolchain on first run)"

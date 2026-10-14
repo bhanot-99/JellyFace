@@ -89,7 +89,7 @@ Scope {
                 implicitWidth: 248
                 implicitHeight: col.implicitHeight + Tokens.padding.medium * 2
                 radius: Tokens.rounding.large
-                color: Glass.enabled ? Glass.smokeCovered : Colours.palette.m3surfaceContainer
+                color: Glass.enabled ? Glass.sheet : Colours.palette.m3surfaceContainer
                 transformOrigin: Item.Bottom
 
                 // a quick pop: grow from the dock upwards
@@ -427,7 +427,7 @@ Scope {
         anchors.centerIn: parent
         implicitHeight: content.implicitHeight + Tokens.padding.extraLarge * 2
         radius: Tokens.rounding.extraLarge
-        color: Glass.enabled ? Glass.smokeCovered : Colours.palette.m3surfaceContainer
+        color: Glass.enabled ? Glass.sheet : Colours.palette.m3surfaceContainer
 
         scale: 0.94
         opacity: 0

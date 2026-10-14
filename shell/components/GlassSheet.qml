@@ -13,5 +13,5 @@ StyledRect {
     z: -1
     visible: Glass.enabled
     radius: Tokens.rounding.extraLarge + bleed
-    color: Glass.smokeCovered
+    color: Glass.sheet
 }

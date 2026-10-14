@@ -8,12 +8,12 @@ import Quickshell.Widgets
 import Jellyface.Config
 import qs.components
 import qs.components.containers
-import qs.components.effects
 import qs.services
 import qs.utils
 
-// JellyFace dock: a JellyFace-logo badge at the bottom centre of the desktop that opens a single row of apps on hover.
-// It lives on the Bottom layer, so every window covers it. Apps come from ~/.config/jellyface/dock.json.
+// JellyFace dock: a single row of apps at the bottom centre of the screen, above windows. It slides out of sight while a
+// window on the current workspace overlaps it (or anything is fullscreen) and comes back when nothing does, when the
+// cursor is pushed to the bottom edge under it, or while JellyPanel is open. Apps come from ~/.config/jellyface/dock.json.
 //   drag a tile sideways to reorder it | right-click a tile for its menu | right-click the open dock to add apps
 // Hovering magnifies the icon under the cursor (and a little its neighbours). Menus and dialogs: DockPopups.qml.
 Scope {
@@ -59,6 +59,7 @@ Scope {
 
     // Running app: focus its window (a further click cycles through its windows). Otherwise launch it.
     function open(app: var): void {
+        JellyPanel.open = false;
         const wins = windowsOf(app);
         if (wins.length > 0) {
             const at = wins.findIndex(w => w.id === CosmicWindows.activeId);
@@ -158,7 +159,8 @@ Scope {
 
         screen: Quickshell.screens[0]
         name: "dock"
-        WlrLayershell.layer: WlrLayer.Bottom
+        // above windows (it gets out of their way by hiding); above JellyPanel too while that is open, as on macOS
+        WlrLayershell.layer: JellyPanel.open ? WlrLayer.Overlay : WlrLayer.Top
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
         // anchored to the bottom edge only: the compositor centres the window horizontally
@@ -181,29 +183,75 @@ Scope {
             pane: panel
         }
 
+        // where the dock sits on screen when shown, in the same logical pixels COSMIC reports window geometry in
+        readonly property rect dockRect: Qt.rect(((screen?.width ?? 1920) - panel.fullWidth) / 2, (screen?.height ?? 1080) - margins.bottom - panel.fullHeight, panel.fullWidth, panel.fullHeight)
+        // a visible window on this workspace overlaps the dock, or something is fullscreen
+        readonly property bool covered: CosmicWindows.fullscreen || CosmicWindows.windows.some(w => w.workspace_active && !w.minimized && w.w > 0 && w.x < dockRect.x + dockRect.width && w.x + w.w > dockRect.x && w.y < dockRect.y + dockRect.height && w.y + w.h > dockRect.y)
+        readonly property bool wanted: JellyPanel.open || !covered || hover.hovered || DockReveal.edge || root.popup !== "" || root.dragging
+        property bool shown: true
+
+        // show at once; hide after a moment, so moving from the edge up into the dock never makes it flicker
+        Component.onCompleted: if (!wanted) hideTimer.restart() // already covered when the shell starts
+        onWantedChanged: {
+            if (wanted) {
+                hideTimer.stop();
+                shown = true;
+            } else {
+                hideTimer.restart();
+            }
+        }
+
+        Timer {
+            id: hideTimer
+
+            interval: 450
+            onTriggered: win.shown = win.wanted
+        }
+
+        Binding {
+            target: DockReveal
+            property: "left"
+            value: win.dockRect.x
+        }
+
+        Binding {
+            target: DockReveal
+            property: "right"
+            value: win.dockRect.x + win.dockRect.width
+        }
+
         StyledRect {
             id: panel
 
             readonly property real gap: Tokens.spacing.medium
             readonly property real pad: Tokens.padding.large
-            readonly property real badge: 80
             readonly property real lift: 10                // headroom above the row for magnified icons
             readonly property int slots: Math.max(root.count, 1)
             // 64px tiles, shrunk when there are so many apps that the row would not fit on the screen
             readonly property real tile: Math.max(32, Math.min(64, Math.floor(((win.screen?.width ?? 1920) * 0.9 - pad * 2 - (slots - 1) * gap) / slots)))
             readonly property real fullWidth: slots * tile + (slots - 1) * gap + pad * 2
             readonly property real fullHeight: tile + pad * 2
-            property bool expanded
             property real hoverX: -1000                     // pointer x in the row, for magnification
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
+            // hidden: slid down out of the window (so it takes no clicks and no blur), faded on the way
+            anchors.bottomMargin: win.shown ? 0 : -(fullHeight + win.margins.bottom + 8)
+            opacity: win.shown ? 1 : 0
+
+            Behavior on anchors.bottomMargin {
+                Anim {
+                    type: Anim.DefaultSpatial
+                }
+            }
+            Behavior on opacity {
+                Anim {}
+            }
 
             color: Colours.tPalette.m3surface
-            radius: expanded ? Tokens.rounding.extraLarge : Tokens.rounding.extraLarge * 1.5
-            implicitWidth: expanded ? fullWidth : badge
-            implicitHeight: expanded ? fullHeight : badge
-            clip: !expanded
+            radius: Tokens.rounding.extraLarge
+            implicitWidth: fullWidth
+            implicitHeight: fullHeight
 
             Behavior on implicitWidth {
                 Anim {
@@ -215,60 +263,19 @@ Scope {
                     type: Anim.DefaultSpatial
                 }
             }
-            Behavior on radius {
-                Anim {}
-            }
-
-            Timer {
-                id: collapseTimer
-
-                interval: 400
-                onTriggered: if (!root.dragging && root.popup === "") panel.expanded = false
-            }
-
-            // collapse again once a menu or dialog closes with the pointer elsewhere
-            Connections {
-                function onPopupChanged(): void {
-                    if (root.popup === "" && !hover.hovered)
-                        collapseTimer.restart();
-                }
-
-                target: root
-            }
-
+            // the pointer's position along the row, for magnification
             HoverHandler {
                 id: hover
 
-                onHoveredChanged: {
-                    if (hovered) {
-                        collapseTimer.stop();
-                        panel.expanded = true;
-                    } else {
-                        panel.hoverX = -1000;
-                        collapseTimer.restart();
-                    }
-                }
+                onHoveredChanged: if (!hovered) panel.hoverX = -1000
                 onPointChanged: panel.hoverX = row.mapFromItem(panel, point.position.x, 0).x
             }
 
-            // right-click on the open dock (not on a tile): add apps
+            // right-click on the dock (not on a tile): add apps
             MouseArea {
                 anchors.fill: parent
-                enabled: panel.expanded
                 acceptedButtons: Qt.RightButton
                 onClicked: mouse => root.openPopup("dock", -1, panel)
-            }
-
-            ColouredIcon {
-                anchors.centerIn: parent
-                source: `file://${Quickshell.shellPath("../assets/jellyface-symbolic.svg")}`
-                implicitSize: panel.badge * 0.5
-                colour: Colours.palette.m3primary
-                opacity: panel.expanded ? 0 : 1
-
-                Behavior on opacity {
-                    Anim {}
-                }
             }
 
             ListView {
@@ -281,8 +288,6 @@ Scope {
                 orientation: ListView.Horizontal
                 spacing: panel.gap
                 interactive: false
-                opacity: panel.expanded ? 1 : 0
-                visible: opacity > 0
                 model: root.apps
 
                 // the other tiles slide out of the way while one is dragged
@@ -312,10 +317,6 @@ Scope {
                 }
 
                 delegate: Tile {}
-
-                Behavior on opacity {
-                    Anim {}
-                }
             }
 
             // while dragged, a tile is lifted into this layer so it can move freely over the row

@@ -4,6 +4,7 @@ import Quickshell
 import Jellyface.Config
 import qs.components
 import qs.components.controls
+import qs.services
 import qs.modules.bar as Bar
 import qs.modules.bar.popouts as BarPopouts
 
@@ -110,8 +111,10 @@ CustomMouseArea {
     }
 
     onContainsMouseChanged: {
-        if (!containsMouse)
+        if (!containsMouse) {
             overPanel = false;
+            DockReveal.edge = false;
+        }
         if (!containsMouse) {
             // Only hide if not activated by shortcut
             if (!osdShortcutActive) {
@@ -140,6 +143,8 @@ CustomMouseArea {
 
     onPositionChanged: event => {
         updateOverPanel(event.x, event.y);
+        // the bottom edge under the dock calls an auto-hidden dock back (modules/dock)
+        DockReveal.edge = event.y >= root.height - borderThickness - 2 && event.x >= DockReveal.left && event.x <= DockReveal.right;
         if (popouts.isDetached)
             return;
 

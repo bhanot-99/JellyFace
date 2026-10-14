@@ -1,3 +1,0 @@
-# JellyFace touchpad gestures: let the user at the screen (the active login session) read the touchpad, and nothing
-# else under /dev/input (keyboards stay private). Installed by hand, see README "Touchpad gestures".
-ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_TOUCHPAD}=="1", TAG+="uaccess"

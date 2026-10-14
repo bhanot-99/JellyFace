@@ -8,10 +8,10 @@ import "modules"
 import "modules/drawers"
 import "modules/dock"
 import "modules/clipboard"
+import "modules/jellypanel"
 import "modules/agenda"
 import "modules/areapicker"
 import "modules/lock"
-import "modules/overview"
 import QtQuick
 import Quickshell
 import qs.services
@@ -33,6 +33,7 @@ ShellRoot {
     ServiceLoader {}
 
     Dock {}
+    JellyPanelWindow {}
     Drawers {}
     AreaPicker {}
     ClipboardPopup {}
@@ -40,12 +41,6 @@ ShellRoot {
     EventForm {}
     Lock {
         id: lock
-    }
-    WindowOverview {
-        lock: lock
-    }
-    CosmicOverview {
-        lock: lock
     }
 
     Shortcuts {}

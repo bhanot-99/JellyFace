@@ -144,7 +144,7 @@ Scope {
                     StyledRect {
                         Layout.fillWidth: true
                         implicitHeight: fields.implicitHeight + Tokens.padding.extraLarge * 2
-                        color: Colours.palette.m3surface
+                        color: Glass.enabled ? Colours.palette.m3surfaceContainer : Colours.palette.m3surface
                         radius: Tokens.rounding.extraLarge
                         topRightRadius: Tokens.rounding.small
 

@@ -105,8 +105,7 @@ cmd_doctor() {
     chk "wallpaper theming (python3-gi + palette pack)" 'python3 -I -c "import gi; gi.require_version(\"GdkPixbuf\",\"2.0\")" && [ "$(python3 -I "$JF_ROOT/scripts/theme.py" list | wc -l)" -gt 0 ]' "sudo apt install python3-gi gir1.2-gdkpixbuf-2.0; put a palette pack in Color_Palette/"
     chk "COSMIC theme tool built" '[ -x "$JF_ROOT/tools/cosmic-theme/target/release/jellyface-cosmic-theme" ]' "run: jellyface build (optional: only needed for theming COSMIC apps)"
     chk "native applet built"     '[ -x "$JF_ROOT/native/jellyface-applet/target/release/jellyface-applet" ]' "run: jellyface build (optional)"
-    chk "COSMIC helpers built"    '[ -x "$JF_ROOT/helpers/cosmic-ws/wsd" ] && [ -x "$JF_ROOT/helpers/cosmic-windows/wind" ] && [ -x "$JF_ROOT/helpers/gestures/gestured" ]' "run: jellyface build"
-    chk "touchpad gestures (read access to the touchpad)" '"$JF_ROOT/helpers/gestures/gestured" --probe' "install config/udev/70-jellyface-touchpad.rules (README: Touchpad gestures)"
+    chk "COSMIC helpers built"    '[ -x "$JF_ROOT/helpers/cosmic-ws/wsd" ] && [ -x "$JF_ROOT/helpers/cosmic-windows/wind" ]' "run: jellyface build"
     chk "shell plugin built"      '[ -d "$JF_INSTALL/qml" ]' "run: jellyface build"
     chk "workspace protocol"      ws_ready "compositor lacks ext-workspace-v1?"
     for f in "$JF_CONFIG_DIR/shell.json" "$JF_CONFIG_DIR/shell-tokens.json" "$JF_STATE_DIR/scheme.json"; do

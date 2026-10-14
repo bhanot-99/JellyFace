@@ -70,7 +70,7 @@ jellyface integrate               # shows a plan and asks, then wires it into th
 | **Real window information** | `helpers/cosmic-windows` reads COSMIC's window list and states through its own protocol. The bar shows the focused app's name and icon, and hides for a fullscreen window **on the workspace you are looking at** (a fullscreen video on another workspace does not hide it). |
 | **COSMIC's own apps follow the palette** | `jellyface theme system on\|off`. The wallpaper palette is also written into COSMIC's theme, so Files, Terminal and Settings match. Windows that are already open pick it up the next time they start. Only keys your COSMIC already uses are written. |
 | **A native COSMIC applet** | `jellyface applet install`, then `applet panel-add`, puts a JellyFace button in COSMIC's *own* panel (Rust + COSMIC's toolkit). Its menu opens the launcher, dashboard and notifications, locks the screen, shows the current theme and toggles wallpaper-following and COSMIC theming. COSMIC's panel auto-hides; move the cursor to the top edge to see it. |
-| **Panel and shortcuts** | `jellyface cosmic-tweaks` makes COSMIC's top panel auto-hide (so it doesn't cover JellyFace's drop-downs) and adds **Super+L** (JellyFace's lock screen), **Super+V** (clipboard history) and **Super+Shift+F** (focus mode) as COSMIC custom shortcuts. Shortcuts you already have are kept; a key you already use is left alone. |
+| **Panel and shortcuts** | `jellyface cosmic-tweaks` makes COSMIC's top panel auto-hide (so it doesn't cover JellyFace's drop-downs) and adds **Super+L** (JellyFace's lock screen), **Super+V** (clipboard history), **Super+Shift+F** (focus mode) and **Super** (JellyPanel, instead of COSMIC's launcher) as COSMIC custom shortcuts. Shortcuts you already have are kept; a key you already use is left alone. |
 
 **Safety.** Every file changed outside `~/JellyFace` is recorded together with a copy of the original in `backups/`.
 `jellyface revert-system` puts everything back (`--list` shows what would change). Nothing under `/usr` or `/etc` is
@@ -80,7 +80,8 @@ touched and no `sudo` is used on the host. Backups are never deleted automatical
 
 | Do this | To get this |
 |---|---|
-| Click the **JellyFace logo** in the bar, or move the cursor to the **bottom edge** | Open the app launcher (type to search, Enter to launch) |
+| Hover or click the **JellyFace logo** in the bar | Open the app launcher (type to search, Enter to launch) |
+| Move the cursor to the **bottom edge** under the dock | Bring back the dock when a window has hidden it |
 | Move the cursor to the **top edge** | Slide down the dashboard (Dashboard, Media, Performance, Weather) |
 | Click a **number** in the workspace pill | Switch to that COSMIC workspace |
 | Click the **clock, Wi-Fi, Bluetooth, sound** icons, or hover the app label | Open their pop-outs |
@@ -88,6 +89,7 @@ touched and no `sudo` is used on the host. Backups are never deleted automatical
 | Click the **power** icon | Open or close the session menu (power off, restart, log out) |
 | **Click outside** an open launcher, session menu or sidebar, or press **Escape** | Close it (the click only closes the panel; it is not passed to the app underneath) |
 | Press **Super + L** | Lock the screen with JellyFace's lock screen |
+| Press **Super** | Open or close JellyPanel: every installed app in a full-screen grid (see below) |
 
 From the command line (or as COSMIC custom shortcuts under **Settings -> Keyboard**):
 
@@ -127,6 +129,19 @@ the one exception: it is never tinted or softened. To add palettes, drop another
 `Color_Palette/`. With a wallpaper folder (slideshow), COSMIC does not say which image is showing, so the first image of
 the folder is used.
 
+## Dock and JellyPanel
+
+**Dock.** A row of apps at the bottom centre of the screen, above windows. It slides away while a window on the current
+workspace overlaps it (or something is fullscreen) and comes back once nothing does; push the cursor to the bottom edge
+under it to call it back over your windows. Click an app to open it (or focus and cycle its windows if it is running),
+drag a tile sideways to reorder, right-click a tile for its menu, right-click the dock to add apps or web apps. Apps are
+kept in `~/.config/jellyface/dock.json`.
+
+**JellyPanel.** **Super** (or `jellyface ipc jellypanel toggle`) shows every app installed on the desktop in pages of 7 x 5
+over the blurred desktop, with the dock in front. Type to search, arrows + Enter or a click opens an app, scroll or swipe
+(or Page Up / Page Down, or the dots) changes page, Escape or a click on the background closes it. Super + / still opens
+COSMIC's own launcher.
+
 ## Clipboard history, focus mode, agenda
 
 | Do this | To get this |
@@ -146,30 +161,6 @@ jellyface agenda status
 
 A local `.ics` file path works too. The card re-reads the calendar every 15 minutes; `"enabled": false` in
 `~/.config/jellyface/desktop.json` hides it.
-
-## Touchpad gestures
-
-**Swipe up with three fingers** to open COSMIC's own workspace overview (the same as Super+W: live previews of your
-windows and workspaces); **swipe down with three fingers** (or press Esc) to go back to your desktop. While you swipe
-up, the desktop dims and shrinks with your fingers; let go after a short swipe or a flick and the overview opens, let go
-earlier and it springs back.
-
-JellyFace also has its own overview of the windows on the current workspace, as a grid of cards (app icon, name and
-window title): `jellyface ipc overview toggle`. Click a card or press Enter to switch to that window, the x on a card
-closes it, and Esc or a click outside closes the overview.
-
-COSMIC keeps every swipe of three or more fingers to itself, so `helpers/gestures/gestured` reads the touchpad
-directly on the host, next to COSMIC (which keeps its own four-finger workspace swipe). That needs read access to the
-touchpad, given once by a udev rule (only the touchpad, only to whoever is logged in at the screen; keyboards stay
-private). Gestures start working within half a minute, no restart needed:
-
-```bash
-sudo cp ~/JellyFace/config/udev/70-jellyface-touchpad.rules /etc/udev/rules.d/
-sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=input --action=change
-# undo: sudo rm /etc/udev/rules.d/70-jellyface-touchpad.rules, then the same two udevadm commands
-```
-
-`jellyface doctor` shows whether it works; `logs/gestures.log` lists each recognised swipe.
 
 ## Lock screen
 
@@ -266,7 +257,8 @@ JellyFace gets less information from COSMIC than Jellyface gets from Hyprland.
   neutral glass tiers over COSMIC's compositor blur. The base glass adapts to how bright the wallpaper is along the
   screen edges and stays the same while drawers open and close. The compositor uses one blur strength, so the tiers differ in tint
   and frost, not blur radius. `glass off` brings back the wallpaper palettes.
-- **Single screen.** All workspaces are treated as one group; multi-monitor setups are untested.
+- **Single screen.** All workspaces are treated as one group; multi-monitor setups are untested. The dock lives on the
+  first screen and checks window positions as if every window were on that screen.
 - **Clean-machine install** is untested end to end.
 
 ## Troubleshooting

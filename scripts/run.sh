@@ -99,7 +99,7 @@ notif_guard() {
 }
 
 mkdir -p "$JF_ROOT/logs"
-watcher=0 gestures=0
+watcher=0
 notif_guard 9>&- >/dev/null 2>&1 &
 guard=$!
 # --- supervise ---------------------------------------------------------------
@@ -132,17 +132,6 @@ while :; do
     if [ "$watcher" -eq 0 ] || ! kill -0 "$watcher" 2>/dev/null; then
         nice -n 10 python3 -I "$JF_ROOT/scripts/theme.py" watch >>"$JF_ROOT/logs/theme.log" 2>&1 9>&- &
         watcher=$!
-    fi
-
-    # touchpad gestures: read on the host (the container cannot open /dev/input). Restarted if the touchpad goes
-    # away (e.g. after resume); exit code 3 = no touchpad or no permission yet: try again now and then (logged once).
-    if [ "$gestures" -eq 0 ] || ! kill -0 "$gestures" 2>/dev/null; then
-        ( g="$JF_ROOT/helpers/gestures/gestured" said=0
-          while kill -0 $$ 2>/dev/null; do    # ($$ is the supervisor: never outlive it, even after a SIGKILL)
-              if [ "$said" -eq 0 ] || "$g" --probe 2>/dev/null; then "$g"; rc=$?; else rc=3; fi
-              if [ "$rc" -eq 3 ]; then said=1; sleep 30; else said=0; sleep 2; fi
-          done ) >>"$JF_ROOT/logs/gestures.log" 2>&1 9>&- &
-        gestures=$!
     fi
 
     wait "$child"

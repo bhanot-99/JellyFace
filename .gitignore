@@ -7,7 +7,6 @@ helpers/cosmic-ws/wsd
 shell/assets/pam.d/passwd
 .rust/
 helpers/cosmic-windows/wind
-helpers/gestures/gestured
 tools/cosmic-theme/target/
 native/jellyface-applet/target/
 Bugs/

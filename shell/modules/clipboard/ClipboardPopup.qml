@@ -140,7 +140,7 @@ Scope {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         visible: panel.shown.length === 0
-                        color: Colours.palette.m3surface
+                        color: Glass.enabled ? Colours.palette.m3surfaceContainer : Colours.palette.m3surface
                         radius: Tokens.rounding.extraLarge * 1.5
 
                         ColumnLayout {
@@ -272,7 +272,7 @@ Scope {
                                             width: 28
                                             height: 28
                                             radius: Tokens.rounding.full
-                                            color: modelData.act === "pin" && cell.pinned ? Colours.palette.m3primary : Qt.alpha(Colours.palette.m3surface, 0.75)
+                                            color: modelData.act === "pin" && cell.pinned ? Colours.palette.m3primary : (Glass.enabled ? Qt.alpha(Glass.ink, 0.55) : Qt.alpha(Colours.palette.m3surface, 0.75))
 
                                             StateLayer {
                                                 onClicked: btn.modelData.act === "pin" ? Clipboard.togglePin(cell.modelData) : Clipboard.remove(cell.modelData)
