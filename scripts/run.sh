@@ -22,9 +22,15 @@ cleanup() {   # stop our own children and the shell, never anything else
 trap cleanup EXIT
 trap 'exit 0' TERM INT HUP
 
+# --- leftovers ---------------------------------------------------------------
+# We hold the single-instance lock, so any shell/helper of this checkout still running is an orphan of a supervisor
+# that was killed hard (e.g. SIGKILL): clear it before starting a fresh one.
+pkill -f "$JF_QS_RE" 2>/dev/null; pkill -f "$JF_WSD_RE" 2>/dev/null; pkill -f "$JF_WIND_RE" 2>/dev/null
+for _ in $(seq 1 20); do pgrep -f "$JF_QS_RE" >/dev/null || break; sleep 0.25; done
+
 # --- preflight ---------------------------------------------------------------
 container_exists || die "container '$JF_CONTAINER' does not exist. Run: jellyface install"
-[ -x "$JF_ROOT/helpers/cosmic-ws/wsd" ] || die "workspace helper not built. Run: jellyface build"
+[ -x "$JF_ROOT/helpers/cosmic-ws/wsd" ] && [ -x "$JF_ROOT/helpers/cosmic-windows/wind" ] || die "COSMIC helpers not built. Run: jellyface build"
 [ -d "$JF_INSTALL/qml" ] || die "shell plugin not built. Run: jellyface build"
 
 # A broken config file must never keep the shell from starting: back it up and restore the default.

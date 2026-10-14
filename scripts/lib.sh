@@ -12,6 +12,7 @@ JF_BACKUPS="${JF_BACKUPS:-$JF_ROOT/backups}"
 # that merely contains the same text (e.g. a grep, an editor, or a terminal running this very command).
 JF_QS_RE="^quickshell -p ${JF_SHELL}\$"
 JF_WSD_RE="^${JF_SHELL}/\\.\\./helpers/cosmic-ws/wsd\$"
+JF_WIND_RE="^${JF_SHELL}/\\.\\./helpers/cosmic-windows/wind\$"
 JF_SUP_RE="^((/usr)?/bin/)?bash ${JF_ROOT}/scripts/run\\.sh"
 JF_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/caelestia"
 JF_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/caelestia"
@@ -37,4 +38,23 @@ backup() {
     dest="$JF_BACKUPS/$(basename "$src").$(date +%Y%m%d-%H%M%S)"
     cp -a "$src" "$dest"
     log "backed up $src -> $dest"
+}
+
+# --- tracked system changes -------------------------------------------------------------------------------------
+# Every file JellyFace changes outside its own folder (COSMIC settings, user services, ...) is recorded here together
+# with a copy of what was there before, so `jellyface revert-system` can put everything back exactly.
+JF_MANIFEST="${XDG_STATE_HOME:-$HOME/.local/state}/jellyface/system-manifest.tsv"
+
+# sys_track <path>: call BEFORE modifying/creating <path> (a file or a directory)
+sys_track() {
+    local path="$1" dest="(new)"
+    mkdir -p "$(dirname "$JF_MANIFEST")"
+    # already tracked once -> keep the first (original) version only
+    if grep -qF "$path"$'\t' "$JF_MANIFEST" 2>/dev/null; then return 0; fi
+    if [ -e "$path" ]; then
+        dest="$JF_BACKUPS/system/$(date +%Y%m%d-%H%M%S)$(echo "$path" | tr '/' '_')"
+        mkdir -p "$JF_BACKUPS/system"
+        cp -a "$path" "$dest"
+    fi
+    printf '%s\t%s\n' "$path" "$dest" >> "$JF_MANIFEST"
 }
