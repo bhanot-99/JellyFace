@@ -31,8 +31,8 @@ body:
   - type: textarea
     attributes:
       label: "Version info"
-      description: "Run `caelestia -v` and paste the result below."
-      placeholder: "Paste the output of `caelestia -v` here!"
+      description: "Run `jellyface -v` and paste the result below."
+      placeholder: "Paste the output of `jellyface -v` here!"
       render: text
     validations:
       required: true

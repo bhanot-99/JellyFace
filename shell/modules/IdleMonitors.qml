@@ -5,8 +5,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Services.UPower
-import Caelestia.Config
-import Caelestia.Services
+import Jellyface.Config
+import Jellyface.Services
 import qs.services
 
 Scope {

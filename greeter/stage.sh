@@ -7,7 +7,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 out="${1:-$here/.greeter-data}"
 mkdir -p "$out"
 
-state="${XDG_STATE_HOME:-$HOME/.local/state}/caelestia/scheme.json"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/jellyface/scheme.json"
 [ -f "$state" ] && cp "$state" "$out/scheme.json"
 
 wp="$(python3 -I - "$here/scripts" <<'PY'
@@ -25,5 +25,24 @@ for f in "$HOME/.face" "/var/lib/AccountsService/icons/$USER"; do [ -f "$f" ] &&
 [ -n "$face" ] && cp "$face" "$out/face.png"
 
 printf '{"user": "%s", "session": "start-cosmic"}\n' "$USER" > "$out/greeter.json"
+
+# Lock-screen extras: the no-notifications dino, the fetch logo, window manager name, and the last known weather
+cp "$here"/shell/assets/google-sans-flex/*.ttf "$out/gsf.ttf" 2>/dev/null || true
+cp "$here/shell/assets/dino.png" "$here/shell/assets/logo.svg" "$out/" 2>/dev/null || true
+printf '{"wm": "%s"}\n' "$(basename "${XDG_CURRENT_DESKTOP:-COSMIC}" | cut -d: -f1)" > "$out/fetch.json"
+python3 -I - "$out/weather.json" <<'PY' || true
+import json, sys, urllib.request
+cfg = json.load(open(__import__("os").path.expanduser("~/.config/jellyface/shell.json")))
+loc = cfg.get("services", {}).get("weatherLocation", "")
+if "," not in loc:
+    sys.exit(0)
+lat, lon = [x.strip() for x in loc.split(",")]
+url = ("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&daily=weather_code,temperature_2m_max,temperature_2m_min"
+       "&current=temperature_2m,apparent_temperature,weather_code&timezone=auto&forecast_days=1" % (lat, lon))
+j = json.load(urllib.request.urlopen(url, timeout=8))
+json.dump({"loc": loc, "code": j["current"]["weather_code"], "temp": j["current"]["temperature_2m"],
+           "feels": j["current"]["apparent_temperature"], "hi": j["daily"]["temperature_2m_max"][0],
+           "lo": j["daily"]["temperature_2m_min"][0]}, open(sys.argv[1], "w"))
+PY
 chmod -R a+rX "$out"
 echo "$out"

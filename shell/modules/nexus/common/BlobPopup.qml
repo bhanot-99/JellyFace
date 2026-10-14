@@ -1,6 +1,6 @@
 import QtQuick
-import Caelestia.Blobs
-import Caelestia.Config
+import Jellyface.Blobs
+import Jellyface.Config
 import qs.components
 import qs.services
 

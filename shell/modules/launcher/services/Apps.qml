@@ -1,8 +1,8 @@
 pragma Singleton
 
 import Quickshell
-import Caelestia.Config
-import Caelestia.Models
+import Jellyface.Config
+import Jellyface.Models
 import qs.utils
 
 Searcher {

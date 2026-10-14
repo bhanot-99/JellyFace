@@ -3,9 +3,9 @@ pragma Singleton
 import ".."
 import QtQuick
 import Quickshell
-import Caelestia.Config
-import Caelestia.I18n
-import Caelestia.Services
+import Jellyface.Config
+import Jellyface.I18n
+import Jellyface.Services
 import qs.services
 import qs.utils
 

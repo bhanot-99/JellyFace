@@ -3,9 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
-import Caelestia
-import Caelestia.Config
-import Caelestia.I18n
+import Jellyface
+import Jellyface.Config
+import Jellyface.I18n
 import qs.services
 import qs.utils
 

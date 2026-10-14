@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell
-import Caelestia.Config
+import Jellyface.Config
 import qs.services
 
 Scope {

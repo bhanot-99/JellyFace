@@ -31,7 +31,7 @@ PACK_GLOB = os.path.join(ROOT, "Color_Palette", "*.txt")
 CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", os.path.join(HOME, ".config"))
 STATE_HOME = os.environ.get("XDG_STATE_HOME", os.path.join(HOME, ".local", "state"))
 COSMIC_BG = os.path.join(CONFIG_HOME, "cosmic", "com.system76.CosmicBackground", "v1")
-SCHEME = os.path.join(STATE_HOME, "caelestia", "scheme.json")
+SCHEME = os.path.join(STATE_HOME, "jellyface", "scheme.json")
 STATE = os.path.join(STATE_HOME, "jellyface", "theme.json")
 IMAGE_EXT = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tif", ".tiff")
 

@@ -4,7 +4,7 @@ JF_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 [ -f "$JF_ROOT/.env.local" ] && . "$JF_ROOT/.env.local"
 
 JF_CONTAINER="${JF_CONTAINER:-jellyface}"   # distrobox container that runs the shell
-JF_SHELL="$JF_ROOT/shell"                   # patched Caelestia shell (QML)
+JF_SHELL="$JF_ROOT/shell"                   # patched Jellyface shell (QML)
 JF_BUILD="$JF_ROOT/.build"                  # cmake build tree (regenerable)
 JF_INSTALL="$JF_ROOT/.install"              # built QML plugin + version binary (regenerable)
 JF_BACKUPS="${JF_BACKUPS:-$JF_ROOT/backups}"
@@ -14,8 +14,8 @@ JF_QS_RE="^quickshell -p ${JF_SHELL}\$"
 JF_WSD_RE="^${JF_SHELL}/\\.\\./helpers/cosmic-ws/wsd\$"
 JF_WIND_RE="^${JF_SHELL}/\\.\\./helpers/cosmic-windows/wind\$"
 JF_SUP_RE="^((/usr)?/bin/)?bash ${JF_ROOT}/scripts/run\\.sh"
-JF_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/caelestia"
-JF_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/caelestia"
+JF_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/jellyface"
+JF_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/jellyface"
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
 
 log()  { printf '\033[1;35m[jellyface]\033[0m %s\n' "$*"; }

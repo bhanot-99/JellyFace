@@ -1,0 +1,37 @@
+qml_module(jellyface-services
+    URI Jellyface.Services
+    SOURCES
+        service.cpp
+        serviceref.cpp
+        beattracker.cpp
+        audiocollector.cpp
+        audioprovider.cpp
+        cavaprovider.cpp
+        tickingservice.cpp
+        sensorslib.cpp
+        cpu.cpp
+        gpu.cpp
+        memory.cpp
+        diskinfo.cpp
+        storage.cpp
+        lyriccandidate.cpp
+        lyrics.cpp
+        sessionmanager.cpp
+        networkusage.cpp
+        hyprdevices.cpp
+        hyprextras.cpp
+    LIBRARIES
+        Qt::Concurrent
+        Qt::DBus
+        Qt::Network
+        PkgConfig::Pipewire
+        PkgConfig::Aubio
+        PkgConfig::Cava
+        Sensors::Sensors
+        jellyface-util
+        jellyface-core
+        jellyface-config
+    DEPENDENCIES
+        Jellyface
+        Jellyface.Config
+)

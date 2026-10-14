@@ -9,35 +9,35 @@ self: {
   cli-default = self.inputs.caelestia-cli.packages.${system}.default;
   shell-default = self.packages.${system}.with-cli;
 
-  cfg = config.programs.caelestia;
+  cfg = config.programs.jellyface;
 in {
   imports = [
-    (lib.mkRenamedOptionModule ["programs" "caelestia" "environment"] ["programs" "caelestia" "systemd" "environment"])
+    (lib.mkRenamedOptionModule ["programs" "jellyface" "environment"] ["programs" "jellyface" "systemd" "environment"])
   ];
   options = with lib; {
-    programs.caelestia = {
-      enable = mkEnableOption "Enable Caelestia shell";
+    programs.jellyface = {
+      enable = mkEnableOption "Enable Jellyface shell";
       package = mkOption {
         type = types.package;
         default = shell-default;
-        description = "The package of Caelestia shell";
+        description = "The package of Jellyface shell";
       };
       systemd = {
         enable = mkOption {
           type = types.bool;
           default = true;
-          description = "Enable the systemd service for Caelestia shell";
+          description = "Enable the systemd service for Jellyface shell";
         };
         target = mkOption {
           type = types.str;
           description = ''
-            The systemd target that will automatically start the Caelestia shell.
+            The systemd target that will automatically start the Jellyface shell.
           '';
           default = config.wayland.systemd.target;
         };
         environment = mkOption {
           type = types.listOf types.str;
-          description = "Extra Environment variables to pass to the Caelestia shell systemd service.";
+          description = "Extra Environment variables to pass to the Jellyface shell systemd service.";
           default = [];
           example = [
             "QT_QPA_PLATFORMTHEME=gtk3"
@@ -47,29 +47,29 @@ in {
       settings = mkOption {
         type = types.attrsOf types.anything;
         default = {};
-        description = "Caelestia shell settings";
+        description = "Jellyface shell settings";
       };
       extraConfig = mkOption {
         type = types.str;
         default = "";
-        description = "Caelestia shell extra configs written to shell.json";
+        description = "Jellyface shell extra configs written to shell.json";
       };
       cli = {
-        enable = mkEnableOption "Enable Caelestia CLI";
+        enable = mkEnableOption "Enable Jellyface CLI";
         package = mkOption {
           type = types.package;
           default = cli-default;
-          description = "The package of Caelestia CLI"; # Doesn't override the shell's CLI, only change from home.packages
+          description = "The package of Jellyface CLI"; # Doesn't override the shell's CLI, only change from home.packages
         };
         settings = mkOption {
           type = types.attrsOf types.anything;
           default = {};
-          description = "Caelestia CLI settings";
+          description = "Jellyface CLI settings";
         };
         extraConfig = mkOption {
           type = types.str;
           default = "";
-          description = "Caelestia CLI extra configs written to cli.json";
+          description = "Jellyface CLI extra configs written to cli.json";
         };
       };
     };
@@ -80,19 +80,19 @@ in {
     shell = cfg.package;
   in
     lib.mkIf cfg.enable {
-      systemd.user.services.caelestia = lib.mkIf cfg.systemd.enable {
+      systemd.user.services.jellyface = lib.mkIf cfg.systemd.enable {
         Unit = {
-          Description = "Caelestia Shell Service";
+          Description = "Jellyface Shell Service";
           After = [cfg.systemd.target];
           PartOf = [cfg.systemd.target];
           X-Restart-Triggers = lib.mkIf (cfg.settings != {}) [
-            "${config.xdg.configFile."caelestia/shell.json".source}"
+            "${config.xdg.configFile."jellyface/shell.json".source}"
           ];
         };
 
         Service = {
           Type = "exec";
-          ExecStart = "${shell}/bin/caelestia-shell";
+          ExecStart = "${shell}/bin/jellyface-shell";
           Restart = "on-failure";
           RestartSec = "5s";
           TimeoutStopSec = "5s";
@@ -123,10 +123,10 @@ in {
           ];
         shouldGenerate = c: c.extraConfig != "" || c.settings != {};
       in {
-        "caelestia/shell.json" = lib.mkIf (shouldGenerate cfg) {
+        "jellyface/shell.json" = lib.mkIf (shouldGenerate cfg) {
           text = mkConfig cfg;
         };
-        "caelestia/cli.json" = lib.mkIf (shouldGenerate cfg.cli) {
+        "jellyface/cli.json" = lib.mkIf (shouldGenerate cfg.cli) {
           text = mkConfig cfg.cli;
         };
       };

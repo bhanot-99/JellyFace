@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
-import Caelestia.Config
+import Jellyface.Config
 import qs.components
 import qs.components.containers
 import qs.components.effects
@@ -13,7 +13,7 @@ import qs.services
 import qs.utils
 
 // JellyFace dock: a ghost badge at the bottom centre of the desktop that opens a single row of apps on hover.
-// It lives on the Bottom layer, so every window covers it. Apps come from ~/.config/caelestia/dock.json.
+// It lives on the Bottom layer, so every window covers it. Apps come from ~/.config/jellyface/dock.json.
 Scope {
     id: root
 

@@ -1,5 +1,5 @@
 import QtQuick
-import Caelestia.Config
+import Jellyface.Config
 
 NumberAnimation {
     enum Type {

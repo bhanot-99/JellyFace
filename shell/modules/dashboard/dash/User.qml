@@ -2,8 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import M3Shapes
-import Caelestia.Config
-import Caelestia.I18n
+import Jellyface.Config
+import Jellyface.I18n
 import qs.components
 import qs.components.effects
 import qs.components.filedialog
@@ -146,7 +146,7 @@ Item {
 
         Loader {
             anchors.centerIn: parent
-            sourceComponent: SysInfo.isDefaultLogo ? caelestiaLogo : osLogo
+            sourceComponent: SysInfo.isDefaultLogo ? jellyfaceLogo : osLogo
         }
     }
 
@@ -163,7 +163,7 @@ Item {
     }
 
     Component {
-        id: caelestiaLogo
+        id: jellyfaceLogo
 
         Logo {
             implicitWidth: Tokens.sizes.dashboard.logoSize

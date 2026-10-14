@@ -1,7 +1,7 @@
 pragma Singleton
 
 import Quickshell
-import Caelestia.Config
+import Jellyface.Config
 
 Singleton {
     id: root

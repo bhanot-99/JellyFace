@@ -1,6 +1,6 @@
 # Architecture
 
-JellyFace is the [Caelestia](https://github.com/caelestia-dots/shell) desktop shell (a Quickshell/QML project written
+JellyFace is the [upstream](https://github.com/caelestia-dots/shell) desktop shell (a Quickshell/QML project written
 for Hyprland), ported to run on COSMIC and wired into the COSMIC session.
 
 ```
@@ -9,7 +9,7 @@ JellyFace/
 ├── scripts/                 lib.sh (shared helpers, tracked system changes), install, build, run (supervisor),
 │                            service, integrate, revert-system, applet, cosmic-tweaks, cosmic-theme, theme.py
 │                            (wallpaper theming), fix-icons, record.sh, pam-host-check.sh, rust-env.sh
-├── shell/                   patched Caelestia shell (QML + C++ plugin sources); see shell/UPSTREAM
+├── shell/                   patched Jellyface shell (QML + C++ plugin sources); see shell/UPSTREAM
 ├── helpers/cosmic-ws/       C: COSMIC workspaces (ext-workspace-v1)  -> JSON lines
 ├── helpers/cosmic-windows/  C: COSMIC windows + state + their workspace (ext-foreign-toplevel-list,
 │                            cosmic-toplevel-info, ext-workspace)      -> JSON lines
@@ -19,7 +19,7 @@ JellyFace/
 ├── config/                  default shell.json, shell-tokens.json, scheme.json (the Original Grey palette), PAM
 │                            template, icon aliases, COSMIC shortcut template
 ├── Color_Palette/           palette packs (*.txt) that wallpaper theming chooses from
-├── patches/                 our changes to the upstream shell as one patch (for rebasing onto newer Caelestia)
+├── patches/                 our changes to the upstream shell as one patch (for rebasing onto newer Jellyface)
 ├── tests/stability.sh       restart / crash / stress test suite
 ├── docs/                    this file
 ├── backups/                 backups of your COSMIC / JellyFace config, incl. the upstream shell's .git (kept, never deleted)
@@ -44,7 +44,7 @@ COSMIC session (Pop!_OS host)
    └── COSMIC panel ──► native/jellyface-applet (ghost button + menu, calls `jellyface`)
 ```
 
-The shell runs in an Arch container because Quickshell, the Qt 6 build and Caelestia's plugins are packaged for Arch.
+The shell runs in an Arch container because Quickshell, the Qt 6 build and Jellyface's plugins are packaged for Arch.
 The container shares `$HOME`, the Wayland socket and the system D-Bus with the host, so its windows appear on your
 COSMIC desktop, and things that need the real system (launching apps, the lock screen's password check, the screen
 recorder) are handed to the host with `distrobox-host-exec`.
@@ -59,14 +59,14 @@ recorder) are handed to the host with `distrobox-host-exec`.
 | `services/CosmicWindows.qml`, `ContentWindow.qml`, `Shortcuts.qml`, `Notifs.qml`, `NotifData.qml`, `bar/components/ActiveWindow.qml`, `bar/popouts/ActiveWindow.qml` | Active window and fullscreen came from Hyprland's IPC. They now come from the `wind` helper; fullscreen only counts for a window on the workspace being shown. The pop-out loses its live thumbnail and "detach" (Hyprland-only capture). |
 | `SidebarButton.qml`, `ContentWindow.qml` (Escape shortcut, full-screen mask while a panel is open), `Interactions.qml` (click-outside-to-close, launcher hover) | "Click outside to close" uses `HyprlandFocusGrab`, which only exists on Hyprland. The bell button, Escape and an outside click close the panels on COSMIC; the launcher also opens on hover at the bottom edge and closes (after a short grace period) when the cursor leaves. |
 | `launcher/services/Apps.qml` | The launcher started apps inside the Arch container, where none of your desktop's apps exist; it now asks the host (`distrobox-host-exec gtk-launch <desktop id>`). |
-| `Recorder.qml`, `cards/Record.qml`, `scripts/record.sh` | Caelestia records with `caelestia record` + gpu-screen-recorder; COSMIC has no wlr-screencopy and that recorder failed inside its sandbox, so the card opens Kooha instead. |
+| `Recorder.qml`, `cards/Record.qml`, `scripts/record.sh` | Jellyface records with `jellyface record` + gpu-screen-recorder; COSMIC has no wlr-screencopy and that recorder failed inside its sandbox, so the card opens Kooha instead. |
 | `assets/pam.d/passwd` (generated from `config/pam-passwd.tmpl`), `scripts/pam-host-check.sh` | The lock screen used `pam_unix` inside the container, whose account has an empty password, so any input unlocked it. It now checks the password on the host and fails closed. |
-| `services/Colours.qml`, `scripts/theme.py` | Caelestia derives colours from the wallpaper with its own CLI (not installed here). `theme.py` replaces it: it matches the COSMIC wallpaper to a palette from `Color_Palette/` and writes `scheme.json`, which the shell reloads live (the shell logs each load). |
+| `services/Colours.qml`, `scripts/theme.py` | Jellyface derives colours from the wallpaper with its own CLI (not installed here). `theme.py` replaces it: it matches the COSMIC wallpaper to a palette from `Color_Palette/` and writes `scheme.json`, which the shell reloads live (the shell logs each load). |
 | `Shortcuts.qml` | New IPC function `drawers dashboardTab <n>`. |
 | `OsIcon.qml` | Ghost logo instead of the distro logo. |
 | `WeatherTab.qml` | Re-laid out as a wide two-column tab so it has the same height as the Media tab. |
 
-Configuration-only changes (no code) live in `config/`: greyscale fallback scheme, square border corners, Caelestia's
+Configuration-only changes (no code) live in `config/`: greyscale fallback scheme, square border corners, Jellyface's
 wallpaper feature off, Celsius, the launcher opening on hover.
 
 ## COSMIC integration and its safety model
@@ -82,7 +82,7 @@ wallpaper feature off, Celsius, the launcher opening on hover.
 - **The applet is a thin client**: it only runs `jellyface ...` commands and reads `theme.json`, so the shell, the applet
   and the terminal always agree.
 
-## Moving to a newer Caelestia
+## Moving to a newer Jellyface
 
 `shell/UPSTREAM` records the upstream commit. To update: check out a newer upstream into a fresh directory, apply
 `patches/0001-cosmic-port.patch` with `git apply --3way`, fix conflicts, replace `shell/`. The patch is regenerated from
@@ -101,7 +101,7 @@ one in `git log`).
 ## Dock (shell/modules/dock)
 
 A ghost badge at the bottom centre of the desktop, on the Bottom layer (every window covers it), that opens a single row of apps
-on hover. Apps are listed in `~/.config/caelestia/dock.json` (default: `config/dock.json`): `id` is a desktop-file id;
+on hover. Apps are listed in `~/.config/jellyface/dock.json` (default: `config/dock.json`): `id` is a desktop-file id;
 Brave web apps use `name`, `command`, `icon` (relative to the project) and `match` (a substring of the window class).
 A dot under a tile means the app has a window; a wide pill means it is focused. Clicking a running app focuses its
 window (again: the next one) through `wind`'s `activate <id>` command; otherwise it is launched on the host.

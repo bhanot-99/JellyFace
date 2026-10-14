@@ -4,9 +4,9 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
-import Caelestia
-import Caelestia.Components
-import Caelestia.Config
+import Jellyface
+import Jellyface.Components
+import Jellyface.Config
 import qs.components
 import qs.services
 

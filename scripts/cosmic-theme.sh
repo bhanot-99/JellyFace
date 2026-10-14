@@ -12,7 +12,7 @@ COSMIC_CFG="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic"
 SYS="/usr/share/cosmic"
 DIRS=(com.system76.CosmicTheme.Dark com.system76.CosmicTheme.Dark.Builder)
 TOOL="$JF_ROOT/tools/cosmic-theme/target/release/jellyface-cosmic-theme"
-SCHEME="${XDG_STATE_HOME:-$HOME/.local/state}/caelestia/scheme.json"
+SCHEME="${XDG_STATE_HOME:-$HOME/.local/state}/jellyface/scheme.json"
 
 case "${1:-status}" in
     apply)

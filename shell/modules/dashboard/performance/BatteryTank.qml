@@ -1,9 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Services.UPower
-import Caelestia.Config
-import Caelestia.I18n
-import Caelestia.Services
+import Jellyface.Config
+import Jellyface.I18n
+import Jellyface.Services
 import qs.components
 import qs.services
 import qs.utils

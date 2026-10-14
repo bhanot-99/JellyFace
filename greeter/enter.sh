@@ -19,7 +19,12 @@ else
     export WAYLAND_DISPLAY=none XDG_RUNTIME_DIR=/tmp GREETD_SOCK=/nonexistent
 fi
 
-export JFG_ROOTFS JFG_PRISTINE_QML=$JFG_OPT/qml uid gid mode
+# the Arch copy has no timezone of its own (empty /etc/localtime = UTC): hand it the host's, so the clock is right
+TZ=$(timedatectl show -p Timezone --value 2>/dev/null || true)
+[ -n "$TZ" ] || TZ=$(readlink -f /etc/localtime | sed -n 's|.*/zoneinfo/||p')
+case "$TZ" in ''|*[!A-Za-z0-9._+/-]*|*..*) TZ=UTC ;; esac
+
+export JFG_ROOTFS JFG_PRISTINE_QML=$JFG_OPT/qml uid gid mode TZ
 exec unshare --mount --propagation private bash -c '
     set -eu
     R=$JFG_ROOTFS
@@ -30,7 +35,7 @@ exec unshare --mount --propagation private bash -c '
     mkdir -p "$R/jf-qml" "$R/jf-data" "$R/tmp"
     mount --bind "$JFG_PRISTINE_QML" "$R/jf-qml"; mount -o remount,bind,ro "$R/jf-qml"
     mount --bind /var/lib/jellyface-greeter "$R/jf-data"
-    env=(env -i PATH=/usr/bin HOME=/tmp LANG=C.UTF-8 XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" WAYLAND_DISPLAY="$WAYLAND_DISPLAY"
+    env=(env -i PATH=/usr/bin HOME=/tmp LANG=C.UTF-8 TZ="$TZ" XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" WAYLAND_DISPLAY="$WAYLAND_DISPLAY"
          GREETD_SOCK="$GREETD_SOCK" QT_QPA_PLATFORM=wayland QT_QUICK_BACKEND=software QS_NO_RELOAD_POPUP=1
          JF_GREETER_DATA=/jf-data/data JF_GREETER_RUN=/jf-data/run)
     if [ "$mode" = smoke ]; then

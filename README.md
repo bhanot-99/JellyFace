@@ -4,7 +4,7 @@ A desktop shell for **COSMIC on Pop!_OS**: a slim left bar with a ghost logo, re
 app's name; a slide-down dashboard (weather, media, performance); an app launcher; a lock screen; and colours that follow
 your wallpaper, from a pack of 100 palettes, across the shell **and** COSMIC's own apps.
 
-JellyFace is a port of the [Caelestia](https://github.com/caelestia-dots/shell) shell (built with
+JellyFace is a port of the [upstream](https://github.com/caelestia-dots/shell) shell (built with
 [Quickshell](https://quickshell.org)), which was written for Hyprland, to run on COSMIC. It is wired into the COSMIC
 session (systemd user service, a native panel applet, COSMIC theming) and every change it makes outside its own folder
 can be undone with one command.
@@ -138,19 +138,19 @@ no remote-control interface). Recordings go to `~/Videos/Recordings/` and are li
 
 | File | What it controls |
 |---|---|
-| `~/.config/caelestia/shell.json` | Behaviour: border rounding, weather location and unit, which bar entries and pop-outs are on |
-| `~/.config/caelestia/shell-tokens.json` | Sizes: the dashboard and its cards, and other component dimensions |
-| `~/.local/state/caelestia/scheme.json` | Colours. Written automatically from your wallpaper; edit by hand only with `jellyface theme auto off` |
+| `~/.config/jellyface/shell.json` | Behaviour: border rounding, weather location and unit, which bar entries and pop-outs are on |
+| `~/.config/jellyface/shell-tokens.json` | Sizes: the dashboard and its cards, and other component dimensions |
+| `~/.local/state/jellyface/scheme.json` | Colours. Written automatically from your wallpaper; edit by hand only with `jellyface theme auto off` |
 | `config/icon-aliases.txt` | Tray icons that ask for a name nobody ships (see below) |
 
 Defaults live in `config/`. For example, to pick your own weather location (a city or `"lat,lon"`) and unit:
 
 ```jsonc
-// ~/.config/caelestia/shell.json
+// ~/.config/jellyface/shell.json
 { "services": { "weatherLocation": "30.70547,76.22196", "weatherUnits": "Celsius" } }
 ```
 
-Caelestia's own wallpaper feature is off on purpose: JellyFace never changes your COSMIC wallpaper.
+Jellyface's own wallpaper feature is off on purpose: JellyFace never changes your COSMIC wallpaper.
 
 **Icons.** The shell runs in a container, so `jellyface start` points it at your host's icon theme and at the host's
 apps and Flatpak exports. Some apps still ask for a tray icon by a name nobody ships (Flatpak VLC asks for `vlc` but
@@ -177,14 +177,14 @@ container (as after a reboot), 125 drawer toggles with a scan for QML runtime er
 
 ## Known limitations
 
-JellyFace gets less information from COSMIC than Caelestia gets from Hyprland.
+JellyFace gets less information from COSMIC than Jellyface gets from Hyprland.
 
 - **Window thumbnails and "detach"** in the active-window pop-out need a Hyprland-only capture feature and are not available.
 - **COSMIC's window outline** (the accent-coloured frame) is drawn by the compositor, which seems to read its colour at
   login: log out and in once after the first `jellyface theme system on`.
 - **Workspace pill** shows numbers only, with no per-workspace app icons.
-- **Global shortcuts.** Caelestia's built-in hotkeys need Hyprland; use COSMIC custom shortcuts and `jellyface ipc`.
-- **Notifications.** COSMIC owns the notification service, so Caelestia's notification pop-ups are inactive.
+- **Global shortcuts.** Jellyface's built-in hotkeys need Hyprland; use COSMIC custom shortcuts and `jellyface ipc`.
+- **Notifications.** COSMIC owns the notification service, so Jellyface's notification pop-ups are inactive.
 - **Screen recording** is controlled in Kooha's window, not from the sidebar card.
 - **Transparency and blur** were tried and removed: at useful strengths they were barely visible over the wallpaper.
 - **Single screen.** All workspaces are treated as one group; multi-monitor setups are untested.
@@ -233,6 +233,6 @@ rm -rf ~/JellyFace                        # keep backups/ if you want to keep yo
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the folder structure and the exact list of changes from upstream.
 
-JellyFace is based on [Caelestia shell](https://github.com/caelestia-dots/shell) by the caelestia-dots contributors
+JellyFace is based on [the upstream shell](https://github.com/caelestia-dots/shell) by the caelestia-dots contributors
 (upstream commit recorded in `shell/UPSTREAM`) and runs on [Quickshell](https://quickshell.org). Licensed under the
 **GNU GPL v3** (see `LICENSE`), the same as upstream.

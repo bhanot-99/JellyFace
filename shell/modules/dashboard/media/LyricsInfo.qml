@@ -1,10 +1,10 @@
 import QtQuick
 import QtQuick.Layouts
-import Caelestia
-import Caelestia.Blobs
-import Caelestia.Config
-import Caelestia.I18n
-import Caelestia.Services
+import Jellyface
+import Jellyface.Blobs
+import Jellyface.Config
+import Jellyface.I18n
+import Jellyface.Services
 import qs.components
 import qs.services
 

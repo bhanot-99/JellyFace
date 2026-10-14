@@ -4,9 +4,9 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
-import Caelestia.Config
-import Caelestia.I18n
-import Caelestia.Models
+import Jellyface.Config
+import Jellyface.I18n
+import Jellyface.Models
 import qs.components
 import qs.components.containers
 import qs.components.controls

@@ -26,8 +26,8 @@ body:
   - type: textarea
     attributes:
       label: "2. Version info"
-      description: "Run `caelestia -v` and paste the result below."
-      placeholder: "Paste the output of `caelestia -v` here!"
+      description: "Run `jellyface -v` and paste the result below."
+      placeholder: "Paste the output of `jellyface -v` here!"
       render: text
     validations:
       required: true
@@ -47,7 +47,7 @@ body:
         1. Use `LANG=C LC_ALL=C` to get the output of a command in English.
           - For example, `LANG=C LC_ALL=C date` displays the current date and time in English.
         2. If something throws errors, **PLEASE** attach logs if possible and describe in detail what occurred.
-          - Something happened to the shell (bar, dashboard, etc)? Run `caelestia shell -l` WITHOUT exiting the shell for logs.
+          - Something happened to the shell (bar, dashboard, etc)? Run `jellyface shell -l` WITHOUT exiting the shell for logs.
           - Installation failed? Run the installation process again for logs.
           - You may use additional code blocks if necessary.
         3. In case you are confused, `<details>` and `<summary>` are HTML tags for folding the (typically very long) logs inside. Please do not touch them (unless you know what you are doing).
