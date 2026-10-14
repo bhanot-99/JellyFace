@@ -30,7 +30,7 @@ and nothing under `/usr` or `/etc` is ever modified.
 ## Install
 
 ```bash
-git clone <this repository> ~/JellyFace      # or copy the folder to ~/JellyFace
+git clone https://github.com/bhanot-99/JellyFace ~/JellyFace
 cd ~/JellyFace
 bin/jellyface install                        # container, packages, build everything, default config, Kooha
 ln -s ~/JellyFace/bin/jellyface ~/.local/bin/jellyface     # optional: use `jellyface` from anywhere
