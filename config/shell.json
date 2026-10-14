@@ -7,9 +7,6 @@
     "wallpaperEnabled": false
   },
   "bar": {
-    "popouts": {
-      "activeWindow": false
-    },
     "entries": [
       {
         "id": "logo",
@@ -58,5 +55,10 @@
   },
   "launcher": {
     "showOnHover": true
+  },
+  "general": {
+    "idle": {
+      "timeouts": []
+    }
   }
 }

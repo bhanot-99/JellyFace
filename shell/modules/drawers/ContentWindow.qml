@@ -23,7 +23,7 @@ StyledWindow {
 
     readonly property HyprlandMonitor monitor: Hypr.monitorFor(screen)
     readonly property bool hasSpecialWorkspace: (monitor?.lastIpcObject.specialWorkspace?.name.length ?? 0) > 0
-    readonly property bool hasFullscreenOnNormalWs: monitor?.activeWorkspace?.toplevels.values.some(t => t.lastIpcObject.fullscreen > 1) ?? false
+    readonly property bool hasFullscreenOnNormalWs: CosmicWindows.fullscreen
     readonly property bool hasFullscreen: {
         if (hasSpecialWorkspace) {
             const specialName = monitor?.lastIpcObject.specialWorkspace?.name;

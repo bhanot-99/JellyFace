@@ -3,10 +3,16 @@
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 
-log "building workspace helper (host)"
+log "building COSMIC helpers: workspaces + windows (host)"
 need gcc "Install it with: sudo apt install build-essential libwayland-dev libwayland-bin"
 need wayland-scanner "Install it with: sudo apt install libwayland-bin"
 "$JF_ROOT/helpers/cosmic-ws/build.sh"
+"$JF_ROOT/helpers/cosmic-windows/build.sh"
+
+if [ "${JF_SKIP_RUST:-0}" != 1 ]; then
+    log "building the COSMIC theme tool (installs a project-local Rust toolchain on first run)"
+    "$JF_ROOT/tools/cosmic-theme/build.sh" || warn "theme tool not built; COSMIC's own theme will not follow the palette"
+fi
 
 log "building shell plugin (container: $JF_CONTAINER) -- this takes a few minutes"
 container_exists || die "container '$JF_CONTAINER' does not exist. Run: jellyface install"

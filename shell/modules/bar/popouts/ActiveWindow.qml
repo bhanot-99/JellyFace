@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Wayland
 import Quickshell.Widgets
 import Caelestia.Config
 import qs.components
@@ -12,7 +11,7 @@ Item {
 
     required property PopoutState popouts
 
-    implicitWidth: Hypr.activeToplevel ? child.implicitWidth : -Tokens.padding.extraLargeIncreased
+    implicitWidth: CosmicWindows.active ? child.implicitWidth : -Tokens.padding.extraLargeIncreased
     implicitHeight: child.implicitHeight
 
     Column {
@@ -34,7 +33,7 @@ Item {
                 asynchronous: true
                 Layout.alignment: Qt.AlignVCenter
                 implicitSize: details.implicitHeight
-                source: Icons.getAppIcon(Hypr.activeToplevel?.lastIpcObject.class ?? "", "image-missing")
+                source: Icons.getAppIcon(CosmicWindows.active?.app_id ?? "", "image-missing")
             }
 
             ColumnLayout {
@@ -45,55 +44,17 @@ Item {
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: Hypr.activeToplevel?.title ?? ""
+                    text: CosmicWindows.active?.title ?? ""
                     font: Tokens.font.body.medium
                     elide: Text.ElideRight
                 }
 
                 StyledText {
                     Layout.fillWidth: true
-                    text: Hypr.activeToplevel?.lastIpcObject.class ?? ""
+                    text: CosmicWindows.active?.app_id ?? ""
                     color: Colours.palette.m3onSurfaceVariant
                     elide: Text.ElideRight
                 }
-            }
-
-            Item {
-                implicitWidth: expandIcon.implicitHeight + Tokens.padding.small
-                implicitHeight: expandIcon.implicitHeight + Tokens.padding.small
-
-                Layout.alignment: Qt.AlignVCenter
-
-                StateLayer {
-                    radius: Tokens.rounding.large
-                    onClicked: root.popouts.detachRequested("winfo")
-                }
-
-                MaterialIcon {
-                    id: expandIcon
-
-                    anchors.centerIn: parent
-                    anchors.horizontalCenterOffset: font.pointSize * 0.05
-
-                    text: "chevron_right"
-
-                    fontStyle: Tokens.font.icon.large
-                }
-            }
-        }
-
-        ClippingWrapperRectangle {
-            color: "transparent"
-            radius: Tokens.rounding.medium
-
-            ScreencopyView {
-                id: preview
-
-                captureSource: Hypr.activeToplevel?.wayland ?? null // qmllint disable unresolved-type
-                live: visible
-
-                constraintSize.width: Tokens.sizes.bar.windowPreviewSize
-                constraintSize.height: Tokens.sizes.bar.windowPreviewSize
             }
         }
     }
