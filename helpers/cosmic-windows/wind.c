@@ -3,7 +3,7 @@
 //     "fullscreen":false,"maximized":false,"minimized":false,"workspace_active":true}, ...]}
 // "active" is the id of the focused window on the workspace you are looking at (0 = none); "fullscreen" is true when a
 // window on that workspace is fullscreen. Windows on other workspaces never count.
-// Read-only: it never changes windows. Exits when its parent goes away or the compositor connection breaks.
+// Read-only except for one command: "activate <id>" on stdin focuses that window. Exits when its parent goes away or the compositor connection breaks.
 #include <errno.h>
 #include <poll.h>
 #include <signal.h>
@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <wayland-client.h>
 #include "cosmic-toplevel-info-unstable-v1-client.h"
+#include "cosmic-toplevel-management-unstable-v1-client.h"
 #include "ext-foreign-toplevel-list-v1-client.h"
 #include "ext-workspace-v1-client.h"
 
@@ -50,6 +51,8 @@ static struct win *wins[MAXWIN];
 static int nwins, next_id = 1, dirty;
 static struct ext_foreign_toplevel_list_v1 *list;
 static struct zcosmic_toplevel_info_v1 *info;
+static struct zcosmic_toplevel_manager_v1 *mgmt;
+static struct wl_seat *seat;
 static struct wl_display *dpy;
 
 static void json_str(const char *s) {
@@ -183,8 +186,16 @@ static void wm_done(void *d, struct ext_workspace_manager_v1 *m) { dirty = 1; }
 static void wm_fin(void *d, struct ext_workspace_manager_v1 *m) {}
 static const struct ext_workspace_manager_v1_listener wm_listener = { wm_group, wm_ws, wm_done, wm_fin };
 
+static void mg_caps(void *d, struct zcosmic_toplevel_manager_v1 *m, struct wl_array *c) {}
+static const struct zcosmic_toplevel_manager_v1_listener mg_listener = { .capabilities = mg_caps };
+
 static void reg(void *d, struct wl_registry *r, uint32_t name, const char *iface, uint32_t ver) {
-    if (!strcmp(iface, ext_foreign_toplevel_list_v1_interface.name)) {
+    if (!strcmp(iface, wl_seat_interface.name) && !seat) {
+        seat = wl_registry_bind(r, name, &wl_seat_interface, 1);
+    } else if (!strcmp(iface, zcosmic_toplevel_manager_v1_interface.name)) {
+        mgmt = wl_registry_bind(r, name, &zcosmic_toplevel_manager_v1_interface, ver < 2 ? ver : 2);
+        zcosmic_toplevel_manager_v1_add_listener(mgmt, &mg_listener, NULL);
+    } else if (!strcmp(iface, ext_foreign_toplevel_list_v1_interface.name)) {
         list = wl_registry_bind(r, name, &ext_foreign_toplevel_list_v1_interface, 1);
     } else if (!strcmp(iface, ext_workspace_manager_v1_interface.name)) {
         wsmgr = wl_registry_bind(r, name, &ext_workspace_manager_v1_interface, 1);
@@ -199,6 +210,18 @@ static void reg(void *d, struct wl_registry *r, uint32_t name, const char *iface
 static void reg_rm(void *d, struct wl_registry *r, uint32_t name) {}
 static const struct wl_registry_listener reg_listener = { .global = reg, .global_remove = reg_rm };
 
+// "activate <id>" on stdin: focus that window (switching to its workspace if needed). Everything else stays read-only.
+static void handle_command(char *line) {
+    int id;
+    if (sscanf(line, "activate %d", &id) != 1 || !mgmt || !seat) return;
+    for (int i = 0; i < nwins; i++)
+        if (wins[i]->id == id && wins[i]->cosmic) {
+            zcosmic_toplevel_manager_v1_activate(mgmt, wins[i]->cosmic, seat);
+            wl_display_flush(dpy);
+            return;
+        }
+}
+
 int main(void) {
     dpy = wl_display_connect(NULL);
     if (!dpy) { fprintf(stderr, "cannot connect to wayland\n"); return 1; }
@@ -211,17 +234,23 @@ int main(void) {
     wl_display_roundtrip(dpy);
     emit();
     dirty = 0;
+    int stdin_ok = 1;
     const pid_t parent = getppid();  // exit when whoever started us goes away (no orphans), without periodic wake-ups
     prctl(PR_SET_PDEATHSIG, SIGTERM);
     if (getppid() != parent) return 0;
     for (;;) {
         while (wl_display_prepare_read(dpy) != 0) wl_display_dispatch_pending(dpy);
         if (wl_display_flush(dpy) < 0 && errno != EAGAIN) return 1;
-        struct pollfd p = { wl_display_get_fd(dpy), POLLIN, 0 };
-        poll(&p, 1, -1);
+        struct pollfd pp[2] = { { wl_display_get_fd(dpy), POLLIN, 0 }, { stdin_ok ? 0 : -1, POLLIN, 0 } };
+        poll(pp, 2, -1);
+        struct pollfd p = pp[0];
         if (p.revents & POLLIN) { if (wl_display_read_events(dpy) < 0) return 1; } else wl_display_cancel_read(dpy);
         if (wl_display_dispatch_pending(dpy) < 0 || wl_display_get_error(dpy)) return 1;
         if (p.revents & (POLLHUP | POLLERR)) return 1;
+        if (pp[1].revents & POLLIN) {
+            char buf[128];
+            if (!fgets(buf, sizeof buf, stdin)) stdin_ok = 0; else handle_command(buf);
+        } else if (pp[1].revents & (POLLHUP | POLLERR)) stdin_ok = 0;
         if (dirty) { dirty = 0; emit(); }
     }
 }

@@ -21,11 +21,30 @@ Scope {
     readonly property int rows: 4
     property var apps: []
 
-    function launch(app: var): void {
-        if (app.command)
+    // The windows that belong to an app. An app with a "match" (the Brave web apps) owns every window whose class
+    // contains it; any other app owns the windows whose class is its desktop id or its StartupWMClass.
+    function windowsOf(app: var): var {
+        const entry = app.id ? DesktopEntries.heuristicLookup(app.id) : null;
+        const ids = [app.id, entry?.startupClass, entry?.id].filter(x => x).map(x => x.toLowerCase().replace(/\.desktop$/, ""));
+        if (app.id)
+            ids.push(app.id.split(".").pop().toLowerCase()); // Flatpak/Electron apps often report just "obsidian"
+        return CosmicWindows.windows.filter(w => {
+            const cls = (w.app_id ?? "").toLowerCase();
+            return app.match ? cls.includes(app.match.toLowerCase()) : ids.includes(cls);
+        });
+    }
+
+    // Running app: focus its window (a further click cycles through its windows). Otherwise launch it.
+    function open(app: var): void {
+        const wins = windowsOf(app);
+        if (wins.length > 0) {
+            const at = wins.findIndex(w => w.id === CosmicWindows.activeId);
+            CosmicWindows.activate(wins[(at + 1) % wins.length].id);
+        } else if (app.command) {
             Quickshell.execDetached(["distrobox-host-exec", "sh", "-c", app.command]);
-        else
+        } else {
             Quickshell.execDetached(["distrobox-host-exec", "gtk-launch", app.id]);
+        }
     }
 
     FileView {
@@ -176,6 +195,9 @@ Scope {
         property var app
         readonly property var entry: app?.id ? DesktopEntries.heuristicLookup(app.id) : null
         readonly property string label: app?.name ?? entry?.name ?? app?.id ?? ""
+        readonly property var windows: app ? root.windowsOf(app) : []
+        readonly property bool running: windows.length > 0
+        readonly property bool focused: windows.some(w => w.id === CosmicWindows.activeId)
 
         implicitWidth: panel.tile
         implicitHeight: panel.tile
@@ -187,7 +209,7 @@ Scope {
             disabled: !tile.app
             radius: tile.radius
             color: Colours.palette.m3onSurface
-            onClicked: root.launch(tile.app)
+            onClicked: root.open(tile.app)
             onContainsMouseChanged: panel.hovered = containsMouse ? tile.label : (panel.hovered === tile.label ? "" : panel.hovered)
         }
 
@@ -195,7 +217,26 @@ Scope {
             anchors.centerIn: parent
             implicitSize: panel.tile * 0.6
             visible: !!tile.app
-            source: Quickshell.iconPath(tile.app?.icon ?? tile.entry?.icon ?? "", "application-x-executable")
+            source: tile.app?.icon?.includes("/") ? `file://${Quickshell.shellPath("../" + tile.app.icon)}` : Quickshell.iconPath(tile.app?.icon ?? tile.entry?.icon ?? "", "application-x-executable")
+        }
+
+        // running indicator: a dot under the icon, a wider pill for the focused app
+        StyledRect {
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: Tokens.padding.small / 2
+            implicitWidth: tile.focused ? 14 : 5
+            implicitHeight: 5
+            radius: Tokens.rounding.full
+            color: Colours.palette.m3primary
+            opacity: tile.running ? 1 : 0
+
+            Behavior on implicitWidth {
+                Anim {}
+            }
+            Behavior on opacity {
+                Anim {}
+            }
         }
     }
 }

@@ -14,10 +14,15 @@ Singleton {
     property bool fullscreen: false
     readonly property var active: windows.find(w => w.id === activeId) ?? null
 
+    function activate(id: int): void {
+        proc.write(`activate ${id}\n`);
+    }
+
     Process {
         id: proc
 
         running: true
+        stdinEnabled: true
         command: [Quickshell.shellPath("../helpers/cosmic-windows/wind")]
         stdout: SplitParser {
             onRead: data => {

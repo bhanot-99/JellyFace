@@ -97,3 +97,11 @@ one in `git log`).
 - `notify-send` is not installed on the host or in the container; `scripts/shims/notify-send` (gdbus) replaces it for the shell.
 - Start-up: the container is warmed in parallel, the compositor probe returns on the first line instead of waiting 3 s,
   and a shell that dies after running a while (for example when the lock screen is unlocked) restarts with no delay.
+
+## Dock (shell/modules/dock)
+
+A ghost badge at the top-left of the desktop, on the Bottom layer (every window covers it), that opens a 5x4 grid of apps
+on hover. Apps are listed in `~/.config/caelestia/dock.json` (default: `config/dock.json`): `id` is a desktop-file id;
+Brave web apps use `name`, `command`, `icon` (relative to the project) and `match` (a substring of the window class).
+A dot under a tile means the app has a window; a wide pill means it is focused. Clicking a running app focuses its
+window (again: the next one) through `wind`'s `activate <id>` command; otherwise it is launched on the host.

@@ -1,17 +1,55 @@
 {
     "apps": [
-        { "id": "brave-browser" },
-        { "id": "com.system76.CosmicFiles" },
-        { "id": "com.system76.CosmicTerm" },
-        { "id": "org.videolan.VLC" },
-        { "id": "com.system76.CosmicMonitor" },
-        { "id": "org.gnome.baobab" },
-        { "id": "com.system76.CosmicScreenshot" },
-        { "id": "io.github.seadve.Kooha" },
-        { "id": "com.system76.CosmicSettings" },
-        { "id": "com.system76.CosmicStore" },
-        { "id": "md.obsidian.Obsidian" },
-        { "id": "code" },
-        { "id": "com.sublimehq.SublimeText" }
+        {
+            "id": "brave-browser"
+        },
+        {
+            "id": "com.system76.CosmicFiles"
+        },
+        {
+            "id": "com.system76.CosmicTerm"
+        },
+        {
+            "id": "org.videolan.VLC"
+        },
+        {
+            "id": "com.system76.CosmicMonitor"
+        },
+        {
+            "id": "org.gnome.baobab"
+        },
+        {
+            "id": "com.system76.CosmicScreenshot"
+        },
+        {
+            "id": "io.github.seadve.Kooha"
+        },
+        {
+            "id": "com.system76.CosmicSettings"
+        },
+        {
+            "id": "com.system76.CosmicStore"
+        },
+        {
+            "id": "md.obsidian.Obsidian"
+        },
+        {
+            "id": "code"
+        },
+        {
+            "id": "com.sublimehq.SublimeText"
+        },
+        {
+            "name": "Claude",
+            "command": "brave-browser --app=https://claude.ai",
+            "icon": "assets/dock/claude.png",
+            "match": "claude.ai"
+        },
+        {
+            "name": "Gemini",
+            "command": "brave-browser --app=https://gemini.google.com",
+            "icon": "assets/dock/gemini.svg",
+            "match": "gemini.google.com"
+        }
     ]
 }
