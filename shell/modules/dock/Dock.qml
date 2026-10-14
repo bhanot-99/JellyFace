@@ -12,13 +12,11 @@ import qs.components.effects
 import qs.services
 import qs.utils
 
-// JellyFace dock: a ghost badge in the top-left corner of the desktop that opens a 5x4 grid of apps on hover.
+// JellyFace dock: a ghost badge at the bottom centre of the desktop that opens a single row of apps on hover.
 // It lives on the Bottom layer, so every window covers it. Apps come from ~/.config/caelestia/dock.json.
 Scope {
     id: root
 
-    readonly property int columns: 5
-    readonly property int rows: 4
     property var apps: []
 
     // The windows that belong to an app. An app with a "match" (the Brave web apps) owns every window whose class
@@ -71,10 +69,9 @@ Scope {
         WlrLayershell.layer: WlrLayer.Bottom
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-        anchors.top: true
-        anchors.left: true
-        margins.top: Math.max(Tokens.padding.small, Config.border.thickness) + Tokens.padding.extraLargeIncreased
-        margins.left: Tokens.sizes.bar.innerWidth + Math.max(Tokens.padding.small, Config.border.thickness) + Tokens.padding.extraLargeIncreased
+        // anchored to the bottom edge only: the compositor centres the window horizontally
+        anchors.bottom: true
+        margins.bottom: Math.max(Tokens.padding.small, Config.border.thickness) + Tokens.padding.extraLargeIncreased
 
         implicitWidth: panel.fullWidth
         implicitHeight: panel.fullHeight
@@ -86,14 +83,19 @@ Scope {
         StyledRect {
             id: panel
 
-            readonly property real tile: 64
             readonly property real gap: Tokens.spacing.medium
             readonly property real pad: Tokens.padding.large
             readonly property real badge: 80
-            readonly property real fullWidth: root.columns * tile + (root.columns - 1) * gap + pad * 2
-            readonly property real fullHeight: root.rows * tile + (root.rows - 1) * gap + pad * 2 + footer.implicitHeight + gap
+            readonly property int count: Math.max(root.apps.length, 1)
+            // 64px tiles, shrunk when there are so many apps that the row would not fit on the screen
+            readonly property real tile: Math.max(32, Math.min(64, Math.floor(((win.screen?.width ?? 1920) * 0.9 - pad * 2 - (count - 1) * gap) / count)))
+            readonly property real fullWidth: count * tile + (count - 1) * gap + pad * 2
+            readonly property real fullHeight: tile + pad * 2 + footer.implicitHeight + gap
             property bool expanded
             property string hovered
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
 
             color: Colours.tPalette.m3surface
             radius: expanded ? Tokens.rounding.extraLarge : Tokens.rounding.extraLarge * 1.5
@@ -146,7 +148,7 @@ Scope {
             }
 
             Item {
-                x: panel.pad
+                anchors.horizontalCenter: parent.horizontalCenter
                 y: panel.pad
                 width: panel.fullWidth - panel.pad * 2
                 height: panel.fullHeight - panel.pad * 2
@@ -157,19 +159,17 @@ Scope {
                     Anim {}
                 }
 
-                Grid {
-                    id: grid
-
-                    columns: root.columns
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
                     spacing: panel.gap
 
                     Repeater {
-                        model: root.columns * root.rows
+                        model: root.apps
 
                         Tile {
-                            required property int index
+                            required property var modelData
 
-                            app: root.apps[index] ?? null
+                            app: modelData
                         }
                     }
                 }

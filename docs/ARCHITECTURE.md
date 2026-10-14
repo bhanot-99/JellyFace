@@ -100,7 +100,7 @@ one in `git log`).
 
 ## Dock (shell/modules/dock)
 
-A ghost badge at the top-left of the desktop, on the Bottom layer (every window covers it), that opens a 5x4 grid of apps
+A ghost badge at the bottom centre of the desktop, on the Bottom layer (every window covers it), that opens a single row of apps
 on hover. Apps are listed in `~/.config/caelestia/dock.json` (default: `config/dock.json`): `id` is a desktop-file id;
 Brave web apps use `name`, `command`, `icon` (relative to the project) and `match` (a substring of the window class).
 A dot under a tile means the app has a window; a wide pill means it is focused. Clicking a running app focuses its
