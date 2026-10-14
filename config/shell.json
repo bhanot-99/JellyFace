@@ -1,59 +1,59 @@
 {
-  "border": {
-    "rounding": 0
-  },
-  "background": {
-    "enabled": false,
-    "wallpaperEnabled": false
-  },
-  "bar": {
-    "entries": [
-      {
-        "id": "logo",
-        "enabled": true
-      },
-      {
-        "id": "workspaces",
-        "enabled": true
-      },
-      {
-        "id": "spacer",
-        "enabled": true
-      },
-      {
-        "id": "activeWindow",
-        "enabled": true
-      },
-      {
-        "id": "spacer",
-        "enabled": true
-      },
-      {
-        "id": "tray",
-        "enabled": true
-      },
-      {
-        "id": "clock",
-        "enabled": true
-      },
-      {
-        "id": "statusIcons",
-        "enabled": true
-      },
-      {
-        "id": "sidebar",
-        "enabled": true
-      },
-      {
-        "id": "power",
-        "enabled": true
-      }
-    ]
-  },
-  "services": {
-    "weatherUnits": "Celsius"
-  },
-  "launcher": {
-    "showOnHover": true
-  }
+    "border": {
+        "rounding": 24
+    },
+    "background": {
+        "enabled": false,
+        "wallpaperEnabled": false
+    },
+    "bar": {
+        "entries": [
+            {
+                "id": "logo",
+                "enabled": true
+            },
+            {
+                "id": "workspaces",
+                "enabled": true
+            },
+            {
+                "id": "spacer",
+                "enabled": true
+            },
+            {
+                "id": "activeWindow",
+                "enabled": true
+            },
+            {
+                "id": "spacer",
+                "enabled": true
+            },
+            {
+                "id": "tray",
+                "enabled": true
+            },
+            {
+                "id": "clock",
+                "enabled": true
+            },
+            {
+                "id": "statusIcons",
+                "enabled": true
+            },
+            {
+                "id": "sidebar",
+                "enabled": true
+            },
+            {
+                "id": "power",
+                "enabled": true
+            }
+        ]
+    },
+    "services": {
+        "weatherUnits": "Celsius"
+    },
+    "launcher": {
+        "showOnHover": true
+    }
 }
