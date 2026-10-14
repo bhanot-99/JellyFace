@@ -1,3 +1,4 @@
 {
     (modifiers: [Super], key: "l"): Spawn("@JF_ROOT@/bin/jellyface lock"),
+    (modifiers: [Super, Shift], key: "f"): Spawn("@JF_ROOT@/bin/jellyface ipc focus toggle"),
 }

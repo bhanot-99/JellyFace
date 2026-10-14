@@ -9,6 +9,7 @@ Scope {
 
         IdleInhibitor;
         GameMode;
+        FocusMode;
         Notifs;
         Players;
         Brightness;

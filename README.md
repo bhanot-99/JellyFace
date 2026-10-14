@@ -33,7 +33,7 @@ and nothing under `/usr` or `/etc` is ever modified.
 git clone https://github.com/bhanot-99/JellyFace ~/JellyFace
 cd ~/JellyFace
 bin/jellyface install                        # container, packages, build everything, default config, Kooha
-ln -s ~/JellyFace/bin/jellyface ~/.local/bin/jellyface     # optional: use `jellyface` from anywhere
+ln -s ~/JellyFace/bin/jellyface ~/.local/bin/jellyface     # makes `jellyface` work from anywhere (the commands below assume it)
 ```
 
 `install` is safe to run again. It:
@@ -150,9 +150,12 @@ Defaults live in `config/`. For example, to pick your own weather location (a ci
 { "services": { "weatherLocation": "30.70547,76.22196", "weatherUnits": "Celsius" } }
 ```
 
-Jellyface's own wallpaper feature is off on purpose: JellyFace never changes your COSMIC wallpaper.
+JellyFace draws no wallpaper, desktop clock, visualiser or desktop widgets of its own (the background layer and desktop
+widgets were removed); your COSMIC wallpaper stays in charge, and JellyFace never changes it. There is no built-in file
+manager either: use COSMIC Files.
 
-**Icons.** The shell runs in a container, so `jellyface start` points it at your host's icon theme and at the host's
+**Icons.** JellyFace uses whatever icon theme your desktop uses (`gsettings get org.gnome.desktop.interface icon-theme`;
+COSMIC's own setting is `~/.config/cosmic/com.system76.CosmicTk/v1/icon_theme`; set both to change it). The shell runs in a container, so `jellyface start` points it at your host's icon theme and at the host's
 apps and Flatpak exports. Some apps still ask for a tray icon by a name nobody ships (Flatpak VLC asks for `vlc` but
 exports `org.videolan.VLC`), which shows as a pink/black checkerboard. Add a line to `config/icon-aliases.txt`
 (`<name asked for>  <name that exists>`) and run `jellyface fix-icons`. The log line `Could not load icon "<name>"` in

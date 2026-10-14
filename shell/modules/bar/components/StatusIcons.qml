@@ -57,6 +57,17 @@ StyledRect {
 
         spacing: 0
 
+        MaterialIcon {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.bottomMargin: FocusMode.enabled ? root.spacing : 0
+            visible: FocusMode.enabled
+            animate: true
+            text: "target"
+            color: Colours.palette.m3primary
+            fontStyle: Tokens.font.icon.medium
+            fill: 1
+        }
+
         Repeater {
             model: ScriptModel {
                 id: model
