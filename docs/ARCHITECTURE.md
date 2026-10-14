@@ -88,3 +88,12 @@ wallpaper feature off, Celsius, the launcher opening on hover.
 `patches/0001-cosmic-port.patch` with `git apply --3way`, fix conflicts, replace `shell/`. The patch is regenerated from
 this repository's history with `git diff --relative=shell <import-commit> -- shell` (the import commit is the first
 one in `git log`).
+
+## Notifications and start-up (added after v1.0.0)
+
+- COSMIC's `cosmic-notifications` owns `org.freedesktop.Notifications`, so the shell's server could not register and its
+  panel was always empty. `scripts/run.sh` now lets the shell take the name (it stops COSMIC's daemon, which COSMIC
+  restarts idle) and gives it back when JellyFace stops. Test with `jellyface notify "Title" "Body"`.
+- `notify-send` is not installed on the host or in the container; `scripts/shims/notify-send` (gdbus) replaces it for the shell.
+- Start-up: the container is warmed in parallel, the compositor probe returns on the first line instead of waiting 3 s,
+  and a shell that dies after running a while (for example when the lock screen is unlocked) restarts with no delay.

@@ -8,11 +8,18 @@ P="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicPanel.Panel/v1"
 [ -d "$P" ] || die "COSMIC panel config not found at $P"
 
 if [ "${1:-}" = "--revert" ]; then
-    printf 'Never' > "$P/autohide"; printf 'true' > "$P/exclusive_zone"
-    log "COSMIC panel restored to always-visible"
+    # put back the user's own values (recorded before the first change); only fall back to COSMIC's defaults if unknown
+    orig="$(awk -F'\t' -v p="$P" '$1==p{print $2}' "$JF_MANIFEST" 2>/dev/null | head -1)"
+    for k in autohide exclusive_zone; do
+        if [ -n "$orig" ] && [ -f "$orig/$k" ]; then cp "$orig/$k" "$P/$k"
+        elif [ "$k" = autohide ]; then printf 'Never' > "$P/$k"
+        else printf 'true' > "$P/$k"; fi
+    done
+    log "COSMIC panel restored to how it was before"
     exit 0
 fi
 backup "$P"
+sys_track "$P"
 printf 'Always' > "$P/autohide"       # hide until the cursor touches the top edge
 printf 'false'  > "$P/exclusive_zone" # don't reserve space while hidden
 log "COSMIC top panel now auto-hides (it re-appears on hover at the top edge)"

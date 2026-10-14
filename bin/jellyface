@@ -73,8 +73,6 @@ cmd_autostart() {
     esac
 }
 
-ws_protocol_ok() { local out; out=$(timeout 2 "$JF_ROOT/helpers/cosmic-ws/wsd" </dev/null || true); [[ "$out" == *'"ws"'* ]]; }
-
 cmd_doctor() {
     local ok=1
     chk() { if eval "$2" >/dev/null 2>&1; then log "ok    $1"; else warn "FAIL  $1  ->  $3"; ok=0; fi; }
@@ -86,7 +84,7 @@ cmd_doctor() {
     chk "native applet built"     '[ -x "$JF_ROOT/native/jellyface-applet/target/release/jellyface-applet" ]' "run: jellyface build (optional)"
     chk "COSMIC helpers built"    '[ -x "$JF_ROOT/helpers/cosmic-ws/wsd" ] && [ -x "$JF_ROOT/helpers/cosmic-windows/wind" ]' "run: jellyface build"
     chk "shell plugin built"      '[ -d "$JF_INSTALL/qml" ]' "run: jellyface build"
-    chk "workspace protocol"      ws_protocol_ok "compositor lacks ext-workspace-v1?"
+    chk "workspace protocol"      ws_ready "compositor lacks ext-workspace-v1?"
     for f in "$JF_CONFIG_DIR/shell.json" "$JF_CONFIG_DIR/shell-tokens.json" "$JF_STATE_DIR/scheme.json"; do
         chk "valid JSON: ${f/#$HOME/~}" "python3 -I -c 'import json,sys;json.load(open(sys.argv[1]))' '$f'" "fix or restore from config/"
     done
@@ -107,7 +105,9 @@ JellyFace -- a Caelestia-based shell for COSMIC (Pop!_OS)
                                   start the shell (--timeout N exits after N seconds: safe for testing)
   jellyface stop | restart | status
   jellyface ipc <target> <fn> [args]   e.g.  jellyface ipc drawers toggle launcher
-  jellyface lock                  JellyFace's own lock screen (optional; Super+L uses COSMIC's lock)
+  jellyface lock                  lock the screen with JellyFace's own lock screen (Super+L does the same)
+  jellyface notify [-u low|normal|critical] [-a app] [-i icon] SUMMARY [BODY]
+                                  send a desktop notification (e.g. to test the notification panel)
   jellyface integrate [--yes]     make JellyFace part of the COSMIC session (service, panel, lock, applet, theme)
   jellyface applet install|panel-add|panel-remove|remove   the JellyFace menu as a native COSMIC panel applet
   jellyface service on|off|status start JellyFace with the COSMIC session (systemd user service)
@@ -130,6 +130,7 @@ case "${1:-help}" in
     ipc)           shift; cmd_ipc "$@" ;;
     autostart)     shift; cmd_autostart "$@" ;;
     lock)          exec "$0" ipc lock lock ;;
+    notify)        shift; exec "$JF_ROOT/scripts/shims/notify-send" "$@" ;;
     integrate)     shift; exec "$JF_ROOT/scripts/integrate.sh" "$@" ;;
     applet)        shift; exec "$JF_ROOT/scripts/applet.sh" "$@" ;;
     service)       shift; exec "$JF_ROOT/scripts/service.sh" "$@" ;;

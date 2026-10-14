@@ -138,17 +138,24 @@ Item {
                         required property int index
                         required property var modelData
 
-                        Layout.alignment: Qt.AlignTop
-
-                        sourceComponent: modelData.component
-
-                        Component.onCompleted: active = Qt.binding(() => {
+                        // Whether this tab is (partly) on screen. It is kept apart from `active`: the old binding read
+                        // implicitWidth, which only exists once the pane is loaded, i.e. `active` depended on itself
+                        // (binding loop) and panes were torn down mid-load ("destroyed during incubation").
+                        readonly property bool inView: {
                             if (index === view.currentIndex)
                                 return true;
                             const vx = Math.floor(view.visibleArea.xPosition * view.contentWidth);
                             const vex = Math.floor(vx + view.visibleArea.widthRatio * view.contentWidth);
                             return (vx >= x && vx <= x + implicitWidth) || (vex >= x && vex <= x + implicitWidth);
-                        })
+                        }
+
+                        Layout.alignment: Qt.AlignTop
+
+                        sourceComponent: modelData.component
+
+                        active: false
+                        onInViewChanged: if (inView) active = true
+                        Component.onCompleted: if (inView) active = true
                     }
                 }
             }

@@ -58,3 +58,20 @@ sys_track() {
     fi
     printf '%s\t%s\n' "$path" "$dest" >> "$JF_MANIFEST"
 }
+
+# ws_ready: true once the compositor answers ext-workspace-v1 requests. wsd streams forever, so read just its first
+# line (a plain `$(timeout 3 wsd)` always burns the whole 3 seconds, which was a fixed delay on every start).
+ws_ready() {
+    local fd line=""
+    exec {fd}< <(timeout 3 "$JF_ROOT/helpers/cosmic-ws/wsd" </dev/null 2>/dev/null)
+    read -r -t 3 -u "$fd" line
+    exec {fd}<&-
+    [[ "$line" == *'"ws"'* ]]
+}
+
+# --- notifications -----------------------------------------------------------------------------------------------
+# COSMIC's own cosmic-notifications owns org.freedesktop.Notifications, so the shell's notification server could never
+# register and its panel stayed empty. While JellyFace runs, the shell owns the name; cosmic-notifications is only asked
+# to let go of it (COSMIC restarts it by itself) and is restarted again when JellyFace stops.
+JF_NOTIF_NAME=org.freedesktop.Notifications
+notif_owner_pid() { busctl --user status "$JF_NOTIF_NAME" 2>/dev/null | sed -n 's/^PID=//p'; }

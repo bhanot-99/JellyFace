@@ -4,5 +4,6 @@ set -e
 cd "$(dirname "$0")"
 wayland-scanner client-header ext-workspace-v1.xml ext-workspace-v1-client.h
 wayland-scanner private-code ext-workspace-v1.xml ext-workspace-v1-protocol.c
-gcc -O2 -Wall -o wsd wsd.c ext-workspace-v1-protocol.c -lwayland-client
+gcc -O2 -Wall -o wsd.new wsd.c ext-workspace-v1-protocol.c -lwayland-client
 rm -f ext-workspace-v1-client.h ext-workspace-v1-protocol.c
+mv -f wsd.new wsd   # replace atomically: a running copy must not block the build

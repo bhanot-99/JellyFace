@@ -6,6 +6,8 @@
 // Read-only: it never changes windows. Exits when its parent goes away or the compositor connection breaks.
 #include <errno.h>
 #include <poll.h>
+#include <signal.h>
+#include <sys/prctl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -188,6 +190,7 @@ static void reg(void *d, struct wl_registry *r, uint32_t name, const char *iface
         wsmgr = wl_registry_bind(r, name, &ext_workspace_manager_v1_interface, 1);
         ext_workspace_manager_v1_add_listener(wsmgr, &wm_listener, NULL);
     } else if (!strcmp(iface, zcosmic_toplevel_info_v1_interface.name)) {
+        if (ver < 2) return;  // get_cosmic_toplevel needs version 2
         uint32_t v = ver < 3 ? ver : 3;
         info = wl_registry_bind(r, name, &zcosmic_toplevel_info_v1_interface, v);
         zcosmic_toplevel_info_v1_add_listener(info, &info_listener, NULL);
@@ -208,13 +211,14 @@ int main(void) {
     wl_display_roundtrip(dpy);
     emit();
     dirty = 0;
-    const pid_t parent = getppid();  // exit when whoever started us goes away (no orphans)
+    const pid_t parent = getppid();  // exit when whoever started us goes away (no orphans), without periodic wake-ups
+    prctl(PR_SET_PDEATHSIG, SIGTERM);
+    if (getppid() != parent) return 0;
     for (;;) {
         while (wl_display_prepare_read(dpy) != 0) wl_display_dispatch_pending(dpy);
         if (wl_display_flush(dpy) < 0 && errno != EAGAIN) return 1;
         struct pollfd p = { wl_display_get_fd(dpy), POLLIN, 0 };
-        poll(&p, 1, 2000);
-        if (getppid() != parent) return 0;
+        poll(&p, 1, -1);
         if (p.revents & POLLIN) { if (wl_display_read_events(dpy) < 0) return 1; } else wl_display_cancel_read(dpy);
         if (wl_display_dispatch_pending(dpy) < 0 || wl_display_get_error(dpy)) return 1;
         if (p.revents & (POLLHUP | POLLERR)) return 1;

@@ -5,6 +5,8 @@
 #include <poll.h>
 #include <unistd.h>
 #include <errno.h>
+#include <signal.h>
+#include <sys/prctl.h>
 #include <wayland-client.h>
 #include "ext-workspace-v1-client.h"
 
@@ -40,11 +42,24 @@ static void m_ws(void *d, struct ext_workspace_manager_v1 *m, struct ext_workspa
     memset(&list[n], 0, sizeof list[n]); list[n].h = h; n++;
     ext_workspace_handle_v1_add_listener(h, &hl, NULL);
 }
+static void json_str(const char *s) {
+    putchar('"');
+    for (; *s; s++) {
+        unsigned char c = (unsigned char)*s;
+        if (c == '"' || c == '\\') { putchar('\\'); putchar(c); }
+        else if (c < 0x20) printf("\\u%04x", c);
+        else putchar(c);
+    }
+    putchar('"');
+}
 static void m_done(void *d, struct ext_workspace_manager_v1 *m) {
     printf("{\"ws\":[");
-    for (int i = 0; i < n; i++)
-        printf("%s{\"i\":%d,\"name\":\"%s\",\"active\":%s,\"urgent\":%s,\"hidden\":%s}", i ? "," : "", i, list[i].name,
+    for (int i = 0; i < n; i++) {
+        printf("%s{\"i\":%d,\"name\":", i ? "," : "", i);
+        json_str(list[i].name);
+        printf(",\"active\":%s,\"urgent\":%s,\"hidden\":%s}",
                list[i].state & 1 ? "true" : "false", list[i].state & 2 ? "true" : "false", list[i].state & 4 ? "true" : "false");
+    }
     printf("]}\n"); fflush(stdout);
 }
 static void m_fin(void *d, struct ext_workspace_manager_v1 *m) { exit(0); }
@@ -66,14 +81,17 @@ int main(void) {
     wl_display_roundtrip(dpy);
     if (!mgr) { fprintf(stderr, "no ext_workspace_manager_v1\n"); return 2; }
     char buf[128]; int stdin_ok = 1;
-    const pid_t parent = getppid();   // exit when whoever started us goes away (no orphans)
+    // exit when whoever started us goes away (no orphans): the kernel tells us, so there is no need to wake up
+    // every couple of seconds just to check
+    const pid_t parent = getppid();
+    prctl(PR_SET_PDEATHSIG, SIGTERM);
+    if (getppid() != parent) return 0;
     setvbuf(stdin, NULL, _IOLBF, 0);
     for (;;) {
         while (wl_display_prepare_read(dpy) != 0) wl_display_dispatch_pending(dpy);
         if (wl_display_flush(dpy) < 0 && errno != EAGAIN) return 1;   // compositor went away
         struct pollfd p[2] = { { wl_display_get_fd(dpy), POLLIN, 0 }, { stdin_ok ? 0 : -1, POLLIN, 0 } };
-        poll(p, 2, 2000);
-        if (getppid() != parent) return 0;
+        poll(p, 2, -1);
         if (p[0].revents & POLLIN) { if (wl_display_read_events(dpy) < 0) return 1; } else wl_display_cancel_read(dpy);
         if (wl_display_dispatch_pending(dpy) < 0 || wl_display_get_error(dpy)) return 1;
         if (p[0].revents & (POLLHUP | POLLERR)) return 1;

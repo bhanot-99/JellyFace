@@ -89,7 +89,7 @@ Item {
                 id: pfp
 
                 anchors.fill: parent
-                path: `${Paths.home}/.face`
+                path: Face.path
             }
 
             StyledRect {

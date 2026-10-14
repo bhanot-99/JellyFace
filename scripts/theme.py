@@ -293,13 +293,22 @@ def update_cosmic_theme():
 
 
 def write_scheme(scheme):
+    """Returns False (and touches nothing) when the shell already shows exactly this scheme."""
+    text = json.dumps(scheme, indent=1)
+    try:
+        if open(SCHEME, encoding="utf-8").read() == text:
+            return False
+    except OSError:
+        pass
     os.makedirs(os.path.dirname(SCHEME), exist_ok=True)
-    # written in place (not renamed over) so the shell's file watcher keeps following the same file
-    with open(SCHEME, "w") as f:
-        json.dump(scheme, f, indent=1)
+    # written in place (not renamed over) so the shell's file watcher keeps following the same file; one write() so the
+    # shell never sees a half-written file
+    with open(SCHEME, "w", encoding="utf-8") as f:
+        f.write(text)
         f.flush()
         os.fsync(f.fileno())
     update_cosmic_theme()
+    return True
 
 
 def wallpaper_ramp(image=None):
@@ -334,10 +343,10 @@ def cmd_match(image=None):
 
 def apply_palette(p, source, reason):
     tint, soft = read_state().get("tint", DEFAULT_TINT), read_state().get("soft", DEFAULT_SOFT)
-    write_scheme(build_scheme(p, tint, soft))
-    write_state(palette=p["num"], name=p["name"], family=p["family"], source=source, reason=reason, applied=time.strftime("%F %T"))
+    changed = write_scheme(build_scheme(p, tint, soft))
+    write_state(palette=p["num"], name=p["name"], family=p["family"], source=source, reason=reason, applied=time.strftime("%F %T"), wallpaper_key=repr(wallpaper_key()))
     extra = "exact (tint and softness do not apply)" if p.get("exact") else f"tint {tint:g}, softness {soft:g}"
-    print(f"applied [{p['num']:03d}] {p['name']} ({p['family']}), {extra} -- {reason}")
+    print(f"applied [{p['num']:03d}] {p['name']} ({p['family']}), {extra} -- {reason}" + ("" if changed else " (already showing)"))
 
 
 def cmd_apply(key=None):
@@ -416,8 +425,23 @@ def wallpaper_key():
 
 
 def cmd_watch():
+    import fcntl
+    # one watcher only, and it ends with whoever started it: a killed supervisor used to leave watchers behind, each of
+    # them polling and re-applying the theme
+    lock = open(os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "jellyface-theme.lock"), "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        return
+    parent = os.getppid()
     last = None
-    while True:
+    try:  # the wallpaper this palette was chosen for: nothing to redo (and no colour flash) if it is still the same
+        st = read_state()
+        if st.get("mode", "auto") == "auto" and st.get("wallpaper_key") == repr(wallpaper_key()):
+            last = wallpaper_key()
+    except Exception:
+        pass
+    while os.getppid() == parent:
         try:
             if read_state().get("mode", "auto") == "auto":
                 key = wallpaper_key()

@@ -10,3 +10,5 @@ helpers/cosmic-windows/wind
 tools/cosmic-theme/target/
 native/jellyface-applet/target/
 Bugs/
+__pycache__/
+*.pyc

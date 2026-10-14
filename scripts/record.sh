@@ -8,7 +8,7 @@ set -uo pipefail
 APP=io.github.seadve.Kooha
 DIR="${JF_RECORD_DIR:-$HOME/Videos/Recordings}"
 
-note() { command -v notify-send >/dev/null && notify-send -a JellyFace "$@" || true; }
+note() { "$(dirname "$(readlink -f "$0")")/shims/notify-send" -a JellyFace "$@" || true; }
 
 case "${1:-open}" in
     open)
