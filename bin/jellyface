@@ -107,6 +107,7 @@ JellyFace -- a Caelestia-based shell for COSMIC (Pop!_OS)
                                   start the shell (--timeout N exits after N seconds: safe for testing)
   jellyface stop | restart | status
   jellyface ipc <target> <fn> [args]   e.g.  jellyface ipc drawers toggle launcher
+  jellyface glass [on [0.9]|off]  frosted-glass look: translucent surfaces with the background blurred
   jellyface lock                  JellyFace's own lock screen (optional; Super+L uses COSMIC's lock)
   jellyface integrate [--yes]     make JellyFace part of the COSMIC session (service, panel, lock, applet, theme)
   jellyface applet install|panel-add|panel-remove|remove   the JellyFace menu as a native COSMIC panel applet
@@ -129,6 +130,7 @@ case "${1:-help}" in
     status)        cmd_status ;;
     ipc)           shift; cmd_ipc "$@" ;;
     autostart)     shift; cmd_autostart "$@" ;;
+    glass)         shift; exec python3 -I "$JF_ROOT/scripts/glass.py" "$@" ;;
     lock)          exec "$0" ipc lock lock ;;
     integrate)     shift; exec "$JF_ROOT/scripts/integrate.sh" "$@" ;;
     applet)        shift; exec "$JF_ROOT/scripts/applet.sh" "$@" ;;
