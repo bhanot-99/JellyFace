@@ -21,6 +21,9 @@ CustomMouseArea {
     property point dragStart
     property bool dashboardShortcutActive
     property bool osdShortcutActive
+    // The cursor is over an open launcher/session/sidebar: the panel then takes the keyboard without a click
+    // (COSMIC's focus-follows-cursor only covers normal windows, not layer-shell panels)
+    property bool overPanel
     property bool utilitiesShortcutActive
 
     function withinPanelHeight(panel: Item, x: real, y: real): bool {
@@ -101,7 +104,13 @@ CustomMouseArea {
         dragStart = Qt.point(event.x, event.y);
         closeIfClickedOutside(event.x, event.y);
     }
+    function updateOverPanel(x: real, y: real): void {
+        overPanel = (screenState.launcher && inLauncherZone(x, y)) || (screenState.sidebar && insideItem(panels.sidebar, x, y)) || (screenState.session && insideItem(panels.session, x, y));
+    }
+
     onContainsMouseChanged: {
+        if (!containsMouse)
+            overPanel = false;
         if (!containsMouse) {
             // Only hide if not activated by shortcut
             if (!osdShortcutActive) {
@@ -129,6 +138,7 @@ CustomMouseArea {
     }
 
     onPositionChanged: event => {
+        updateOverPanel(event.x, event.y);
         if (popouts.isDetached)
             return;
 
