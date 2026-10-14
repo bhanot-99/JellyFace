@@ -1,0 +1,5 @@
+#%PAM-1.0
+# JellyFace lock screen: check the typed password against the HOST account (see scripts/pam-host-check.sh).
+# 'requisite' + a final pam_permit means: success only if the host check succeeded (the container has no real passwords).
+auth    requisite   pam_exec.so   expose_authtok   quiet   @JF_ROOT@/scripts/pam-host-check.sh
+auth    required    pam_permit.so

@@ -1,0 +1,3 @@
+# <icon name the app asks for>  <icon name that actually exists on this system>
+# Used by scripts/fix-icons.sh. Some apps (often Flatpaks) ask for a tray icon by a name nobody ships.
+vlc  org.videolan.VLC

@@ -1,0 +1,3 @@
+{
+    (modifiers: [Super], key: "l"): Spawn("@JF_ROOT@/bin/jellyface ipc lock lock"),
+}

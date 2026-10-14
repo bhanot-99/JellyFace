@@ -44,19 +44,8 @@ StyledWindow {
 
     property color surfaceColour: Colours.tPalette.m3surface
 
-    readonly property int dragMaskPadding: {
-        if (focusGrab.active || panels.popouts.isDetached)
-            return 0;
-
-        if (monitor?.lastIpcObject.specialWorkspace?.name || monitor?.activeWorkspace?.toplevels.values.length > 0)
-            return 0;
-
-        const thresholds = [];
-        for (const panel of ["dashboard", "launcher", "session", "sidebar"])
-            if (contentItem.Config[panel].enabled)
-                thresholds.push(contentItem.Config[panel].dragThreshold);
-        return Math.max(...thresholds);
-    }
+    // Edge-drag padding relies on Hyprland workspace info; on COSMIC it would block clicks along every screen edge
+    readonly property int dragMaskPadding: 0
 
     onHasFullscreenChanged: {
         screenState.launcher = false;
@@ -68,9 +57,13 @@ StyledWindow {
     name: "drawers"
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: (fsTransitionProg > 0 && contentItem.Config.general.showOverFullscreen) || (hasSpecialWorkspace && hasFullscreenOnNormalWs) ? WlrLayer.Overlay : WlrLayer.Top
-    WlrLayershell.keyboardFocus: screenState.launcher || screenState.session ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: screenState.launcher || screenState.session || screenState.sidebar ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
-    mask: hasFullscreen ? emptyRegion : regions
+    // While a closable panel is open the window covers the whole screen, so a click anywhere outside the panel
+    // reaches Interactions and closes it (Hyprland does this with a focus grab, which COSMIC doesn't have)
+    readonly property bool anyClosableOpen: screenState.launcher || screenState.session || screenState.sidebar
+
+    mask: hasFullscreen ? emptyRegion : (anyClosableOpen ? fullRegion : regions)
 
     anchors.top: true
     anchors.bottom: true
@@ -83,6 +76,15 @@ StyledWindow {
 
     Behavior on surfaceColour {
         CAnim {}
+    }
+
+    Region {
+        id: fullRegion
+
+        x: 0
+        y: 0
+        width: root.width
+        height: root.height
     }
 
     Region {
@@ -107,6 +109,18 @@ StyledWindow {
         bar: bar
         panels: panels
         win: root
+    }
+
+    // HyprlandFocusGrab (below) closes drawers on outside-click only on Hyprland; Escape works everywhere
+    Shortcut {
+        sequence: "Escape"
+        enabled: root.screenState.launcher || root.screenState.session || root.screenState.sidebar || root.screenState.dashboard
+        onActivated: {
+            root.screenState.launcher = false;
+            root.screenState.session = false;
+            root.screenState.sidebar = false;
+            root.screenState.dashboard = false;
+        }
     }
 
     HyprlandFocusGrab {

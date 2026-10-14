@@ -63,7 +63,28 @@ CustomMouseArea {
     acceptedButtons: fullscreen ? Qt.NoButton : Qt.AllButtons
     hoverEnabled: true
 
-    onPressed: event => dragStart = Qt.point(event.x, event.y)
+    function insideItem(item: Item, x: real, y: real): bool {
+        const p = item.mapToItem(root, 0, 0);
+        const margin = 8;
+        return x >= p.x - margin && x <= p.x + item.width + margin && y >= p.y - margin && y <= p.y + item.height + margin;
+    }
+
+    // Click outside an open launcher/session/sidebar closes it (the bar toggles its own panels, so leave it alone)
+    function closeIfClickedOutside(x: real, y: real): void {
+        if (!(screenState.launcher || screenState.session || screenState.sidebar) || x < bar.implicitWidth)
+            return;
+        for (const panel of [panels.launcher, panels.session, panels.sidebar])
+            if (panel.visible && insideItem(panel, x, y))
+                return;
+        screenState.launcher = false;
+        screenState.session = false;
+        screenState.sidebar = false;
+    }
+
+    onPressed: event => {
+        dragStart = Qt.point(event.x, event.y);
+        closeIfClickedOutside(event.x, event.y);
+    }
     onContainsMouseChanged: {
         if (!containsMouse) {
             // Only hide if not activated by shortcut
@@ -200,6 +221,9 @@ CustomMouseArea {
         if (Config.launcher.showOnHover) {
             if (!screenState.launcher && inBottomPanel(panels.launcher, x, y))
                 screenState.launcher = true;
+            // Like the dashboard: close again once the cursor has left the panel (the bar is excluded so its buttons still work)
+            else if (screenState.launcher && !pressed && x >= bar.implicitWidth && !insideItem(panels.launcher, x, y))
+                screenState.launcher = false;
         } else if (pressed && inBottomPanel(panels.launcher, dragStart.x, dragStart.y) && withinPanelWidth(panels.launcher, x, y)) {
             if (dragY < -Config.launcher.dragThreshold)
                 screenState.launcher = true;

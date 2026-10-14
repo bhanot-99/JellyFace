@@ -130,7 +130,7 @@ ColumnLayout {
             DelegateChoice {
                 roleValue: "workspaces"
                 delegate: EntryWrapper {
-                    Workspaces {
+                    CosmicWorkspaces {
                         objectName: "taskbarWorkspaces"
                         screen: root.screen
                         fullscreen: root.fullscreen
@@ -168,6 +168,15 @@ ColumnLayout {
                 delegate: EntryWrapper {
                     StatusIcons {
                         objectName: "taskbarStatusIcons"
+                    }
+                }
+            }
+            DelegateChoice {
+                roleValue: "sidebar"
+                delegate: EntryWrapper {
+                    SidebarButton {
+                        objectName: "taskbarSidebarButton"
+                        screenState: root.screenState
                     }
                 }
             }

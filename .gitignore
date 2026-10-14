@@ -1,0 +1,7 @@
+.build/
+.install/
+.env.local
+logs/
+backups/
+helpers/cosmic-ws/wsd
+shell/assets/pam.d/passwd

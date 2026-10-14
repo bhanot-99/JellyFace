@@ -11,13 +11,9 @@ Searcher {
     function launch(entry: DesktopEntry): void {
         appDb.incrementFrequency(entry.id);
 
-        if (entry.runInTerminal)
-            Quickshell.execDetached({
-                command: [...GlobalConfig.general.apps.terminal, `${Quickshell.shellDir}/assets/wrap_term_launch.sh`, ...entry.command],
-                workingDirectory: entry.workingDirectory
-            });
-        else
-            entry.execute();
+        // The shell runs in a container where the desktop's apps are not installed (and terminals/Flatpaks differ),
+        // so ask the host to launch the app by its desktop id
+        Quickshell.execDetached(["distrobox-host-exec", "gtk-launch", entry.id]);
     }
 
     function search(search: string): var {

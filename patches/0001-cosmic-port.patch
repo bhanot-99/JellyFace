@@ -1,0 +1,775 @@
+diff --git a/modules/bar/Bar.qml b/modules/bar/Bar.qml
+index 1ceb9b6..b47d2de 100644
+--- a/modules/bar/Bar.qml
++++ b/modules/bar/Bar.qml
+@@ -130,7 +130,7 @@ ColumnLayout {
+             DelegateChoice {
+                 roleValue: "workspaces"
+                 delegate: EntryWrapper {
+-                    Workspaces {
++                    CosmicWorkspaces {
+                         objectName: "taskbarWorkspaces"
+                         screen: root.screen
+                         fullscreen: root.fullscreen
+@@ -171,6 +171,15 @@ ColumnLayout {
+                     }
+                 }
+             }
++            DelegateChoice {
++                roleValue: "sidebar"
++                delegate: EntryWrapper {
++                    SidebarButton {
++                        objectName: "taskbarSidebarButton"
++                        screenState: root.screenState
++                    }
++                }
++            }
+             DelegateChoice {
+                 roleValue: "power"
+                 delegate: EntryWrapper {
+diff --git a/modules/bar/components/OsIcon.qml b/modules/bar/components/OsIcon.qml
+index a4546fd..78b22d7 100644
+--- a/modules/bar/components/OsIcon.qml
++++ b/modules/bar/components/OsIcon.qml
+@@ -1,4 +1,5 @@
+ import QtQuick
++import Quickshell
+ import Caelestia.Config
+ import qs.components
+ import qs.components.effects
+@@ -20,28 +21,10 @@ Item {
+         }
+     }
+ 
+-    Loader {
+-        asynchronous: true
++    ColouredIcon {
+         anchors.centerIn: parent
+-        sourceComponent: SysInfo.isDefaultLogo ? caelestiaLogo : distroIcon
+-    }
+-
+-    Component {
+-        id: caelestiaLogo
+-
+-        Logo {
+-            implicitWidth: Math.round(Tokens.font.body.large.pointSize * 1.6)
+-            implicitHeight: Math.round(Tokens.font.body.large.pointSize * 1.6)
+-        }
+-    }
+-
+-    Component {
+-        id: distroIcon
+-
+-        ColouredIcon {
+-            source: SysInfo.osLogo
+-            implicitSize: Math.round(Tokens.font.body.large.pointSize * 1.2)
+-            colour: Colours.palette.m3tertiary
+-        }
++        source: `file://${Quickshell.shellPath("../assets/ghost.svg")}`
++        implicitSize: Math.round(Tokens.font.body.large.pointSize * 1.6)
++        colour: Colours.palette.m3primary
+     }
+ }
+diff --git a/modules/bar/components/SidebarButton.qml b/modules/bar/components/SidebarButton.qml
+new file mode 100644
+index 0000000..8238d40
+--- /dev/null
++++ b/modules/bar/components/SidebarButton.qml
+@@ -0,0 +1,34 @@
++import QtQuick
++import Caelestia.Config
++import qs.components
++import qs.services
++
++// Bell button that toggles the notification sidebar (the click-outside-to-close grab is Hyprland-only)
++Item {
++    id: root
++
++    required property ScreenState screenState
++
++    implicitWidth: icon.implicitHeight + Tokens.padding.small
++    implicitHeight: icon.implicitHeight
++
++    StateLayer {
++        // Cursed workaround to make the height larger than the parent
++        anchors.fill: undefined
++        anchors.centerIn: parent
++        implicitWidth: implicitHeight
++        implicitHeight: icon.implicitHeight + Tokens.padding.small
++        radius: Tokens.rounding.full
++        onClicked: root.screenState.sidebar = !root.screenState.sidebar
++    }
++
++    MaterialIcon {
++        id: icon
++
++        anchors.centerIn: parent
++
++        text: root.screenState.sidebar ? "notifications_active" : "notifications"
++        color: Colours.palette.m3onSurfaceVariant
++        fontStyle: Tokens.font.icon.builders.small.weight(Font.Bold).build()
++    }
++}
+diff --git a/modules/bar/components/workspaces/CosmicWorkspaces.qml b/modules/bar/components/workspaces/CosmicWorkspaces.qml
+new file mode 100644
+index 0000000..5030ea2
+--- /dev/null
++++ b/modules/bar/components/workspaces/CosmicWorkspaces.qml
+@@ -0,0 +1,55 @@
++import QtQuick
++import Caelestia.Config
++import qs.components
++import qs.services
++
++// Workspace switcher backed by COSMIC's real workspaces
++StyledRect {
++    id: root
++
++    required property var screen
++    required property bool fullscreen
++
++    readonly property int cell: Tokens.sizes.bar.innerWidth - Tokens.padding.extraSmall * 2
++
++    implicitWidth: Tokens.sizes.bar.innerWidth
++    implicitHeight: col.implicitHeight + Tokens.padding.extraSmall * 2
++    visible: !fullscreen
++
++    color: Colours.tPalette.m3surfaceContainer
++    radius: Tokens.rounding.full
++
++    Column {
++        id: col
++
++        anchors.centerIn: parent
++        spacing: Tokens.spacing.extraSmall
++
++        Repeater {
++            model: CosmicWs.list
++
++            StyledRect {
++                id: item
++
++                required property var modelData
++
++                width: root.cell
++                height: root.cell
++                radius: Tokens.rounding.full
++                color: modelData.active ? Colours.palette.m3primary : (modelData.urgent ? Colours.palette.m3error : "transparent")
++
++                StyledText {
++                    anchors.centerIn: parent
++                    text: item.modelData.name
++                    color: item.modelData.active ? Colours.palette.m3onPrimary : Colours.palette.m3onSurfaceVariant
++                }
++
++                MouseArea {
++                    anchors.fill: parent
++                    cursorShape: Qt.PointingHandCursor
++                    onClicked: CosmicWs.activate(item.modelData.i)
++                }
++            }
++        }
++    }
++}
+diff --git a/modules/dashboard/WeatherTab.qml b/modules/dashboard/WeatherTab.qml
+index f0982a8..07502d9 100644
+--- a/modules/dashboard/WeatherTab.qml
++++ b/modules/dashboard/WeatherTab.qml
+@@ -11,7 +11,7 @@ Item {
+ 
+     readonly property var today: Weather.forecast && Weather.forecast.length > 0 ? Weather.forecast[0] : null
+ 
+-    implicitWidth: layout.implicitWidth > 800 ? layout.implicitWidth : 840
++    implicitWidth: layout.implicitWidth > 600 ? layout.implicitWidth : 640
+     implicitHeight: layout.implicitHeight
+     Component.onCompleted: Weather.reload()
+ 
+diff --git a/modules/drawers/ContentWindow.qml b/modules/drawers/ContentWindow.qml
+index 9f82df2..e8885b5 100644
+--- a/modules/drawers/ContentWindow.qml
++++ b/modules/drawers/ContentWindow.qml
+@@ -44,19 +44,8 @@ StyledWindow {
+ 
+     property color surfaceColour: Colours.tPalette.m3surface
+ 
+-    readonly property int dragMaskPadding: {
+-        if (focusGrab.active || panels.popouts.isDetached)
+-            return 0;
+-
+-        if (monitor?.lastIpcObject.specialWorkspace?.name || monitor?.activeWorkspace?.toplevels.values.length > 0)
+-            return 0;
+-
+-        const thresholds = [];
+-        for (const panel of ["dashboard", "launcher", "session", "sidebar"])
+-            if (contentItem.Config[panel].enabled)
+-                thresholds.push(contentItem.Config[panel].dragThreshold);
+-        return Math.max(...thresholds);
+-    }
++    // Edge-drag padding relies on Hyprland workspace info; on COSMIC it would block clicks along every screen edge
++    readonly property int dragMaskPadding: 0
+ 
+     onHasFullscreenChanged: {
+         screenState.launcher = false;
+@@ -68,9 +57,13 @@ StyledWindow {
+     name: "drawers"
+     WlrLayershell.exclusionMode: ExclusionMode.Ignore
+     WlrLayershell.layer: (fsTransitionProg > 0 && contentItem.Config.general.showOverFullscreen) || (hasSpecialWorkspace && hasFullscreenOnNormalWs) ? WlrLayer.Overlay : WlrLayer.Top
+-    WlrLayershell.keyboardFocus: screenState.launcher || screenState.session ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
++    WlrLayershell.keyboardFocus: screenState.launcher || screenState.session || screenState.sidebar ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
++
++    // While a closable panel is open the window covers the whole screen, so a click anywhere outside the panel
++    // reaches Interactions and closes it (Hyprland does this with a focus grab, which COSMIC doesn't have)
++    readonly property bool anyClosableOpen: screenState.launcher || screenState.session || screenState.sidebar
+ 
+-    mask: hasFullscreen ? emptyRegion : regions
++    mask: hasFullscreen ? emptyRegion : (anyClosableOpen ? fullRegion : regions)
+ 
+     anchors.top: true
+     anchors.bottom: true
+@@ -85,6 +78,15 @@ StyledWindow {
+         CAnim {}
+     }
+ 
++    Region {
++        id: fullRegion
++
++        x: 0
++        y: 0
++        width: root.width
++        height: root.height
++    }
++
+     Region {
+         id: emptyRegion
+ 
+@@ -109,6 +111,18 @@ StyledWindow {
+         win: root
+     }
+ 
++    // HyprlandFocusGrab (below) closes drawers on outside-click only on Hyprland; Escape works everywhere
++    Shortcut {
++        sequence: "Escape"
++        enabled: root.screenState.launcher || root.screenState.session || root.screenState.sidebar || root.screenState.dashboard
++        onActivated: {
++            root.screenState.launcher = false;
++            root.screenState.session = false;
++            root.screenState.sidebar = false;
++            root.screenState.dashboard = false;
++        }
++    }
++
+     HyprlandFocusGrab {
+         id: focusGrab
+ 
+diff --git a/modules/drawers/Interactions.qml b/modules/drawers/Interactions.qml
+index 3d94a52..d49e975 100644
+--- a/modules/drawers/Interactions.qml
++++ b/modules/drawers/Interactions.qml
+@@ -63,7 +63,28 @@ CustomMouseArea {
+     acceptedButtons: fullscreen ? Qt.NoButton : Qt.AllButtons
+     hoverEnabled: true
+ 
+-    onPressed: event => dragStart = Qt.point(event.x, event.y)
++    function insideItem(item: Item, x: real, y: real): bool {
++        const p = item.mapToItem(root, 0, 0);
++        const margin = 8;
++        return x >= p.x - margin && x <= p.x + item.width + margin && y >= p.y - margin && y <= p.y + item.height + margin;
++    }
++
++    // Click outside an open launcher/session/sidebar closes it (the bar toggles its own panels, so leave it alone)
++    function closeIfClickedOutside(x: real, y: real): void {
++        if (!(screenState.launcher || screenState.session || screenState.sidebar) || x < bar.implicitWidth)
++            return;
++        for (const panel of [panels.launcher, panels.session, panels.sidebar])
++            if (panel.visible && insideItem(panel, x, y))
++                return;
++        screenState.launcher = false;
++        screenState.session = false;
++        screenState.sidebar = false;
++    }
++
++    onPressed: event => {
++        dragStart = Qt.point(event.x, event.y);
++        closeIfClickedOutside(event.x, event.y);
++    }
+     onContainsMouseChanged: {
+         if (!containsMouse) {
+             // Only hide if not activated by shortcut
+@@ -200,6 +221,9 @@ CustomMouseArea {
+         if (Config.launcher.showOnHover) {
+             if (!screenState.launcher && inBottomPanel(panels.launcher, x, y))
+                 screenState.launcher = true;
++            // Like the dashboard: close again once the cursor has left the panel (the bar is excluded so its buttons still work)
++            else if (screenState.launcher && !pressed && x >= bar.implicitWidth && !insideItem(panels.launcher, x, y))
++                screenState.launcher = false;
+         } else if (pressed && inBottomPanel(panels.launcher, dragStart.x, dragStart.y) && withinPanelWidth(panels.launcher, x, y)) {
+             if (dragY < -Config.launcher.dragThreshold)
+                 screenState.launcher = true;
+diff --git a/modules/launcher/services/Apps.qml b/modules/launcher/services/Apps.qml
+index 1b8740e..e54fd63 100644
+--- a/modules/launcher/services/Apps.qml
++++ b/modules/launcher/services/Apps.qml
+@@ -11,13 +11,9 @@ Searcher {
+     function launch(entry: DesktopEntry): void {
+         appDb.incrementFrequency(entry.id);
+ 
+-        if (entry.runInTerminal)
+-            Quickshell.execDetached({
+-                command: [...GlobalConfig.general.apps.terminal, `${Quickshell.shellDir}/assets/wrap_term_launch.sh`, ...entry.command],
+-                workingDirectory: entry.workingDirectory
+-            });
+-        else
+-            entry.execute();
++        // The shell runs in a container where the desktop's apps are not installed (and terminals/Flatpaks differ),
++        // so ask the host to launch the app by its desktop id
++        Quickshell.execDetached(["distrobox-host-exec", "gtk-launch", entry.id]);
+     }
+ 
+     function search(search: string): var {
+diff --git a/modules/utilities/cards/Record.qml b/modules/utilities/cards/Record.qml
+index cdaaad0..e25dbe9 100644
+--- a/modules/utilities/cards/Record.qml
++++ b/modules/utilities/cards/Record.qml
+@@ -15,7 +15,7 @@ StyledRect {
+ 
+     required property var props
+     required property ScreenState screenState
+-    readonly property real nonAnimHeight: btnLayout.implicitHeight + listOrControls.implicitHeight + layout.spacing + layout.anchors.margins * 2
++    readonly property real nonAnimHeight: btnLayout.implicitHeight + recordingList.implicitHeight + layout.spacing + layout.anchors.margins * 2
+ 
+     implicitHeight: layout.implicitHeight + layout.anchors.margins * 2
+ 
+@@ -46,7 +46,7 @@ StyledRect {
+                 }
+ 
+                 radius: Tokens.rounding.full
+-                color: Recorder.running ? Colours.palette.m3secondary : Colours.palette.m3secondaryContainer
++                color: Colours.palette.m3secondaryContainer
+ 
+                 MaterialIcon {
+                     id: icon
+@@ -54,7 +54,7 @@ StyledRect {
+                     anchors.centerIn: parent
+                     anchors.verticalCenterOffset: 1
+                     text: "screen_record"
+-                    color: Recorder.running ? Colours.palette.m3onSecondary : Colours.palette.m3onSecondaryContainer
++                    color: Colours.palette.m3onSecondaryContainer
+                     fontStyle: Tokens.font.icon.large
+                 }
+             }
+@@ -72,7 +72,7 @@ StyledRect {
+ 
+                 StyledText {
+                     Layout.fillWidth: true
+-                    text: Recorder.paused ? Tr.trCtx("Paused", "recorder state") : Recorder.running ? Tr.trCtx("Running...", "recorder state") : Tr.trCtx("Ready", "recorder state")
++                    text: Tr.tr("Records with Kooha")
+                     color: Colours.palette.m3onSurfaceVariant
+                     font: Tokens.font.body.small
+                     elide: Text.ElideRight
+@@ -80,219 +80,18 @@ StyledRect {
+                 }
+             }
+ 
+-            SplitButton {
+-                disabled: Recorder.running
+-
+-                active: menuItems.find(m => root.props.recordingMode === m.icon + m.text) ?? menuItems[0]
+-                menu.onItemSelected: item => root.props.recordingMode = item.icon + item.text
+-
+-                menuItems: [
+-                    MenuItem {
+-                        icon: "fullscreen"
+-                        text: Tr.tr("Record fullscreen")
+-                        activeText: Tr.trCtx("Fullscreen", "recording mode")
+-                        onClicked: Recorder.start()
+-                    },
+-                    MenuItem {
+-                        icon: "screenshot_region"
+-                        text: Tr.tr("Record region")
+-                        activeText: Tr.trCtx("Region", "recording mode")
+-                        onClicked: Recorder.start(["-r"])
+-                    },
+-                    MenuItem {
+-                        icon: "select_to_speak"
+-                        text: Tr.tr("Record fullscreen with sound")
+-                        activeText: Tr.trCtx("Fullscreen", "recording mode")
+-                        onClicked: Recorder.start(["-s"])
+-                    },
+-                    MenuItem {
+-                        icon: "volume_up"
+-                        text: Tr.tr("Record region with sound")
+-                        activeText: Tr.trCtx("Region", "recording mode")
+-                        onClicked: Recorder.start(["-sr"])
+-                    }
+-                ]
++            TextButton {
++                text: Tr.tr("Open Kooha")
++                onClicked: Recorder.openKooha()
+             }
+         }
+ 
+-        Loader {
+-            id: listOrControls
+-
+-            property bool running: Recorder.running
++        RecordingList {
++            id: recordingList
+ 
+-            asynchronous: true
+             Layout.fillWidth: true
+-            Layout.preferredHeight: implicitHeight
+-            sourceComponent: running ? recordingControls : recordingList
+-            clip: Layout.preferredHeight < implicitHeight
+-
+-            Behavior on Layout.preferredHeight {
+-                id: locHeightAnim
+-
+-                enabled: false
+-
+-                Anim {}
+-            }
+-
+-            Behavior on running {
+-                SequentialAnimation {
+-                    Anim {
+-                        target: listOrControls
+-                        property: "opacity"
+-                        to: 0
+-                        type: Anim.DefaultEffects
+-                    }
+-                    PropertyAction {
+-                        target: locHeightAnim
+-                        property: "enabled"
+-                        value: true
+-                    }
+-                    PropertyAction {}
+-                    ParallelAnimation {
+-                        SequentialAnimation {
+-                            PauseAnimation {
+-                                duration: 100
+-                            }
+-                            PropertyAction {
+-                                target: locHeightAnim
+-                                property: "enabled"
+-                                value: false
+-                            }
+-                        }
+-                        Anim {
+-                            target: listOrControls
+-                            property: "opacity"
+-                            to: 1
+-                            type: Anim.SlowEffects
+-                        }
+-                    }
+-                }
+-            }
+-        }
+-    }
+-
+-    Component {
+-        id: recordingList
+-
+-        RecordingList {
+             props: root.props
+             screenState: root.screenState
+         }
+     }
+-
+-    Component {
+-        id: recordingControls
+-
+-        RowLayout {
+-            spacing: Tokens.spacing.medium
+-
+-            StyledRect {
+-                radius: Tokens.rounding.full
+-                color: Recorder.paused ? Colours.palette.m3tertiary : Colours.palette.m3error
+-
+-                implicitWidth: recText.implicitWidth + Tokens.padding.medium * 2
+-                implicitHeight: recText.implicitHeight + Tokens.padding.large
+-
+-                StyledText {
+-                    id: recText
+-
+-                    anchors.centerIn: parent
+-                    animate: true
+-                    text: Recorder.paused ? Tr.trCtx("PAUSED", "recording status") : Tr.trCtx("REC", "recording status")
+-                    color: Recorder.paused ? Colours.palette.m3onTertiary : Colours.palette.m3onError
+-                    font: Tokens.font.mono.small
+-                }
+-
+-                Behavior on implicitWidth {
+-                    Anim {}
+-                }
+-
+-                SequentialAnimation on opacity {
+-                    running: !Recorder.paused
+-                    alwaysRunToEnd: true
+-                    loops: Animation.Infinite
+-
+-                    Anim {
+-                        from: 1
+-                        to: 0
+-                        duration: Tokens.anim.durations.large
+-                        easing: Tokens.anim.emphasizedAccel
+-                    }
+-                    Anim {
+-                        from: 0
+-                        to: 1
+-                        duration: Tokens.anim.durations.extraLarge
+-                        easing: Tokens.anim.emphasizedDecel
+-                    }
+-                }
+-            }
+-
+-            StyledText {
+-                Layout.fillWidth: true
+-                text: {
+-                    const elapsed = Recorder.elapsed;
+-
+-                    const hours = Math.floor(elapsed / 3600);
+-                    const mins = Math.floor((elapsed % 3600) / 60);
+-                    const secs = Math.floor(elapsed % 60).toString().padStart(2, "0");
+-
+-                    let time;
+-                    if (hours > 0)
+-                        time = `${hours}:${mins.toString().padStart(2, "0")}:${secs}`;
+-                    else
+-                        time = `${mins}:${secs}`;
+-
+-                    // TRANSLATORS: %1 = elapsed recording duration, e.g. 01:23
+-                    return Tr.tr("Recording for %1").arg(time);
+-                }
+-                font: Tokens.font.body.medium
+-                elide: Text.ElideMiddle
+-            }
+-
+-            ButtonRow {
+-                spacing: Tokens.spacing.extraSmall
+-
+-                IconButton {
+-                    shapeMorph: true
+-                    isRound: true
+-                    label.animate: true
+-                    icon: Recorder.paused ? "play_arrow" : "pause"
+-                    isToggle: true
+-                    checked: Recorder.paused
+-                    type: IconButton.Tonal
+-                    font: Tokens.font.icon.medium
+-                    onClicked: {
+-                        Recorder.togglePause();
+-                        internalChecked = Recorder.paused;
+-                    }
+-
+-                    implicitWidth: {
+-                        // Ensure even size so icon is centered properly
+-                        const h = label.implicitHeight + Tokens.padding.large * 2;
+-                        if (h % 2 !== 0)
+-                            return h + 1;
+-                        return h;
+-                    }
+-                }
+-
+-                IconButton {
+-                    shapeMorph: true
+-                    isRound: true
+-                    icon: "stop"
+-                    inactiveColour: Colours.palette.m3error
+-                    inactiveOnColour: Colours.palette.m3onError
+-                    font: Tokens.font.icon.medium
+-                    onClicked: Recorder.stop()
+-
+-                    implicitWidth: {
+-                        // Ensure even size so icon is centered properly
+-                        const h = label.implicitHeight + Tokens.padding.large * 2;
+-                        if (h % 2 !== 0)
+-                            return h + 1;
+-                        return h;
+-                    }
+-                }
+-            }
+-        }
+-    }
+ }
+diff --git a/services/CosmicWs.qml b/services/CosmicWs.qml
+new file mode 100644
+index 0000000..a32ce3b
+--- /dev/null
++++ b/services/CosmicWs.qml
+@@ -0,0 +1,40 @@
++pragma Singleton
++
++import QtQuick
++import Quickshell
++import Quickshell.Io
++
++// COSMIC workspaces via the ext-workspace-v1 helper (helpers/cosmic-ws)
++Singleton {
++    id: root
++
++    property var list: []
++    readonly property int activeIndex: list.findIndex(w => w.active)
++
++    function activate(i: int): void {
++        proc.write(`activate ${i}\n`);
++    }
++
++    Process {
++        id: proc
++
++        running: true
++        stdinEnabled: true
++        command: [Quickshell.shellPath("../helpers/cosmic-ws/wsd")]
++        stdout: SplitParser {
++            onRead: data => {
++                try {
++                    root.list = JSON.parse(data).ws.filter(w => !w.hidden);
++                } catch (e) {}
++            }
++        }
++        onExited: restartTimer.start()
++    }
++
++    Timer {
++        id: restartTimer
++
++        interval: 2000
++        onTriggered: proc.running = true
++    }
++}
+diff --git a/services/Recorder.qml b/services/Recorder.qml
+index 9938f76..3906f6a 100644
+--- a/services/Recorder.qml
++++ b/services/Recorder.qml
+@@ -4,103 +4,18 @@ import QtQuick
+ import Quickshell
+ import Quickshell.Io
+ 
++// Screen recording on COSMIC is done by Kooha, which has no start/stop/pause interface for other programs,
++// so the shell only opens it; recording state, timer and controls live in Kooha's own window.
+ Singleton {
+     id: root
+ 
+-    readonly property alias running: props.running
+-    readonly property alias paused: props.paused
+-    readonly property alias elapsed: props.elapsed
+     property int refCount: 0
+-    property bool needsStart
+-    property list<string> startArgs
+-    property bool needsStop
+-    property bool needsPause
+ 
+-    function start(extraArgs = []): void {
+-        needsStart = true;
+-        startArgs = extraArgs;
+-        checkProc.running = true;
+-    }
+-
+-    function stop(): void {
+-        needsStop = true;
+-        checkProc.running = true;
+-    }
+-
+-    function togglePause(): void {
+-        needsPause = true;
+-        checkProc.running = true;
+-    }
+-
+-    PersistentProperties {
+-        id: props
+-
+-        property bool running: false
+-        property bool paused: false
+-        property real elapsed: 0 // Might get too large for int
+-
+-        reloadableId: "recorder"
++    function openKooha(): void {
++        proc.exec(["distrobox-host-exec", Quickshell.shellPath("../scripts/record.sh"), "open"]);
+     }
+ 
+     Process {
+-        id: checkProc
+-
+-        running: true
+-        command: ["pidof", "gpu-screen-recorder"]
+-        onExited: code => { // qmllint disable signal-handler-parameters
+-            const running = code === 0;
+-
+-            if (running && root.needsStop) {
+-                commandProc.exec(["caelestia", "record"]);
+-                props.running = false;
+-                props.paused = false;
+-            } else if (running && root.needsPause) {
+-                commandProc.exec(["caelestia", "record", "-p"]);
+-                props.paused = !props.paused;
+-            } else if (!running && root.needsStart) {
+-                commandProc.exec(["caelestia", "record", ...root.startArgs]);
+-                props.running = true;
+-                props.paused = false;
+-                props.elapsed = 0;
+-            } else if (running !== props.running && !commandProc.running) {
+-                // The recording was started/stopped outside the shell (e.g. via
+-                // keybind), or our command finished without reaching the optimistic state
+-                props.running = running;
+-                props.paused = false;
+-                props.elapsed = 0;
+-            }
+-
+-            root.needsStart = false;
+-            root.needsStop = false;
+-            root.needsPause = false;
+-        }
+-    }
+-
+-    Process {
+-        id: commandProc
+-
+-        // The command owns the transition: `caelestia record` blocks on slurp for
+-        // region captures, and waits for the recorder to finalise the file when
+-        // stopping. Reconcile once it has actually finished.
+-        onExited: checkProc.running = true // qmllint disable signal-handler-parameters
+-    }
+-
+-    // Only poll while something is showing the state, i.e. the utilities drawer is open
+-    Timer {
+-        interval: 1000
+-        running: root.refCount > 0
+-        repeat: true
+-        triggeredOnStart: true
+-
+-        onTriggered: checkProc.running = true
+-    }
+-
+-    Connections {
+-        function onSecondsChanged(): void {
+-            props.elapsed++;
+-        }
+-
+-        enabled: props.running && !props.paused
+-        target: Time // qmllint disable incompatible-type
++        id: proc
+     }
+ }
+diff --git a/services/ShellState.qml b/services/ShellState.qml
+index 84672fe..885c331 100644
+--- a/services/ShellState.qml
++++ b/services/ShellState.qml
+@@ -25,7 +25,8 @@ Singleton {
+         for (const s of states.instances)
+             if (Hypr.monitorFor(s.modelData) === mon)
+                 return s;
+-        return null;
++        // No Hyprland (e.g. COSMIC): focused monitor is unknown, fall back to the first screen
++        return mon ? null : (states.instances[0] ?? null);
+     }
+ 
+     function componentsFor(screen: ShellScreen): Components {
+@@ -40,7 +41,7 @@ Singleton {
+         for (const c of components.instances)
+             if (Hypr.monitorFor(c.modelData) === mon)
+                 return c;
+-        return null;
++        return mon ? null : (components.instances[0] ?? null);
+     }
+ 
+     Variants {
