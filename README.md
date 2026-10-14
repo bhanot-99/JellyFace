@@ -136,20 +136,6 @@ Defaults live in `config/`. Examples:
 
 The wallpaper feature of Caelestia is switched off on purpose: JellyFace leaves your COSMIC wallpaper alone.
 
-## Frosted glass
-
-JellyFace's bar, frame and drawers are slightly see-through (10% transparent by default) and the compositor blurs
-what is behind them, using COSMIC's `ext-background-effect` protocol. Only the parts the shell actually paints are
-blurred, never the empty middle of the screen where your windows are.
-
-```bash
-jellyface glass            # show the setting
-jellyface glass on 0.9     # on; 0.9 = surfaces 90% solid (10% transparent). Range 0.5-1.0
-jellyface glass off        # solid surfaces, no blur
-```
-
-How strong the blur is, is decided by COSMIC's compositor and cannot be tuned from JellyFace.
-
 ## Wallpaper-driven colour themes
 
 The whole shell (bar, drawers, lock screen) takes its colours from a palette chosen to match your wallpaper.

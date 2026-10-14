@@ -65,10 +65,6 @@ StyledWindow {
 
     mask: hasFullscreen ? emptyRegion : (anyClosableOpen ? fullRegion : regions)
 
-    // Frosted-glass look: when transparency is on, the compositor blurs what is behind the parts of the window the shell paints
-    // (the bar, frame and open drawers: exactly the `regions` shape), via COSMIC's ext-background-effect protocol
-    BackgroundEffect.blurRegion: Colours.transparency.enabled && !hasFullscreen ? regions : null
-
     anchors.top: true
     anchors.bottom: true
     anchors.left: true
