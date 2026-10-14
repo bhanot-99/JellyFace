@@ -1,7 +1,7 @@
 pragma Singleton
 
 import QtQuick
-import JellyFace.I18n
+import Jellyface.I18n
 
 QtObject {
     id: root

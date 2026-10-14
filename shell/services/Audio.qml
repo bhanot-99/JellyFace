@@ -4,10 +4,10 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
-import JellyFace
-import JellyFace.Config
-import JellyFace.I18n
-import JellyFace.Services
+import Jellyface
+import Jellyface.Config
+import Jellyface.I18n
+import Jellyface.Services
 
 Singleton {
     id: root

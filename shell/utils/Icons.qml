@@ -3,7 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
-import JellyFace.Config
+import Jellyface.Config
 
 Singleton {
     id: root

@@ -4,7 +4,7 @@ JF_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 [ -f "$JF_ROOT/.env.local" ] && . "$JF_ROOT/.env.local"
 
 JF_CONTAINER="${JF_CONTAINER:-jellyface}"   # distrobox container that runs the shell
-JF_SHELL="$JF_ROOT/shell"                   # patched JellyFace shell (QML)
+JF_SHELL="$JF_ROOT/shell"                   # patched Jellyface shell (QML)
 JF_BUILD="$JF_ROOT/.build"                  # cmake build tree (regenerable)
 JF_INSTALL="$JF_ROOT/.install"              # built QML plugin + version binary (regenerable)
 JF_BACKUPS="${JF_BACKUPS:-$JF_ROOT/backups}"

@@ -1,5 +1,5 @@
 import QtQuick
-import JellyFace.Config
+import Jellyface.Config
 
 ColorAnimation {
     duration: Tokens.anim.durations.expressiveSlowEffects

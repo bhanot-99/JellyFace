@@ -6,7 +6,7 @@ import "components/workspaces"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import JellyFace.Config
+import Jellyface.Config
 import qs.components
 import qs.services
 

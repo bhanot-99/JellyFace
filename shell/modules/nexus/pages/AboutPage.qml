@@ -1,9 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Io
-import JellyFace
-import JellyFace.Config
-import JellyFace.I18n
+import Jellyface
+import Jellyface.Config
+import Jellyface.I18n
 import qs.components
 import qs.services
 import qs.utils
@@ -71,7 +71,7 @@ PageBase {
                 StyledText {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: Tokens.spacing.small
-                    text: "JellyFace"
+                    text: "Jellyface"
                     font: Tokens.font.headline.builders.large.width(110).build()
                 }
 

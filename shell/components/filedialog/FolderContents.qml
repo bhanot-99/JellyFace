@@ -3,9 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import JellyFace.Config
-import JellyFace.I18n
-import JellyFace.Models
+import Jellyface.Config
+import Jellyface.I18n
+import Jellyface.Models
 import qs.components
 import qs.components.controls
 import qs.components.effects

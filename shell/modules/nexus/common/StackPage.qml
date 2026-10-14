@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Controls
-import JellyFace.Config
+import Jellyface.Config
 import qs.components
 import qs.modules.nexus
 

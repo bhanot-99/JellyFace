@@ -1,5 +1,5 @@
 qml_module(jellyface-core
-    URI JellyFace
+    URI Jellyface
     INCLUDE_PREFIX core
     SOURCES
         cutils.cpp

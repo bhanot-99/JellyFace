@@ -2,7 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import JellyFace
+import Jellyface
 import qs.components
 import qs.services
 

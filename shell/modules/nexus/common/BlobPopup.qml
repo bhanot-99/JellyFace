@@ -1,6 +1,6 @@
 import QtQuick
-import JellyFace.Blobs
-import JellyFace.Config
+import Jellyface.Blobs
+import Jellyface.Config
 import qs.components
 import qs.services
 

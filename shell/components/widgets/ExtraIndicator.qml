@@ -1,6 +1,6 @@
 import "../effects"
 import QtQuick
-import JellyFace.Config
+import Jellyface.Config
 import qs.components
 import qs.services
 

@@ -4,9 +4,9 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
-import JellyFace
-import JellyFace.Components
-import JellyFace.Config
+import Jellyface
+import Jellyface.Components
+import Jellyface.Config
 import qs.components
 import qs.services
 

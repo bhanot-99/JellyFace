@@ -1,7 +1,7 @@
 import QtQuick
 import Quickshell
-import JellyFace.Config
-import JellyFace.Models
+import Jellyface.Config
+import Jellyface.Models
 import qs.components
 import qs.components.effects
 import qs.components.images

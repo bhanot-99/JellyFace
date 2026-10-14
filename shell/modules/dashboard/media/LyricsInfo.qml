@@ -1,10 +1,10 @@
 import QtQuick
 import QtQuick.Layouts
-import JellyFace
-import JellyFace.Blobs
-import JellyFace.Config
-import JellyFace.I18n
-import JellyFace.Services
+import Jellyface
+import Jellyface.Blobs
+import Jellyface.Config
+import Jellyface.I18n
+import Jellyface.Services
 import qs.components
 import qs.services
 

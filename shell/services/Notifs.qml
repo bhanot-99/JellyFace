@@ -5,9 +5,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Notifications
-import JellyFace
-import JellyFace.Config
-import JellyFace.I18n
+import Jellyface
+import Jellyface.Config
+import Jellyface.I18n
 import qs.components.misc
 import qs.services
 import qs.utils

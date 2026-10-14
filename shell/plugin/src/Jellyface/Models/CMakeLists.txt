@@ -1,5 +1,5 @@
 qml_module(jellyface-models
-    URI JellyFace.Models
+    URI Jellyface.Models
     SOURCES
         filesystemmodel.cpp
         appdb.cpp

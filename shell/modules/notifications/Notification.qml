@@ -4,8 +4,8 @@ import QtQuick
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Services.Notifications
-import JellyFace.Components
-import JellyFace.Config
+import Jellyface.Components
+import Jellyface.Config
 import qs.components
 import qs.components.controls
 import qs.components.effects

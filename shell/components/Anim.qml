@@ -1,5 +1,5 @@
 import QtQuick
-import JellyFace.Config
+import Jellyface.Config
 
 NumberAnimation {
     enum Type {

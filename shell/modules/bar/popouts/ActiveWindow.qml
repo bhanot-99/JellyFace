@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Widgets
-import JellyFace.Config
+import Jellyface.Config
 import qs.components
 import qs.services
 import qs.utils

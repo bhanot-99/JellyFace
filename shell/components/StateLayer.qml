@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
-import JellyFace
-import JellyFace.Config
+import Jellyface
+import Jellyface.Config
 import qs.services
 
 MouseArea {

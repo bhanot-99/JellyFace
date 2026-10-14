@@ -26,7 +26,7 @@ endif()
 
 string(REGEX REPLACE "^v" "" VERSION "${VERSION}")
 
-project(JellyFace VERSION ${VERSION} LANGUAGES CXX)
+project(jellyface-shell VERSION ${VERSION} LANGUAGES CXX)
 
 include(GNUInstallDirs)
 

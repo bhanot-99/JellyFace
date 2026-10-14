@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Shapes
 import QtQuick.Templates
-import JellyFace.Config
+import Jellyface.Config
 import qs.components
 import qs.services
 

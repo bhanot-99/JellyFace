@@ -3,9 +3,9 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import JellyFace
-import JellyFace.Config
-import JellyFace.I18n
+import Jellyface
+import Jellyface.Config
+import Jellyface.I18n
 import qs.utils
 
 Singleton {
@@ -180,7 +180,7 @@ Singleton {
 
         const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=geocodejson&accept-language=${lang}`;
         const nominatimHeaders = {
-            "User-Agent": `JellyFace/${CUtils.version} (+https://github.com/caelestia-dots/shell)`
+            "User-Agent": `jellyface-shell/${CUtils.version} (+https://github.com/caelestia-dots/shell)`
         };
 
         Requests.get(nominatimUrl, text => {

@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import M3Shapes
-import JellyFace.Config
+import Jellyface.Config
 import qs.components
 import qs.components.controls
 import qs.services

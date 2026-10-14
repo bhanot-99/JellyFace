@@ -68,7 +68,7 @@ pub enum Message {
     Surface(cosmic::surface::Action),
     PopupClosed(Id),
     Tick,
-    JellyFace(&'static [&'static str]),
+    Jellyface(&'static [&'static str]),
     LockScreen,
     ToggleAuto(bool),
     ToggleSystem(bool),
@@ -112,7 +112,7 @@ impl cosmic::Application for App {
                 }
             }
             Message::Tick => self.theme = read_theme(),
-            Message::JellyFace(args) => {
+            Message::Jellyface(args) => {
                 jellyface(args);
                 return self.close_popup();
             }
@@ -209,11 +209,11 @@ impl App {
             .add(settings::item("Theme", widget::text::body(theme)))
             .add(settings::item("Follow the wallpaper", toggler(self.theme.auto).on_toggle(Message::ToggleAuto)))
             .add(settings::item("Theme COSMIC apps too", toggler(self.theme.system).on_toggle(Message::ToggleSystem)))
-            .add(item("Open launcher", Message::JellyFace(&["ipc", "drawers", "toggle", "launcher"])))
-            .add(item("Show dashboard", Message::JellyFace(&["ipc", "drawers", "toggle", "dashboard"])))
-            .add(item("Show notifications", Message::JellyFace(&["ipc", "drawers", "toggle", "sidebar"])))
+            .add(item("Open launcher", Message::Jellyface(&["ipc", "drawers", "toggle", "launcher"])))
+            .add(item("Show dashboard", Message::Jellyface(&["ipc", "drawers", "toggle", "dashboard"])))
+            .add(item("Show notifications", Message::Jellyface(&["ipc", "drawers", "toggle", "sidebar"])))
             .add(item("Lock screen", Message::LockScreen))
-            .add(item("Restart JellyFace", Message::JellyFace(&["restart"])))
+            .add(item("Restart JellyFace", Message::Jellyface(&["restart"])))
             .into()
     }
 }

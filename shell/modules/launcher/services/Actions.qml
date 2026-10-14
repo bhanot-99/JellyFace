@@ -3,9 +3,9 @@ pragma Singleton
 import ".."
 import QtQuick
 import Quickshell
-import JellyFace.Config
-import JellyFace.I18n
-import JellyFace.Services
+import Jellyface.Config
+import Jellyface.I18n
+import Jellyface.Services
 import qs.services
 import qs.utils
 

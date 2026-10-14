@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import JellyFace.Config
+import Jellyface.Config
 import qs.components
 import qs.services
 import qs.modules.nexus

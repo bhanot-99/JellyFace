@@ -19,4 +19,4 @@ include(cmake/qml-module.cmake)
 add_library(jellyface-util INTERFACE)
 target_include_directories(jellyface-util INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-add_subdirectory(src/JellyFace)
+add_subdirectory(src/Jellyface)

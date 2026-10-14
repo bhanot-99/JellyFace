@@ -3,9 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Services.UPower
-import JellyFace
-import JellyFace.Config
-import JellyFace.I18n
+import Jellyface
+import Jellyface.Config
+import Jellyface.I18n
 import qs.components
 import qs.components.effects
 import qs.services
@@ -54,7 +54,7 @@ StyledRect {
 
             MonoText {
                 Layout.fillWidth: true
-                text: "JellyFace.sh"
+                text: "jellyfacefetch.sh"
                 elide: Text.ElideRight
             }
 

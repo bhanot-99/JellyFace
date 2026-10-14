@@ -2,8 +2,8 @@ pragma Singleton
 
 import QtQuick
 import QtQuick.Layouts
-import JellyFace.Config
-import JellyFace.I18n
+import Jellyface.Config
+import Jellyface.I18n
 import qs.components
 import qs.services
 import qs.modules.nexus.common

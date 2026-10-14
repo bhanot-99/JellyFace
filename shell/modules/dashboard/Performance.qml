@@ -2,9 +2,9 @@ import "performance"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell.Services.UPower
-import JellyFace.Config
-import JellyFace.I18n
-import JellyFace.Services
+import Jellyface.Config
+import Jellyface.I18n
+import Jellyface.Services
 import qs.components
 import qs.services
 

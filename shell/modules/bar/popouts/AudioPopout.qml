@@ -4,8 +4,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell.Services.Pipewire
-import JellyFace.Config
-import JellyFace.I18n
+import Jellyface.Config
+import Jellyface.I18n
 import qs.components
 import qs.components.controls
 import qs.services

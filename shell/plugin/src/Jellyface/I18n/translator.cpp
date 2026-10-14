@@ -37,7 +37,7 @@ constexpr qsizetype k_entrySize = 8;
 constexpr qsizetype k_entryOffsetField = 4;
 
 QString resourceDir() {
-    static const QString k_s = u":/qt/qml/JellyFace/I18n/"_s;
+    static const QString k_s = u":/qt/qml/Jellyface/I18n/"_s;
     return k_s;
 }
 

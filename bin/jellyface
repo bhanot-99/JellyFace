@@ -97,7 +97,7 @@ cmd_doctor() {
 }
 
 usage() { cat <<USAGE
-JellyFace -- a shell for COSMIC (Pop!_OS)
+JellyFace -- a Jellyface-based shell for COSMIC (Pop!_OS)
 
   jellyface install               set up the container, build everything, install default config
   jellyface build                 rebuild the workspace helper and the shell plugin

@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
-import JellyFace.Config
-import JellyFace.I18n
+import Jellyface.Config
+import Jellyface.I18n
 import qs.components.controls
 import qs.modules.nexus.common
 

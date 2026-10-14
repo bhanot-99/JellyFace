@@ -1,5 +1,5 @@
 {
-  description = "Desktop shell for JellyFace dots";
+  description = "Desktop shell for Jellyface dots";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -12,7 +12,7 @@
     caelestia-cli = {
       url = "github:caelestia-dots/cli";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.JellyFace.follows = "";
+      inputs.jellyface-shell.follows = "";
     };
 
     m3shapes = {
@@ -37,7 +37,7 @@
     packages = eachSystem (system: let
       pkgs = pkgsOf.${system};
     in rec {
-      JellyFace = pkgs.callPackage ./nix {
+      jellyface-shell = pkgs.callPackage ./nix {
         rev = self.rev or self.dirtyRev;
         stdenv = pkgs.clangStdenv;
         quickshell = inputs.quickshell.packages.${system}.default.override {
@@ -47,15 +47,15 @@
         caelestia-cli = inputs.caelestia-cli.packages.${system}.default;
         m3shapes = inputs.m3shapes.packages.${system}.default;
       };
-      with-cli = JellyFace.override {withCli = true;};
-      debug = JellyFace.override {debug = true;};
-      default = JellyFace;
+      with-cli = jellyface-shell.override {withCli = true;};
+      debug = jellyface-shell.override {debug = true;};
+      default = jellyface-shell;
     });
 
     devShells = eachSystem (system: {
       default = let
         pkgs = pkgsOf.${system};
-        shell = self.packages.${system}.JellyFace;
+        shell = self.packages.${system}.jellyface-shell;
         mkShell = pkgs.mkShell.override {stdenv = shell.stdenv;};
       in
         mkShell {

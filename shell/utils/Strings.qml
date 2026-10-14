@@ -1,7 +1,7 @@
 pragma Singleton
 
 import Quickshell
-import JellyFace.I18n
+import Jellyface.I18n
 
 Singleton {
     property var _regexCache: ({})
