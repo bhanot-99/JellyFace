@@ -1,6 +1,6 @@
 {
     "border": {
-        "rounding": 24
+        "rounding": 16
     },
     "background": {
         "enabled": false,
