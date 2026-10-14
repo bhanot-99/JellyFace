@@ -23,7 +23,7 @@ cleanup() {   # stop our own children and the shell, never anything else
     pkill -P $$ 2>/dev/null
     pkill -f "$JF_QS_RE" 2>/dev/null
     # give the notification name back to COSMIC (its session restarts the daemon, which then registers again)
-    [ -e "$TOOK" ] && { rm -f "$TOOK"; pkill -x cosmic-notifications 2>/dev/null; }
+    [ -e "$TOOK" ] && { rm -f "$TOOK"; pkill -x cosmic-notifica 2>/dev/null; }
     return 0
 }
 trap cleanup EXIT
@@ -83,7 +83,8 @@ ICON_THEME="${ICON_THEME:-Cosmic}"
 # COSMIC's session restarts the daemon whenever it is stopped, which is also how it comes back after JellyFace stops.
 notif_check() {
     local pid; pid="$(notif_owner_pid)"
-    [ -n "$pid" ] && [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = cosmic-notifications ] || return 0
+    # (comm is cut to 15 characters by the kernel, so "cosmic-notifications" shows up as "cosmic-notifica")
+    [ -n "$pid" ] && [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = cosmic-notifica ] || return 0
     pgrep -f "$JF_QS_RE" >/dev/null || return 0     # never take it away unless our shell is there to take over
     kill "$pid" 2>/dev/null && : > "$TOOK"
 }

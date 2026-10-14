@@ -187,7 +187,8 @@ JellyFace gets less information from COSMIC than Jellyface gets from Hyprland.
   login: log out and in once after the first `jellyface theme system on`.
 - **Workspace pill** shows numbers only, with no per-workspace app icons.
 - **Global shortcuts.** Jellyface's built-in hotkeys need Hyprland; use COSMIC custom shortcuts and `jellyface ipc`.
-- **Notifications.** COSMIC owns the notification service, so Jellyface's notification pop-ups are inactive.
+- **Notifications.** JellyFace takes the notification service from `cosmic-notifications` while it runs (and gives it back when
+  it stops), so notifications use JellyFace's own pop-ups and sidebar. Focus mode (`Super+Shift+F`) mutes them.
 - **Screen recording** is controlled in Kooha's window, not from the sidebar card.
 - **Transparency and blur** were tried and removed: at useful strengths they were barely visible over the wallpaper.
 - **Single screen.** All workspaces are treated as one group; multi-monitor setups are untested.
