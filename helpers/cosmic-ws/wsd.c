@@ -42,25 +42,40 @@ static void m_ws(void *d, struct ext_workspace_manager_v1 *m, struct ext_workspa
     memset(&list[n], 0, sizeof list[n]); list[n].h = h; n++;
     ext_workspace_handle_v1_add_listener(h, &hl, NULL);
 }
+// Output is built in memory and only written when it differs from the last line (a "done" that changes nothing
+// would otherwise make the shell re-parse and rebuild the workspace pill).
+static char *out_buf, *last_buf;
+static size_t out_len, last_len;
+static FILE *out;
+
 static void json_str(const char *s) {
-    putchar('"');
+    fputc('"', out);
     for (; *s; s++) {
         unsigned char c = (unsigned char)*s;
-        if (c == '"' || c == '\\') { putchar('\\'); putchar(c); }
-        else if (c < 0x20) printf("\\u%04x", c);
-        else putchar(c);
+        if (c == '"' || c == '\\') { fputc('\\', out); fputc(c, out); }
+        else if (c < 0x20) fprintf(out, "\\u%04x", c);
+        else fputc(c, out);
     }
-    putchar('"');
+    fputc('"', out);
 }
 static void m_done(void *d, struct ext_workspace_manager_v1 *m) {
-    printf("{\"ws\":[");
+    out = open_memstream(&out_buf, &out_len);
+    if (!out) return;
+    fputs("{\"ws\":[", out);
     for (int i = 0; i < n; i++) {
-        printf("%s{\"i\":%d,\"name\":", i ? "," : "", i);
+        fprintf(out, "%s{\"i\":%d,\"name\":", i ? "," : "", i);
         json_str(list[i].name);
-        printf(",\"active\":%s,\"urgent\":%s,\"hidden\":%s}",
+        fprintf(out, ",\"active\":%s,\"urgent\":%s,\"hidden\":%s}",
                list[i].state & 1 ? "true" : "false", list[i].state & 2 ? "true" : "false", list[i].state & 4 ? "true" : "false");
     }
-    printf("]}\n"); fflush(stdout);
+    fputs("]}\n", out);
+    fclose(out);
+    if (last_buf && out_len == last_len && !memcmp(out_buf, last_buf, out_len)) { free(out_buf); return; }
+    fwrite(out_buf, 1, out_len, stdout);
+    fflush(stdout);
+    free(last_buf);
+    last_buf = out_buf;
+    last_len = out_len;
 }
 static void m_fin(void *d, struct ext_workspace_manager_v1 *m) { exit(0); }
 static const struct ext_workspace_manager_v1_listener ml = { m_group, m_ws, m_done, m_fin };
@@ -80,13 +95,12 @@ int main(void) {
     wl_registry_add_listener(wl_display_get_registry(dpy), &rl, NULL);
     wl_display_roundtrip(dpy);
     if (!mgr) { fprintf(stderr, "no ext_workspace_manager_v1\n"); return 2; }
-    char buf[128]; int stdin_ok = 1;
+    char buf[128]; size_t have = 0; int stdin_ok = 1;
     // exit when whoever started us goes away (no orphans): the kernel tells us, so there is no need to wake up
     // every couple of seconds just to check
     const pid_t parent = getppid();
     prctl(PR_SET_PDEATHSIG, SIGTERM);
     if (getppid() != parent) return 0;
-    setvbuf(stdin, NULL, _IOLBF, 0);
     for (;;) {
         while (wl_display_prepare_read(dpy) != 0) wl_display_dispatch_pending(dpy);
         if (wl_display_flush(dpy) < 0 && errno != EAGAIN) return 1;   // compositor went away
@@ -95,14 +109,24 @@ int main(void) {
         if (p[0].revents & POLLIN) { if (wl_display_read_events(dpy) < 0) return 1; } else wl_display_cancel_read(dpy);
         if (wl_display_dispatch_pending(dpy) < 0 || wl_display_get_error(dpy)) return 1;
         if (p[0].revents & (POLLHUP | POLLERR)) return 1;
-        if (p[1].revents & POLLIN) {
-            if (!fgets(buf, sizeof buf, stdin)) { stdin_ok = 0; continue; }
-            int i;
-            if (sscanf(buf, "activate %d", &i) == 1 && i >= 0 && i < n) {
-                ext_workspace_handle_v1_activate(list[i].h);
-                ext_workspace_manager_v1_commit(mgr);
-                wl_display_flush(dpy);
+        if (p[1].revents & (POLLIN | POLLHUP | POLLERR)) {
+            // read(), not stdio: a second command buffered by fgets would wait for the next compositor event
+            ssize_t r = read(0, buf + have, sizeof buf - 1 - have);
+            if (r <= 0) { stdin_ok = 0; continue; }
+            have += r;
+            char *nl;
+            while ((nl = memchr(buf, '\n', have))) {
+                *nl = 0;
+                int i;
+                if (sscanf(buf, "activate %d", &i) == 1 && i >= 0 && i < n) {
+                    ext_workspace_handle_v1_activate(list[i].h);
+                    ext_workspace_manager_v1_commit(mgr);
+                    wl_display_flush(dpy);
+                }
+                have -= nl + 1 - buf;
+                memmove(buf, nl + 1, have);
             }
-        } else if (p[1].revents & (POLLHUP | POLLERR)) stdin_ok = 0;
+            if (have == sizeof buf - 1) have = 0;  // overlong garbage line: drop it
+        }
     }
 }

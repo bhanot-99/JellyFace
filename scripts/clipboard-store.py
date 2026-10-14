@@ -34,10 +34,15 @@ def load():
         return []
 
 
+def private(path, flags=os.O_WRONLY | os.O_CREAT | os.O_TRUNC):
+    """Open for writing, readable by you only (the history can hold anything you copied)."""
+    return os.fdopen(os.open(path, flags, 0o600), "wb" if flags & os.O_TRUNC else "w")
+
+
 def save(entries):
     tmp = HIST + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(entries, f)
+    with private(tmp) as f:
+        f.write(json.dumps(entries).encode())
     os.replace(tmp, HIST)
 
 
@@ -79,7 +84,7 @@ def add(entries):
             return entries
         key = hashlib.sha1(data).hexdigest()[:16]
         path = os.path.join(STATE, f"img-{key}.png")
-        with open(path, "wb") as f:
+        with private(path) as f:
             f.write(data)
         entry = {"id": key, "kind": "image", "file": path, "text": ""}
     if not entry:
@@ -93,7 +98,11 @@ def add(entries):
 
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
-    os.makedirs(STATE, exist_ok=True)
+    os.makedirs(STATE, mode=0o700, exist_ok=True)
+    try:
+        os.chmod(STATE, 0o700)   # also for a history folder created by an older version
+    except OSError:
+        pass
     with open(os.path.join(STATE, ".lock"), "w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         entries = load()

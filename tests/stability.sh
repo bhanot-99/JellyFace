@@ -4,6 +4,7 @@
 set -uo pipefail
 . "$(dirname "$0")/../scripts/lib.sh"
 JF="$JF_ROOT/bin/jellyface"
+export JF_NO_SERVICE=1   # drive the supervisor directly (the service is stopped while the tests run, and restored after)
 QUICK=0; [ "${1:-}" = "--quick" ] && QUICK=1
 pass=0; failn=0
 ok()   { pass=$((pass+1)); printf '  \033[32mPASS\033[0m %s\n' "$*"; }
@@ -12,7 +13,9 @@ check() { if eval "$2"; then ok "$1"; else bad "$1  [$2]"; fi; }
 n_shell() { pgrep -f "$JF_QS_RE" | wc -l; }
 n_wsd()   { pgrep -f "$JF_WSD_RE" | wc -l; }
 n_wind()  { pgrep -f "$JF_WIND_RE" | wc -l; }
-n_sup()   { pgrep -f "$JF_SUP_RE" | wc -l; }
+# supervisors only: run.sh's own background subshells (notification guard, container warm-up) share its command line
+n_sup()   { local p n=0 sup; sup=" $(pgrep -f "$JF_SUP_RE" | tr '\n' ' ')"
+            for p in $sup; do [[ "$sup" == *" $(ps -o ppid= -p "$p" | tr -d ' ') "* ]] || n=$((n + 1)); done; echo "$n"; }
 wait_up() { for _ in $(seq 1 "${1:-40}"); do [ "$(n_shell)" -ge 1 ] && [ "$(n_wsd)" -ge 1 ] && [ "$(n_wind)" -ge 1 ] && return 0; sleep 1; done; return 1; }
 wait_cfg() { sleep "${1:-8}"; }
 runlog_start() { LOGMARK=$(wc -l < "$JF_ROOT/logs/jellyface.log" 2>/dev/null || echo 0); }

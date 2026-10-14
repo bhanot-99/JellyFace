@@ -21,6 +21,14 @@ rotate_log() {   # keep the log from growing without bound: current + one previo
     [ -f "$LOG" ] && [ "$(stat -c %s "$LOG")" -gt "$LOG_MAX" ] && mv -f "$LOG" "$LOG.1" || true
 }
 
+# With the systemd user service enabled, start/stop/restart from a terminal go through systemd. Otherwise `restart`
+# killed the service's supervisor (a clean exit, so systemd did not restart it) and left a hand-started copy running
+# outside the service. Inside the service itself (systemd sets INVOCATION_ID) the direct path is used.
+use_service() {
+    [ -z "${INVOCATION_ID:-}" ] && [ "${JF_NO_SERVICE:-0}" != 1 ] && command -v systemctl >/dev/null &&
+        systemctl --user is-enabled --quiet jellyface.service 2>/dev/null
+}
+
 cmd_start() {
     local timeout=0 fg=0
     while [ $# -gt 0 ]; do
@@ -30,14 +38,26 @@ cmd_start() {
             *) die "unknown option '$1'" ;;
         esac
     done
+    if [ "$fg" = 0 ] && [ "$timeout" = 0 ] && use_service; then
+        is_running && ! systemctl --user is-active --quiet jellyface.service && { log "already running (started by hand)"; return 0; }
+        systemctl --user start jellyface.service && log "started (systemd user service; log: $LOG)"
+        return
+    fi
     is_running && { log "already running"; return 0; }
     mkdir -p "$JF_ROOT/logs"; rotate_log
-    if [ "$fg" = 1 ]; then exec "$JF_ROOT/scripts/run.sh" "$timeout"; fi
+    if [ "$fg" = 1 ]; then
+        # as the systemd service: same log file as a hand-started shell (the journal only gets start/stop lines)
+        [ -n "${INVOCATION_ID:-}" ] && exec "$JF_ROOT/scripts/run.sh" "$timeout" >>"$LOG" 2>&1
+        exec "$JF_ROOT/scripts/run.sh" "$timeout"
+    fi
     setsid nohup "$JF_ROOT/scripts/run.sh" "$timeout" >>"$LOG" 2>&1 </dev/null &
     log "started (log: $LOG)$([ "$timeout" -gt 0 ] && echo ", stops after ${timeout}s")"
 }
 
 cmd_stop() {
+    if use_service && systemctl --user is-active --quiet jellyface.service; then
+        systemctl --user stop jellyface.service    # its ExecStopPost runs this command again, inside the service
+    fi
     local p; p="$(supervisor_pid || true)"
     if [ -z "$p" ]; then
         pkill -f "$JF_QS_RE" 2>/dev/null && log "stopped stray shell" || log "not running"
@@ -57,6 +77,9 @@ cmd_stop() {
 
 cmd_status() {
     if is_running; then log "supervisor: running (pid $(supervisor_pid))"; else log "supervisor: stopped"; fi
+    if systemctl --user is-enabled --quiet jellyface.service 2>/dev/null; then
+        log "service: enabled, $(systemctl --user is-active jellyface.service 2>/dev/null)"
+    fi
     if pgrep -f "$JF_QS_RE" >/dev/null; then log "shell: running"; else log "shell: stopped"; fi
     if pgrep -f "$JF_WSD_RE" >/dev/null; then log "workspace helper: running"; else log "workspace helper: stopped"; fi
 }
@@ -90,6 +113,10 @@ cmd_doctor() {
     done
     chk "lock screen rejects a wrong password" '! printf "wrong-password\0" | PAM_USER="$USER" "$JF_ROOT/scripts/pam-host-check.sh"' "the lock screen would accept anything; do not rely on it"
     chk "lock screen PAM stack is the host-checking one" 'grep -q pam-host-check.sh "$JF_SHELL/assets/pam.d/passwd" && ! grep -q nullok "$JF_SHELL/assets/pam.d/passwd"' "run: jellyface restart (regenerates it)"
+    if systemctl --user is-enabled --quiet jellyface.service 2>/dev/null && is_running; then
+        chk "running under the systemd service" 'systemctl --user is-active --quiet jellyface.service' "it was started by hand; run: jellyface restart"
+    fi
+    container_exists && log "info  $(in_container 'quickshell --version' 2>/dev/null | head -1) (tested: 0.3.2, revision 4f508be)"
     if command -v nvidia-smi >/dev/null; then
         chk "NVIDIA driver/module match" 'nvidia-smi' "driver update pending -- reboot (a mismatch can cause a grey screen)"
     fi
@@ -97,7 +124,7 @@ cmd_doctor() {
 }
 
 usage() { cat <<USAGE
-JellyFace -- a Jellyface-based shell for COSMIC (Pop!_OS)
+JellyFace -- a desktop shell for COSMIC (Pop!_OS)
 
   jellyface install               set up the container, build everything, install default config
   jellyface build                 rebuild the workspace helper and the shell plugin
@@ -130,7 +157,7 @@ case "${1:-help}" in
     build)         shift; exec "$JF_ROOT/scripts/build.sh" "$@" ;;
     start)         shift; cmd_start "$@" ;;
     stop)          cmd_stop ;;
-    restart)       shift; cmd_stop; sleep 2; cmd_start "$@" ;;
+    restart)       shift; cmd_stop; sleep 1; cmd_start "$@" ;;
     status)        cmd_status ;;
     ipc)           shift; cmd_ipc "$@" ;;
     autostart)     shift; cmd_autostart "$@" ;;

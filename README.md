@@ -25,7 +25,8 @@ sudo apt install distrobox podman flatpak build-essential libwayland-dev libwayl
 ```
 
 No other system packages are needed: the Rust toolchain is installed **inside the project** (`.rust/`, about 600 MB),
-and nothing under `/usr` or `/etc` is ever modified.
+and nothing under `/usr` or `/etc` is modified. The one exception is the optional [login screen](#login-screen-optional),
+which you install separately with `sudo`.
 
 ## Install
 
@@ -42,7 +43,12 @@ ln -s ~/JellyFace/bin/jellyface ~/.local/bin/jellyface     # makes `jellyface` w
    Quickshell, Qt 6 and the other dependencies *inside it* (it asks for your sudo password inside the container only).
 2. Builds the two small C helpers (workspaces, windows), the shell's native plugin (in the container), the COSMIC
    theme tool and the native panel applet (Rust, project-local). Set `JF_SKIP_RUST=1` to skip the Rust parts.
-3. Installs the default configuration (existing files are copied to `backups/` first) and **Kooha** (screen recorder, Flatpak).
+3. Installs the default configuration where none exists yet (your own settings are kept when you re-run it;
+   `JF_RESET_CONFIG=1 jellyface install` puts the defaults back, after copying your files to `backups/`) and
+   **Kooha** (screen recorder, Flatpak).
+
+The shell is tested with Quickshell 0.3.2 (`quickshell-git` revision `4f508be`). The installer takes the newest
+`quickshell-git` from the AUR; if a later Quickshell breaks something, `jellyface doctor` shows which version you have.
 
 Then try it safely, and make it part of your session:
 
@@ -62,7 +68,7 @@ jellyface integrate               # shows a plan and asks, then wires it into th
 | **Real window information** | `helpers/cosmic-windows` reads COSMIC's window list and states through its own protocol. The bar shows the focused app's name and icon, and hides for a fullscreen window **on the workspace you are looking at** (a fullscreen video on another workspace does not hide it). |
 | **COSMIC's own apps follow the palette** | `jellyface theme system on\|off`. The wallpaper palette is also written into COSMIC's theme, so Files, Terminal and Settings match. Windows that are already open pick it up the next time they start. Only keys your COSMIC already uses are written. |
 | **A native COSMIC applet** | `jellyface applet install`, then `applet panel-add`, puts a ghost button in COSMIC's *own* panel (Rust + COSMIC's toolkit). Its menu opens the launcher, dashboard and notifications, locks the screen, shows the current theme and toggles wallpaper-following and COSMIC theming. COSMIC's panel auto-hides; move the cursor to the top edge to see it. |
-| **Panel and lock shortcut** | `jellyface cosmic-tweaks` makes COSMIC's top panel auto-hide (so it doesn't cover JellyFace's drop-downs) and sets **Super+L** to JellyFace's lock screen. |
+| **Panel and shortcuts** | `jellyface cosmic-tweaks` makes COSMIC's top panel auto-hide (so it doesn't cover JellyFace's drop-downs) and adds **Super+L** (JellyFace's lock screen), **Super+V** (clipboard history) and **Super+Shift+F** (focus mode) as COSMIC custom shortcuts. Shortcuts you already have are kept; a key you already use is left alone. |
 
 **Safety.** Every file changed outside `~/JellyFace` is recorded together with a copy of the original in `backups/`.
 `jellyface revert-system` puts everything back (`--list` shows what would change). Nothing under `/usr` or `/etc` is
@@ -148,6 +154,26 @@ asks the host's `unix_chkpwd`. It fails closed (any error rejects the password) 
 wrong password is rejected. If you are ever stuck on it, switch to a text console (`Ctrl+Alt+F3`), log in, and run
 `jellyface ipc lock unlock`.
 
+## Login screen (optional)
+
+`jellyface greeter` can also make JellyFace's lock-screen look your **login screen** (greetd + a copy of the
+container's Arch userland under `/opt/jellyface-greeter`). Unlike everything else this needs `sudo` and changes
+system files (`/etc/greetd/cosmic-greeter.toml`, `/etc/sudoers.d/jellyface-greeter`, two systemd units), so it is
+never part of `install` or `integrate`.
+
+```bash
+jellyface greeter test        # headless load test; changes nothing
+jellyface greeter window      # see it in a test window with a fake login (changes nothing)
+jellyface greeter export      # pack the container's userland (.greeter-root.tar, about 4 GB) for the next step
+jellyface greeter install     # prints the one sudo command to run
+jellyface greeter status
+jellyface greeter uninstall   # back to COSMIC's own login screen (prints the sudo command)
+```
+
+It is built to fail safe: the new login screen is only switched on after a headless load test passes, and if it ever
+fails to start (or shows no sign of life within 30 s) COSMIC's stock login screen starts instead and a root "healer"
+repairs or disables it. You can always log in.
+
 ## Screen recording
 
 The sidebar's **Screen recorder** card has an **Open Kooha** button. [Kooha](https://github.com/SeaDve/Kooha) is a
@@ -216,8 +242,10 @@ JellyFace gets less information from COSMIC than Jellyface gets from Hyprland.
 
 ## Troubleshooting
 
-- **First step:** `jellyface doctor`. Service logs: `journalctl --user -u jellyface.service`. Runtime log:
-  `logs/jellyface.log`. Theme log: `logs/theme.log`.
+- **First step:** `jellyface doctor`. Runtime log (also when started by the service): `logs/jellyface.log`. Theme
+  log: `logs/theme.log`. Service start/stop: `journalctl --user -u jellyface.service`.
+- **Editing the QML.** Live reload on save is off by default (a half-saved file used to load a broken shell).
+  Start with `JF_DEV=1 jellyface start` while you work on `shell/`.
 - **Nothing is visible.** If a window on the current workspace is fullscreen (a video, for example), JellyFace hides on
   purpose; switch workspace or leave fullscreen. Otherwise run `jellyface status`, then `jellyface restart`.
 - **The ghost applet is not visible.** COSMIC's panel auto-hides: move the cursor to the top edge. Add it with
@@ -232,7 +260,7 @@ JellyFace gets less information from COSMIC than Jellyface gets from Hyprland.
 
 ```
 jellyface install | build | doctor | help
-jellyface start [--timeout N] [--foreground] | stop | restart | status
+jellyface start [--timeout N] [--foreground] | stop | restart | status   (through systemd when the service is on)
 jellyface service on|off|status          start with the COSMIC session (systemd user service)
 jellyface autostart on|off               lighter alternative: an XDG autostart entry
 jellyface integrate [--yes]              service + panel/lock + applet + COSMIC theming, after a confirmation
@@ -242,12 +270,18 @@ jellyface applet install|panel-add|panel-remove|remove
 jellyface theme apply|match|list|tint|soft|system|auto|status
 jellyface lock                           JellyFace's lock screen
 jellyface fix-icons                      create icon aliases from config/icon-aliases.txt
+jellyface greeter test|window|export|install|uninstall|status   optional login screen (sudo, see above)
+jellyface agenda set <ics|url> | status   calendar for the Agenda card
+jellyface focus|tiling on|off|status     COSMIC focus-follows-cursor / auto-tiling
+jellyface cosmic-dock hide|show|status   COSMIC's own dock
+jellyface notify SUMMARY [BODY]          send a test notification
 jellyface ipc <target> <function> [args]
 ```
 
 ## Uninstall
 
 ```bash
+jellyface greeter uninstall               # only if you installed the login screen
 jellyface revert-system                   # restores your COSMIC settings, removes the service, applet and theme files
 distrobox rm --force jellyface            # removes the container (name may differ, see .env.local)
 rm -rf ~/JellyFace                        # keep backups/ if you want to keep your saved settings

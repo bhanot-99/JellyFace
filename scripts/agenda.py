@@ -26,12 +26,17 @@ OUT = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local
 DAYS = {"MO": 0, "TU": 1, "WE": 2, "TH": 3, "FR": 4, "SA": 5, "SU": 6}
 
 
+def write_private(path, obj, **kw):
+    """Atomic write, readable by you only (calendar events and the secret iCal address are private)."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with os.fdopen(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+        json.dump(obj, f, **kw)
+    os.replace(tmp, path)
+
+
 def write(obj):
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    tmp = OUT + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(obj, f)
-    os.replace(tmp, OUT)
+    write_private(OUT, obj)
 
 
 def read_source(src):
@@ -162,9 +167,7 @@ def set_source(src):
     except Exception:
         conf = {}
     conf.setdefault("agenda", {})["source"] = src
-    os.makedirs(os.path.dirname(CONF), exist_ok=True)
-    with open(CONF, "w") as f:
-        json.dump(conf, f, indent=4)
+    write_private(CONF, conf, indent=4)
     print("agenda source saved" if src else "agenda source cleared")
 
 
@@ -178,11 +181,7 @@ def load_local():
 
 
 def save_local(items):
-    os.makedirs(os.path.dirname(LOCAL), exist_ok=True)
-    tmp = LOCAL + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(items, f)
-    os.replace(tmp, LOCAL)
+    write_private(LOCAL, items)
 
 
 def add_local(args):

@@ -97,8 +97,13 @@ impl cosmic::Application for App {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        // keep the "current theme" line fresh when the wallpaper (and so the palette) changes
-        cosmic::iced::time::every(Duration::from_secs(3)).map(|_| Message::Tick)
+        // keep the "current theme" line fresh while the menu is open; with the menu closed the applet sleeps (it used to
+        // wake up and redraw every 3 s all day for a line nobody could see)
+        if self.popup.is_some() {
+            cosmic::iced::time::every(Duration::from_secs(3)).map(|_| Message::Tick)
+        } else {
+            Subscription::none()
+        }
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
@@ -117,7 +122,8 @@ impl cosmic::Application for App {
                 return self.close_popup();
             }
             Message::LockScreen => {
-                spawn(PathBuf::from("loginctl"), vec!["lock-session".into()]);
+                // JellyFace's own lock screen, the same as Super+L (loginctl lock-session would also wake COSMIC's)
+                jellyface(&["lock"]);
                 return self.close_popup();
             }
             Message::ToggleAuto(on) => {
@@ -146,6 +152,7 @@ impl cosmic::Application for App {
                         move |state: &mut App| {
                             let new_id = Id::unique();
                             state.popup = Some(new_id);
+                            state.theme = read_theme();
                             let mut settings = state.core.applet.get_popup_settings(
                                 state.core.main_window_id().unwrap(),
                                 new_id,

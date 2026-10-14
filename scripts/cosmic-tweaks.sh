@@ -25,11 +25,32 @@ printf 'false'  > "$P/exclusive_zone" # don't reserve space while hidden
 log "COSMIC top panel now auto-hides (it re-appears on hover at the top edge)"
 
 # Super+L locks the screen with JellyFace's own lock screen (this replaces COSMIC's default Super+L = "focus window to the right"; COSMIC's own Super+Escape is untouched)
+# Super+V clipboard history and Super+Shift+F focus mode come from the same template. Your own custom shortcuts are
+# kept: only bindings for keys you have not used yet are added.
 SC="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom"
-if [ -e "$SC" ]; then
-    warn "you already have custom shortcuts ($SC); add the Super+L lock shortcut yourself from config/cosmic-shortcuts.ron"
-else
-    mkdir -p "$(dirname "$SC")"
-    sed "s#@JF_ROOT@#$JF_ROOT#g" "$JF_ROOT/config/cosmic-shortcuts.ron" > "$SC"
-    log "added shortcut Super+L -> JellyFace lock screen"
-fi
+sys_track "$SC"
+mkdir -p "$(dirname "$SC")"
+python3 -I - "$SC" "$JF_ROOT/config/cosmic-shortcuts.ron" "$JF_ROOT" <<'PY'
+import os, re, sys
+path, tmpl, root = sys.argv[1:4]
+ours = [l.strip().rstrip(",") for l in open(tmpl).read().replace("@JF_ROOT@", root).splitlines() if "Spawn(" in l]
+try:
+    cur = open(path).read()
+except OSError:
+    cur = "{\n}\n"
+m = re.fullmatch(r"\s*\{(.*)\}\s*", cur, re.S)
+if not m:
+    sys.exit(f"warning: {path} has an unexpected format; add the shortcuts from config/cosmic-shortcuts.ron yourself")
+body = m.group(1).rstrip().rstrip(",")
+binding = r"\(modifiers:\[[^\]]*\],key:\"[^\"]*\"\)"   # (modifiers:[Super],key:"l") with spaces removed
+have = set(re.findall(binding, re.sub(r"\s+", "", body)))
+add = [l for l in ours if re.findall(binding, re.sub(r"\s+", "", l))[0] not in have]
+if not add:
+    print("shortcuts: already set (or the keys are taken by your own shortcuts)")
+    sys.exit(0)
+lines = ([body.strip()] if body.strip() else []) + add
+tmp = path + ".tmp"
+open(tmp, "w").write("{\n    " + ",\n    ".join(lines) + ",\n}\n")
+os.replace(tmp, path)
+print("shortcuts added: " + ", ".join(re.search(r'key: "([^"]+)"', l).group(1) for l in add))
+PY

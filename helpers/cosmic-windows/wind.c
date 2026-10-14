@@ -55,15 +55,22 @@ static struct zcosmic_toplevel_manager_v1 *mgmt;
 static struct wl_seat *seat;
 static struct wl_display *dpy;
 
+// Output is built in memory and only written when it differs from the last line: COSMIC sends "done" for many
+// events that change nothing we report (measured: 32 of 35 lines in 15 s were repeats), and every line costs the
+// shell a JSON parse and a rebuild of everything bound to the window list.
+static char *out_buf, *last_buf;
+static size_t out_len, last_len;
+static FILE *out;
+
 static void json_str(const char *s) {
-    putchar('"');
+    fputc('"', out);
     for (; *s; s++) {
         unsigned char c = (unsigned char)*s;
-        if (c == '"' || c == '\\') { putchar('\\'); putchar(c); }
-        else if (c < 0x20) printf("\\u%04x", c);
-        else putchar(c);
+        if (c == '"' || c == '\\') { fputc('\\', out); fputc(c, out); }
+        else if (c < 0x20) fprintf(out, "\\u%04x", c);
+        else fputc(c, out);
     }
-    putchar('"');
+    fputc('"', out);
 }
 
 static void emit(void) {
@@ -74,19 +81,27 @@ static void emit(void) {
         if (w->state & (1u << 2)) active = w->id;
         if (((w->state >> 3) & 1) && !((w->state >> 1) & 1)) fullscreen = 1;
     }
-    printf("{\"active\":%d,\"fullscreen\":%s,\"windows\":[", active, fullscreen ? "true" : "false");
+    out = open_memstream(&out_buf, &out_len);
+    if (!out) return;
+    fprintf(out, "{\"active\":%d,\"fullscreen\":%s,\"windows\":[", active, fullscreen ? "true" : "false");
     for (int i = 0; i < nwins; i++) {
         struct win *w = wins[i];
-        printf("%s{\"id\":%d,\"app_id\":", i ? "," : "", w->id);
+        fprintf(out, "%s{\"id\":%d,\"app_id\":", i ? "," : "", w->id);
         json_str(w->app_id);
-        printf(",\"title\":");
+        fputs(",\"title\":", out);
         json_str(w->title);
-        printf(",\"activated\":%s,\"fullscreen\":%s,\"maximized\":%s,\"minimized\":%s,\"workspace_active\":%s}",
+        fprintf(out, ",\"activated\":%s,\"fullscreen\":%s,\"maximized\":%s,\"minimized\":%s,\"workspace_active\":%s}",
                (w->state >> 2) & 1 ? "true" : "false", (w->state >> 3) & 1 ? "true" : "false",
                (w->state >> 0) & 1 ? "true" : "false", (w->state >> 1) & 1 ? "true" : "false", on_current_ws(w) ? "true" : "false");
     }
-    printf("]}\n");
+    fputs("]}\n", out);
+    fclose(out);
+    if (last_buf && out_len == last_len && !memcmp(out_buf, last_buf, out_len)) { free(out_buf); return; }
+    fwrite(out_buf, 1, out_len, stdout);
     fflush(stdout);
+    free(last_buf);
+    last_buf = out_buf;
+    last_len = out_len;
 }
 
 static void win_remove(struct win *w) {
@@ -101,8 +116,18 @@ static void win_remove(struct win *w) {
 // --- ext_foreign_toplevel_handle_v1 -------------------------------------------------------------------------------
 static void e_closed(void *d, struct ext_foreign_toplevel_handle_v1 *h) { win_remove(d); }
 static void e_done(void *d, struct ext_foreign_toplevel_handle_v1 *h) { dirty = 1; }
-static void e_title(void *d, struct ext_foreign_toplevel_handle_v1 *h, const char *t) { snprintf(((struct win *)d)->title, sizeof(((struct win *)d)->title), "%s", t); }
-static void e_app_id(void *d, struct ext_foreign_toplevel_handle_v1 *h, const char *a) { snprintf(((struct win *)d)->app_id, sizeof(((struct win *)d)->app_id), "%s", a); }
+// copy, cutting an over-long string at a character boundary (never in the middle of a UTF-8 sequence)
+static void copy_utf8(char *dst, size_t size, const char *src) {
+    size_t n = strlen(src);
+    if (n >= size) {
+        n = size - 1;
+        while (n > 0 && ((unsigned char)src[n] & 0xC0) == 0x80) n--;
+    }
+    memcpy(dst, src, n);
+    dst[n] = 0;
+}
+static void e_title(void *d, struct ext_foreign_toplevel_handle_v1 *h, const char *t) { copy_utf8(((struct win *)d)->title, sizeof(((struct win *)d)->title), t); }
+static void e_app_id(void *d, struct ext_foreign_toplevel_handle_v1 *h, const char *a) { copy_utf8(((struct win *)d)->app_id, sizeof(((struct win *)d)->app_id), a); }
 static void e_identifier(void *d, struct ext_foreign_toplevel_handle_v1 *h, const char *i) {}
 static const struct ext_foreign_toplevel_handle_v1_listener ext_listener = {
     .closed = e_closed, .done = e_done, .title = e_title, .app_id = e_app_id, .identifier = e_identifier,
@@ -247,10 +272,24 @@ int main(void) {
         if (p.revents & POLLIN) { if (wl_display_read_events(dpy) < 0) return 1; } else wl_display_cancel_read(dpy);
         if (wl_display_dispatch_pending(dpy) < 0 || wl_display_get_error(dpy)) return 1;
         if (p.revents & (POLLHUP | POLLERR)) return 1;
-        if (pp[1].revents & POLLIN) {
-            char buf[128];
-            if (!fgets(buf, sizeof buf, stdin)) stdin_ok = 0; else handle_command(buf);
-        } else if (pp[1].revents & (POLLHUP | POLLERR)) stdin_ok = 0;
+        if (pp[1].revents & (POLLIN | POLLHUP | POLLERR)) {
+            // read(), not stdio: a second command buffered by fgets would wait for the next compositor event
+            static char cmd[256];
+            static size_t have;
+            ssize_t r = read(0, cmd + have, sizeof cmd - 1 - have);
+            if (r <= 0) stdin_ok = 0;
+            else {
+                have += r;
+                char *nl;
+                while ((nl = memchr(cmd, '\n', have))) {
+                    *nl = 0;
+                    handle_command(cmd);
+                    have -= nl + 1 - cmd;
+                    memmove(cmd, nl + 1, have);
+                }
+                if (have == sizeof cmd - 1) have = 0;  // overlong garbage line: drop it
+            }
+        }
         if (dirty) { dirty = 0; emit(); }
     }
 }

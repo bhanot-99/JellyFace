@@ -23,8 +23,8 @@ Singleton {
     }
 
     function remove(id: string): void {
+        // agenda.py refreshes the card by itself after removing (a second, parallel refresh could write the old list back)
         Quickshell.execDetached(["python3", script, "remove", id]);
-        Quickshell.execDetached(["python3", script]);
     }
 
     IpcHandler {

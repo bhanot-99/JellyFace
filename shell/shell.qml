@@ -1,4 +1,4 @@
-//@ pragma Env QS_CRASHREPORT_URL=https://github.com/caelestia-dots/shell/issues/new?template=crash.yml
+//@ pragma Env QS_CRASHREPORT_URL=https://github.com/bhanot-99/JellyFace/issues
 //@ pragma DefaultEnv QS_NO_RELOAD_POPUP=1
 //@ pragma DefaultEnv QS_DROP_EXPENSIVE_FONTS=1
 //@ pragma DefaultEnv QSG_RENDER_LOOP=threaded
@@ -18,7 +18,9 @@ import qs.services
 ShellRoot {
     id: root
 
-    settings.watchFiles: true
+    // Live reload on every saved QML file is a development aid: for everyone else it only meant half-saved edits (or a
+    // `git pull`) briefly loading a broken shell. JF_DEV=1 jellyface start turns it back on.
+    settings.watchFiles: Quickshell.env("JF_DEV") === "1"
 
     Binding {
         target: ShellState

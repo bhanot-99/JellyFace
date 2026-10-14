@@ -450,6 +450,7 @@ def cmd_watch():
     except Exception:
         pass
     while os.getppid() == parent:
+        key = None
         try:
             if read_state().get("mode", "auto") == "auto":
                 key = wallpaper_key()
@@ -463,7 +464,9 @@ def cmd_watch():
             print(f"theme: {e}", file=sys.stderr)
         except Exception as e:  # never die: a bad image must not stop the watcher
             print(f"theme: {type(e).__name__}: {e}", file=sys.stderr)
-            last = wallpaper_key() if last is None else last
+            # remember the wallpaper that failed: retrying it every 2 s (decoding it, logging the same error) helps
+            # nobody; the next wallpaper change is tried as usual
+            last = key if key is not None else last
         sys.stdout.flush()
         time.sleep(2.0)
 

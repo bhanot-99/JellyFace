@@ -54,8 +54,13 @@ case "${1:-status}" in
         log "COSMIC's own theme restored"
         ;;
     status)
-        n=$(ls "$COSMIC_CFG/${DIRS[0]}/v1" 2>/dev/null | wc -l)
-        [ "$n" -gt 0 ] && log "COSMIC theme: JellyFace-generated ($n theme keys in $COSMIC_CFG/${DIRS[0]}/v1)" || log "COSMIC theme: stock"
+        v="$(ls -d "$COSMIC_CFG/${DIRS[0]}"/v* 2>/dev/null | sort -V | tail -1)"
+        n=$(ls "$v" 2>/dev/null | wc -l)
+        if [ "$n" -gt 0 ] && grep -qF "$COSMIC_CFG/${DIRS[0]}"$'\t' "$JF_MANIFEST" 2>/dev/null; then
+            log "COSMIC theme: JellyFace-generated ($n theme keys in $v)"
+        else
+            log "COSMIC theme: stock"
+        fi
         ;;
     *) echo "usage: cosmic-theme.sh apply|reset|status" >&2; exit 2 ;;
 esac

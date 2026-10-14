@@ -12,6 +12,9 @@ fi
 
 "$JF_ROOT/bin/jellyface" service off >/dev/null 2>&1 || true
 tac "$JF_MANIFEST" | while IFS=$'\t' read -r path backup; do
+    # sys_track only records files in your home folder: anything else means a damaged manifest, so don't touch it
+    case "$path" in "$HOME"/?*) ;; *) warn "skipping unexpected manifest entry '$path'"; continue ;; esac
+    case "$path" in *..*|"$JF_ROOT"|"$JF_ROOT"/*) warn "skipping unexpected manifest entry '$path'"; continue ;; esac
     if [ "$backup" = "(new)" ]; then
         [ -e "$path" ] && { rm -rf -- "$path"; log "removed $path (created by JellyFace)"; }
     elif [ -e "$backup" ]; then

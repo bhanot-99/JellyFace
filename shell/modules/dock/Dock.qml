@@ -71,7 +71,8 @@ Scope {
 
         // anchored to the bottom edge only: the compositor centres the window horizontally
         anchors.bottom: true
-        margins.bottom: Math.max(Tokens.padding.small, Config.border.thickness) + Tokens.padding.extraLargeIncreased
+        // read through contentItem: the window itself is not an Item, so plain Tokens/Config here had no screen (warnings)
+        margins.bottom: Math.max(contentItem.Tokens.padding.small, contentItem.Config.border.thickness) + contentItem.Tokens.padding.extraLargeIncreased
 
         implicitWidth: panel.fullWidth
         implicitHeight: panel.fullHeight

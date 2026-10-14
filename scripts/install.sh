@@ -22,7 +22,7 @@ set -e
 sudo pacman -Syu --needed --noconfirm base-devel git cmake ninja \
     qt6-base qt6-declarative qt6-shadertools qt6-svg qt6-wayland qt6-imageformats \
     libpipewire aubio libqalculate networkmanager ddcutil brightnessctl lm_sensors \
-    grim swappy wl-clipboard fish pipewire-pulse power-profiles-daemon \
+    grim swappy wl-clipboard fish pipewire-pulse power-profiles-daemon python \
     ttf-material-symbols-variable ttf-cascadia-code-nerd mesa vulkan-intel vulkan-radeon
 if ! command -v yay >/dev/null; then
     tmp=$(mktemp -d); git clone https://aur.archlinux.org/yay-bin.git "$tmp/yay-bin"
@@ -45,12 +45,15 @@ fi
 
 # 5. default config (existing files are backed up first, never deleted)
 mkdir -p "$JF_CONFIG_DIR" "$JF_STATE_DIR"
-for f in shell.json shell-tokens.json; do
-    if [ -e "$JF_CONFIG_DIR/$f" ] && ! cmp -s "$JF_ROOT/config/$f" "$JF_CONFIG_DIR/$f"; then backup "$JF_CONFIG_DIR/$f"; fi
-    cp "$JF_ROOT/config/$f" "$JF_CONFIG_DIR/$f"
+# Only files that are missing are installed: re-running install must never throw away your own settings or theme.
+# (A broken file is replaced at start-up anyway, after a backup.) JF_RESET_CONFIG=1 puts all defaults back.
+for f in shell.json shell-tokens.json dock.json desktop.json; do
+    dest="$JF_CONFIG_DIR/$f"
+    if [ -e "$dest" ] && [ "${JF_RESET_CONFIG:-0}" != 1 ]; then log "keeping your $f"; continue; fi
+    [ -e "$dest" ] && ! cmp -s "$JF_ROOT/config/$f" "$dest" && backup "$dest"
+    cp "$JF_ROOT/config/$f" "$dest"
 done
-if [ -e "$JF_STATE_DIR/scheme.json" ] && ! cmp -s "$JF_ROOT/config/scheme.json" "$JF_STATE_DIR/scheme.json"; then backup "$JF_STATE_DIR/scheme.json"; fi
-cp "$JF_ROOT/config/scheme.json" "$JF_STATE_DIR/scheme.json"
+[ -e "$JF_STATE_DIR/scheme.json" ] || cp "$JF_ROOT/config/scheme.json" "$JF_STATE_DIR/scheme.json"
 
 "$JF_ROOT/scripts/fix-icons.sh"
 log "done. Next:  jellyface start --timeout 120   (safe first run)   |   jellyface cosmic-tweaks   (optional)"
