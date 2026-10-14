@@ -136,7 +136,7 @@ MouseArea {
                         bottomLeftRadius: index === repeater?.count - 1 ? Tokens.rounding.medium : radius
                         bottomRightRadius: index === repeater?.count - 1 ? Tokens.rounding.medium : radius
 
-                        color: Qt.alpha(Colours.palette.m3tertiaryContainer, active ? 1 : 0)
+                        color: Qt.alpha(Colours.palette.m3tertiaryContainer, active ? Colours.palette.m3tertiaryContainer.a : 0)
 
                         Behavior on radius {
                             Anim {}

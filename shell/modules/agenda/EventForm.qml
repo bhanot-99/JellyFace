@@ -31,6 +31,14 @@ Scope {
             anchors.left: true
             anchors.right: true
 
+            BackgroundEffect.blurRegion: Glass.enabled ? sheetBlur : null
+
+            GlassRegion {
+                id: sheetBlur
+
+                pane: sheet
+            }
+
             MouseArea {
                 anchors.fill: parent
                 onClicked: AgendaEvents.formOpen = false
@@ -79,6 +87,10 @@ Scope {
                 anchors.centerIn: parent
                 width: 460
                 height: col.implicitHeight
+
+                GlassSheet {
+                    id: sheet
+                }
 
                 MouseArea {
                     anchors.fill: parent

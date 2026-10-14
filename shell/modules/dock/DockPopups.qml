@@ -19,6 +19,7 @@ Scope {
     id: root
 
     required property var dock
+    property Item glassPane // the open menu or dialog, for the compositor's blur behind it
 
     function close(): void {
         dock.popup = "";
@@ -40,6 +41,14 @@ Scope {
             anchors.bottom: true
             anchors.left: true
             anchors.right: true
+
+            BackgroundEffect.blurRegion: Glass.enabled && root.glassPane ? paneRegion : null
+
+            GlassRegion {
+                id: paneRegion
+
+                pane: root.glassPane
+            }
 
             MouseArea {
                 anchors.fill: parent
@@ -80,13 +89,14 @@ Scope {
                 implicitWidth: 248
                 implicitHeight: col.implicitHeight + Tokens.padding.medium * 2
                 radius: Tokens.rounding.large
-                color: Colours.palette.m3surfaceContainer
+                color: Glass.enabled ? Glass.smokeCovered : Colours.palette.m3surfaceContainer
                 transformOrigin: Item.Bottom
 
                 // a quick pop: grow from the dock upwards
                 scale: 0.92
                 opacity: 0
                 Component.onCompleted: {
+                    root.glassPane = card;
                     scale = 1;
                     opacity = 1;
                 }
@@ -417,11 +427,12 @@ Scope {
         anchors.centerIn: parent
         implicitHeight: content.implicitHeight + Tokens.padding.extraLarge * 2
         radius: Tokens.rounding.extraLarge
-        color: Colours.palette.m3surfaceContainer
+        color: Glass.enabled ? Glass.smokeCovered : Colours.palette.m3surfaceContainer
 
         scale: 0.94
         opacity: 0
         Component.onCompleted: {
+            root.glassPane = dialog;
             scale = 1;
             opacity = 1;
         }

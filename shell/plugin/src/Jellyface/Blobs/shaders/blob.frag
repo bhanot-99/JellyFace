@@ -262,8 +262,12 @@ void main() {
     // myIndex >= 0: individual rect renders its owned pixels
     if (owner != myIndex && mergedSdf > smoothFactor)
         discard;
+    // A translucent colour (frosted glass) must reach each pixel exactly once, or the overlapping renderers stack it
+    // up. The owner's quad is padded by the smoothing, so it covers its own fillets and edge: only the owner draws.
+    if (color.a < 0.999 && owner != myIndex)
+        discard;
 
     float fw = fwidth(mergedSdf);
     float alpha = 1.0 - smoothstep(-fw, fw, mergedSdf);
-    fragColor = vec4(color.rgb * alpha, alpha) * qt_Opacity;
+    fragColor = vec4(color.rgb * alpha, alpha) * color.a * qt_Opacity;
 }

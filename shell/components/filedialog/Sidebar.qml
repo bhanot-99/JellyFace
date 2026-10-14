@@ -49,7 +49,7 @@ StyledRect {
                 implicitHeight: placeInner.implicitHeight + Tokens.padding.medium * 2
 
                 radius: Tokens.rounding.full
-                color: Qt.alpha(Colours.palette.m3secondaryContainer, selected ? 1 : 0)
+                color: Qt.alpha(Colours.palette.m3secondaryContainer, selected ? Colours.palette.m3secondaryContainer.a : 0)
 
                 StateLayer {
                     color: place.selected ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface

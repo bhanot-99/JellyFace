@@ -13,12 +13,17 @@ Item {
     property int count: 14
     property real minSize: 36
     property real maxSize: 124
-    property real minSpeed: 4
-    property real maxSpeed: 18
-    property real minRotSpeed: -12
-    property real maxRotSpeed: 12
+    // slower under glass: movement draws the eye, and the shapes should stay behind the player
+    readonly property real calm: Glass.enabled ? 0.55 : 1
+    property real minSpeed: 4 * calm
+    property real maxSpeed: 18 * calm
+    property real minRotSpeed: -12 * calm
+    property real maxRotSpeed: 12 * calm
     property list<real> lightOpacities: [0.34, 0.34, 0.08, 0.2]
     property list<real> darkOpacities: [0.16, 0.16, 0.04, 0.16]
+    // glass colours are already translucent white: these give faint frosted shapes (about 5-10% white) that stay in the
+    // background behind the player
+    property list<real> glassOpacities: [0.4, 0.35, 0.25, 0.4]
 
     function rand(min: real, max: real): real {
         return min + Math.random() * (max - min);
@@ -76,7 +81,7 @@ Item {
         implicitSize: root.minSize + (index / root.count) * (root.maxSize - root.minSize)
         shape: root.shapePool[Math.floor(Math.random() * root.shapePool.length)]
         color: [Colours.palette.m3primaryContainer, Colours.palette.m3secondaryContainer, Colours.palette.m3tertiaryContainer, Colours.palette.m3outlineVariant][colourIdx]
-        opacity: Colours.light ? root.lightOpacities[colourIdx] : root.darkOpacities[colourIdx]
+        opacity: Glass.enabled ? root.glassOpacities[colourIdx] : Colours.light ? root.lightOpacities[colourIdx] : root.darkOpacities[colourIdx]
         rotation: root.rand(0, 360)
 
         Component.onCompleted: {

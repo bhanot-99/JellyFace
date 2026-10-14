@@ -35,7 +35,7 @@ Item {
         id: blobGroup
 
         smoothing: root.Tokens.rounding.medium
-        color: root.blobColour
+        color: Qt.alpha(root.blobColour, 1) // the alpha is applied by the rects' opacity
     }
 
     BlobInvertedRect {

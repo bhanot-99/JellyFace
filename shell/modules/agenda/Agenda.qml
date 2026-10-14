@@ -143,6 +143,29 @@ Scope {
             implicitWidth: 360
             implicitHeight: layout.implicitHeight
 
+            // frosted glass: blur behind each tile (the gaps between them stay clear)
+            BackgroundEffect.blurRegion: Glass.enabled ? tileBlur : null
+
+            Region {
+                id: tileBlur
+
+                GlassRegion {
+                    pane: dateTile
+                }
+                GlassRegion {
+                    pane: nextTile
+                }
+                GlassRegion {
+                    pane: hintTile
+                }
+                GlassRegion {
+                    pane: dayTiles.count > 0 ? dayTiles.itemAt(0) : null
+                }
+                GlassRegion {
+                    pane: dayTiles.count > 1 ? dayTiles.itemAt(1) : null
+                }
+            }
+
             // Bento layout like the dashboard: separate tiles with different corner shapes, no backing card
             ColumnLayout {
                 id: layout
@@ -156,9 +179,11 @@ Scope {
 
                     // Date tile: a big day number, one corner much rounder than the rest
                     StyledRect {
+                        id: dateTile
+
                         Layout.preferredWidth: 112
                         Layout.preferredHeight: 112
-                        color: Colours.palette.m3primaryContainer
+                        color: Glass.standalone(Colours.palette.m3primaryContainer)
                         topLeftRadius: 56
                         topRightRadius: Tokens.rounding.large
                         bottomLeftRadius: Tokens.rounding.large
@@ -195,9 +220,11 @@ Scope {
 
                     // Next-up tile
                     StyledRect {
+                        id: nextTile
+
                         Layout.fillWidth: true
                         Layout.preferredHeight: 112
-                        color: root.nextEvent && root.isNow(root.nextEvent) ? Colours.palette.m3tertiaryContainer : Colours.palette.m3secondaryContainer
+                        color: Glass.standalone(root.nextEvent && root.isNow(root.nextEvent) ? Colours.palette.m3tertiaryContainer : Colours.palette.m3secondaryContainer)
                         topLeftRadius: Tokens.rounding.large
                         topRightRadius: 56
                         bottomLeftRadius: Tokens.rounding.extraLarge
@@ -243,11 +270,13 @@ Scope {
 
                 // Setup / error hint
                 StyledRect {
+                    id: hintTile
+
                     Layout.fillWidth: true
                     visible: root.state === "no-source" || root.state === "error"
                     implicitHeight: hint.implicitHeight + Tokens.padding.large * 2
                     radius: Tokens.rounding.extraLarge
-                    color: Colours.tPalette.m3surfaceContainer
+                    color: Glass.standalone(Colours.tPalette.m3surfaceContainer)
 
                     StyledText {
                         id: hint
@@ -263,6 +292,8 @@ Scope {
 
                 // Day tiles
                 Repeater {
+                    id: dayTiles
+
                     model: root.state !== "no-source" ? [0, 1] : []
 
                     StyledRect {
@@ -273,7 +304,7 @@ Scope {
 
                         Layout.fillWidth: true
                         implicitHeight: dayCol.implicitHeight + Tokens.padding.large * 2
-                        color: Colours.tPalette.m3surfaceContainer
+                        color: Glass.standalone(Colours.tPalette.m3surfaceContainer)
                         topLeftRadius: modelData === 0 ? Tokens.rounding.extraLarge : Tokens.rounding.large
                         topRightRadius: modelData === 0 ? Tokens.rounding.large : Tokens.rounding.extraLarge
                         bottomLeftRadius: modelData === 0 ? Tokens.rounding.large : Tokens.rounding.extraLarge

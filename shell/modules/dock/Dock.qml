@@ -173,6 +173,14 @@ Scope {
             item: panel
         }
 
+        BackgroundEffect.blurRegion: Glass.enabled ? dockBlur : null
+
+        GlassRegion {
+            id: dockBlur
+
+            pane: panel
+        }
+
         StyledRect {
             id: panel
 

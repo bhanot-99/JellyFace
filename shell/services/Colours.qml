@@ -15,13 +15,15 @@ Singleton {
     property bool showPreview
     property string scheme
     property string flavour
-    readonly property bool light: showPreview ? previewLight : currentLight
+    readonly property bool light: showPreview ? previewLight : (Glass.enabled ? false : currentLight)
     property bool currentLight
     property bool previewLight
-    readonly property M3Palette palette: showPreview ? preview : current
+    // Frosted glass (services/Glass.qml) replaces the wallpaper palette's colours while it is on
+    readonly property M3Palette palette: showPreview ? preview : Glass.enabled ? glass : current
     readonly property M3TPalette tPalette: M3TPalette {}
     readonly property M3Palette current: M3Palette {}
     readonly property M3Palette preview: M3Palette {}
+    readonly property M3Palette glass: GlassPalette {}
     readonly property Transparency transparency: Transparency {}
     readonly property alias wallLuminance: analyser.luminance
 
@@ -226,6 +228,86 @@ Singleton {
         readonly property color m3tertiaryFixedDim: root.layer(root.palette.m3tertiaryFixedDim)
         readonly property color m3onTertiaryFixed: root.layer(root.palette.m3onTertiaryFixed)
         readonly property color m3onTertiaryFixedVariant: root.layer(root.palette.m3onTertiaryFixedVariant)
+    }
+
+    // The five glass tiers mapped onto the Material roles every widget already uses, so layouts, shapes and icons stay
+    // exactly as they are: G0 smoke = backgrounds, G1 mist = cards, G2 frost = raised tiles, G3 haze = secondary text,
+    // G4 ice = primary text and active pills (with ink on them). Only error/success keep a faint hue, for meaning.
+    component GlassPalette: M3Palette {
+        m3primary_paletteKeyColor: root.current.m3primary_paletteKeyColor
+        m3secondary_paletteKeyColor: root.current.m3secondary_paletteKeyColor
+        m3tertiary_paletteKeyColor: root.current.m3tertiary_paletteKeyColor
+        m3neutral_paletteKeyColor: root.current.m3neutral_paletteKeyColor
+        m3neutral_variant_paletteKeyColor: root.current.m3neutral_variant_paletteKeyColor
+        m3background: Glass.smoke
+        m3onBackground: Glass.ice
+        m3surface: Glass.smoke
+        m3surfaceDim: Glass.smoke
+        m3surfaceBright: Glass.frost
+        m3surfaceContainerLowest: Glass.well
+        m3surfaceContainerLow: Glass.veil
+        m3surfaceContainer: Glass.mist
+        m3surfaceContainerHigh: Glass.mistHigh
+        m3surfaceContainerHighest: Glass.frost
+        m3onSurface: Glass.ice
+        m3surfaceVariant: Glass.mistHigh
+        m3onSurfaceVariant: Glass.haze
+        m3inverseSurface: Glass.ice
+        m3inverseOnSurface: Glass.ink
+        m3outline: Qt.rgba(1, 1, 1, 0.42)
+        m3outlineVariant: Qt.rgba(1, 1, 1, 0.16)
+        m3shadow: "#000000"
+        m3scrim: "#000000"
+        m3surfaceTint: Glass.ice
+        m3primary: Glass.ice
+        m3onPrimary: Glass.ink
+        m3primaryContainer: Glass.frostHigh
+        m3onPrimaryContainer: Glass.ice
+        m3inversePrimary: Glass.frostHigh
+        m3secondary: Glass.hazeHigh
+        m3onSecondary: Glass.ink
+        m3secondaryContainer: Glass.frost
+        m3onSecondaryContainer: Glass.ice
+        m3tertiary: Glass.haze
+        m3onTertiary: Glass.ink
+        m3tertiaryContainer: Glass.frostHigh
+        m3onTertiaryContainer: Glass.ice
+        m3error: "#f4a3a0"
+        m3onError: Glass.ink
+        m3errorContainer: Qt.rgba(1, 0.35, 0.33, 0.24)
+        m3onErrorContainer: "#ffdcd9"
+        m3success: "#a9dbb4"
+        m3onSuccess: Glass.ink
+        m3successContainer: Qt.rgba(0.4, 0.85, 0.5, 0.2)
+        m3onSuccessContainer: "#d6f2dc"
+        m3primaryFixed: Glass.ice
+        m3primaryFixedDim: Glass.hazeHigh
+        m3onPrimaryFixed: Glass.ink
+        m3onPrimaryFixedVariant: Glass.ink
+        m3secondaryFixed: Glass.hazeHigh
+        m3secondaryFixedDim: Glass.haze
+        m3onSecondaryFixed: Glass.ink
+        m3onSecondaryFixedVariant: Glass.ink
+        m3tertiaryFixed: Glass.haze
+        m3tertiaryFixedDim: Glass.frostHigh
+        m3onTertiaryFixed: Glass.ink
+        m3onTertiaryFixedVariant: Glass.ink
+        term0: root.current.term0
+        term1: root.current.term1
+        term2: root.current.term2
+        term3: root.current.term3
+        term4: root.current.term4
+        term5: root.current.term5
+        term6: root.current.term6
+        term7: root.current.term7
+        term8: root.current.term8
+        term9: root.current.term9
+        term10: root.current.term10
+        term11: root.current.term11
+        term12: root.current.term12
+        term13: root.current.term13
+        term14: root.current.term14
+        term15: root.current.term15
     }
 
     component M3Palette: QtObject {

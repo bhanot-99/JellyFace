@@ -262,7 +262,10 @@ JellyFace gets less information from COSMIC than Jellyface gets from Hyprland.
 - **Notifications.** JellyFace takes the notification service from `cosmic-notifications` while it runs (and gives it back when
   it stops), so notifications use JellyFace's own pop-ups and sidebar. Focus mode (`Super+Shift+F`) mutes them.
 - **Screen recording** is controlled in Kooha's window, not from the sidebar card.
-- **Transparency and blur** were tried and removed: at useful strengths they were barely visible over the wallpaper.
+- **Frosted glass** (`jellyface glass on|off`, on by default) replaces the wallpaper palettes with five
+  neutral glass tiers over COSMIC's compositor blur. The base glass adapts to how bright the wallpaper is along the
+  screen edges and stays the same while drawers open and close. The compositor uses one blur strength, so the tiers differ in tint
+  and frost, not blur radius. `glass off` brings back the wallpaper palettes.
 - **Single screen.** All workspaces are treated as one group; multi-monitor setups are untested.
 - **Clean-machine install** is untested end to end.
 

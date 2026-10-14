@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import Jellyface.Config
 import Jellyface.I18n
 import qs.components
@@ -25,8 +26,16 @@ Singleton {
         FloatingWindow {
             id: win
 
-            color: Colours.tPalette.m3surface
+            color: Glass.enabled ? Glass.smokeCovered : Colours.tPalette.m3surface
             surfaceFormat.opaque: false
+            BackgroundEffect.blurRegion: Glass.enabled ? wholeWindow : null
+
+            Region {
+                id: wholeWindow
+
+                width: win.width
+                height: win.height
+            }
 
             onVisibleChanged: {
                 if (!visible)

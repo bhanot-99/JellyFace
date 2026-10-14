@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Wayland
 import Jellyface.I18n
 import qs.components
 import qs.services
@@ -53,8 +54,16 @@ LazyLoader {
         implicitHeight: 600
         minimumSize.width: 400
         minimumSize.height: 300
-        color: Colours.tPalette.m3surface
+        color: Glass.enabled ? Glass.smokeCovered : Colours.tPalette.m3surface
         surfaceFormat.opaque: false
+        BackgroundEffect.blurRegion: Glass.enabled ? wholeWindow : null
+
+        Region {
+            id: wholeWindow
+
+            width: root.width
+            height: root.height
+        }
         title: loader.title
 
         onVisibleChanged: {

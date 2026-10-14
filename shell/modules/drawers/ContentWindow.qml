@@ -42,7 +42,8 @@ StyledWindow {
     readonly property real shadowOpacity: 0.7 * (1 - fsTransitionProg)
     readonly property real borderLayoutThickness: hasFullscreen ? 0 : contentItem.Config.border.thickness
 
-    property color surfaceColour: Colours.tPalette.m3surface
+    // Frosted glass: one base glass for the frame and drawers, the same whether a drawer is open or not
+    property color surfaceColour: Glass.enabled ? Glass.smoke : Colours.tPalette.m3surface
 
     // Edge-drag padding relies on Hyprland workspace info; on COSMIC it would block clicks along every screen edge
     readonly property int dragMaskPadding: 0
@@ -64,6 +65,9 @@ StyledWindow {
     readonly property bool anyClosableOpen: screenState.launcher || screenState.session || screenState.sidebar
 
     mask: hasFullscreen ? emptyRegion : (anyClosableOpen ? fullRegion : regions)
+
+    // The compositor blurs what is behind the frame and open drawers (COSMIC's ext-background-effect protocol)
+    BackgroundEffect.blurRegion: Glass.enabled && !hasFullscreen ? blurRegions : null
 
     anchors.top: true
     anchors.bottom: true
@@ -101,6 +105,14 @@ StyledWindow {
             width: panels.osdWrapper.width * (1 - panels.osd.offsetScale) + root.borderThickness
             height: panels.osd.height
         }
+    }
+
+    BlurRegions {
+        id: blurRegions
+
+        bar: bar
+        panels: panels
+        win: root
     }
 
     Regions {
@@ -167,13 +179,14 @@ StyledWindow {
         layer.effect: MultiEffect {
             shadowEnabled: true
             blurMax: 15
-            shadowColor: Qt.alpha(Colours.palette.m3shadow, Math.max(0, root.shadowOpacity))
+            // under glass a strong shadow reads as a dirty halo: keep only a soft lift
+            shadowColor: Qt.alpha(Colours.palette.m3shadow, Math.max(0, root.shadowOpacity * (Glass.enabled ? 0.45 : 1)))
         }
 
         BlobGroup {
             id: blobGroup
 
-            color: root.surfaceColour
+            color: Qt.alpha(root.surfaceColour, 1) // the alpha is applied once, by the opacity above (with the shadow)
             smoothing: root.contentItem.Config.border.smoothing
         }
 

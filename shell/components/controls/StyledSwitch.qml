@@ -20,7 +20,7 @@ Switch {
         radius: Tokens.rounding.full
         color: {
             if (root.disabled)
-                return root.checked ? Qt.alpha(Colours.palette.m3onSurface, 0.12) : Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.38);
+                return root.checked ? Qt.alpha(Colours.palette.m3onSurface, 0.12) : Qt.alpha(Colours.palette.m3surfaceContainerHighest, 0.38 * Colours.palette.m3surfaceContainerHighest.a);
             return root.checked ? Colours.palette.m3primary : Colours.layer(Colours.palette.m3surfaceContainerHighest, root.cLayer);
         }
 

@@ -32,6 +32,14 @@ Scope {
             anchors.left: true
             anchors.right: true
 
+            BackgroundEffect.blurRegion: Glass.enabled ? sheetBlur : null
+
+            GlassRegion {
+                id: sheetBlur
+
+                pane: sheet
+            }
+
             MouseArea {
                 anchors.fill: parent
                 onClicked: Clipboard.open = false
@@ -50,6 +58,10 @@ Scope {
                 anchors.centerIn: parent
                 width: 640
                 height: Math.min(parent.height - 120, 600)
+
+                GlassSheet {
+                    id: sheet
+                }
 
                 // Swallow clicks so they don't close the popup
                 MouseArea {

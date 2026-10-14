@@ -13,6 +13,8 @@ Color_Palette/*.txt, and writes it as the shell's colour scheme (scheme.json). T
   theme.py auto on|off         follow the wallpaper automatically (on) or keep the current palette (off)
   theme.py watch               apply automatically whenever the wallpaper changes (used by `jellyface start`)
   theme.py status              what is applied and why
+  theme.py glass [on|off]      frosted-glass look (on): neutral translucent surfaces instead of palette colours, with
+                               the shell's glass adapting to how bright the wallpaper is along the screen edges
 
 Needs python3-gi (GdkPixbuf) to read images; everything else is the standard library.
 """
@@ -33,6 +35,7 @@ STATE_HOME = os.environ.get("XDG_STATE_HOME", os.path.join(HOME, ".local", "stat
 COSMIC_BG = os.path.join(CONFIG_HOME, "cosmic", "com.system76.CosmicBackground", "v1")
 SCHEME = os.path.join(STATE_HOME, "jellyface", "scheme.json")
 STATE = os.path.join(STATE_HOME, "jellyface", "theme.json")
+GLASS = os.path.join(STATE_HOME, "jellyface", "glass.json")  # read live by the shell (services/Glass.qml)
 IMAGE_EXT = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tif", ".tiff")
 
 DEFAULT_SOFT = 0.7  # 0 = backgrounds as dark as the palette's Deepest swatch, 1 = one full tonal step lighter, up to 2
@@ -202,6 +205,66 @@ def tonal_ramp(pixels, bins=5):
     return ramp
 
 
+def image_grid(path, size=64):
+    """The image scaled to fit size x size, as rows of (r, g, b)."""
+    import gi
+    gi.require_version("GdkPixbuf", "2.0")
+    from gi.repository import GdkPixbuf
+    pb = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, size, size, True)
+    data, n, stride, w, h = pb.get_pixels(), pb.get_n_channels(), pb.get_rowstride(), pb.get_width(), pb.get_height()
+    return [[(data[y * stride + x * n], data[y * stride + x * n + 1], data[y * stride + x * n + 2]) for x in range(w)] for y in range(h)]
+
+
+def backdrop(kind, val):
+    """How bright the wallpaper is where the shell's glass sits (bar, border, drawers: the screen edges), as gamma-encoded
+    luma 0-1. Half the mean of the edge strips plus half the brightest strip, so one bright edge is not averaged away."""
+    luma = lambda c: (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255
+    if kind == "color":
+        return round(sum(luma(c) for c in val) / len(val), 3)
+    rows = image_grid(val)
+    h, w = len(rows), len(rows[0])
+    strips = {  # fractions of the screen; the right strip is wider because the sidebar opens there
+        "top": [p for r in rows[:max(1, h // 8)] for p in r],
+        "bottom": [p for r in rows[h - max(1, h // 10):] for p in r],
+        "left": [p for r in rows for p in r[:max(1, w // 12)]],
+        "right": [p for r in rows for p in r[w - max(1, w // 5):]],
+    }
+    means = [sum(luma(p) for p in px) / len(px) for px in strips.values()]
+    return round(0.5 * sum(means) / len(means) + 0.5 * max(means), 3)
+
+
+def read_glass():
+    try:
+        return json.load(open(GLASS))
+    except (OSError, ValueError):
+        return {}
+
+
+def write_glass(**kw):
+    g = {"enabled": True, "backdrop": 0.3}
+    g.update(read_glass())
+    g.update(kw)
+    text = json.dumps(g, indent=1)
+    try:
+        if open(GLASS, encoding="utf-8").read() == text:
+            return
+    except OSError:
+        pass
+    os.makedirs(os.path.dirname(GLASS), exist_ok=True)
+    with open(GLASS, "w", encoding="utf-8") as f:  # in place, like scheme.json, so the shell's watcher keeps following it
+        f.write(text)
+
+
+def glass_on():
+    return read_glass().get("enabled", True)
+
+
+def update_backdrop():
+    kind, val = current_wallpaper()
+    if kind:
+        write_glass(backdrop=backdrop(kind, val), wallpaper=val if kind == "image" else "solid colour")
+
+
 # ----------------------------------------------------------------------------- matching
 WEIGHTS = [0.5, 0.8, 1.0, 1.0, 0.8]  # colour character matters most in the mid/upper tones
 
@@ -365,6 +428,9 @@ def cmd_apply(key=None):
         p = find_palette(palettes, key)
         write_state(mode="manual")
         return apply_palette(p, "manual", "chosen by you; automatic theming is off (theme.py auto on to resume)")
+    if glass_on():  # glass is neutral, so COSMIC and the greeter get the neutral grey instead of a wallpaper match
+        update_backdrop()
+        return apply_palette(find_palette(palettes, "0"), "glass", "frosted glass is on (theme.py glass off for wallpaper palettes)")
     ramp, src = wallpaper_ramp()
     sc, p = best_matches(ramp, palettes, 1)[0]
     apply_palette(p, src, f"best match for {os.path.basename(str(src))} (score {sc:.1f})")
@@ -452,11 +518,12 @@ def cmd_watch():
     while os.getppid() == parent:
         key = None
         try:
-            if read_state().get("mode", "auto") == "auto":
+            auto = read_state().get("mode", "auto") == "auto"
+            if auto or glass_on():  # the glass follows the wallpaper's brightness even when the palette is fixed
                 key = wallpaper_key()
                 if key != last:
                     time.sleep(1.0)  # let a freshly written wallpaper file settle
-                    cmd_apply()
+                    cmd_apply() if auto else update_backdrop()
                     last = wallpaper_key()
             else:
                 last = None
@@ -471,8 +538,24 @@ def cmd_watch():
         time.sleep(2.0)
 
 
+def cmd_glass(val=None):
+    if val is None:
+        g = read_glass()
+        print(f"glass: {'on' if glass_on() else 'off'}" + (f" (wallpaper edge brightness {g['backdrop']:g})" if glass_on() and "backdrop" in g else ""))
+        return
+    if val not in ("on", "off"):
+        raise SystemExit("usage: theme.py glass [on|off]")
+    write_glass(enabled=(val == "on"))
+    print(f"glass {val}")
+    if read_state().get("mode", "auto") == "auto":
+        cmd_apply()
+    elif val == "on":
+        update_backdrop()
+
+
 def cmd_status():
     st = read_state()
+    print(f"glass: {'on' if glass_on() else 'off'}")
     print(f"mode: {st.get('mode', 'auto')}")
     if st.get("name"):
         print(f"palette: [{st['palette']:03d}] {st['name']} ({st['family']})\nsource: {st['source']}\nwhy: {st['reason']}\napplied: {st['applied']}")
@@ -485,7 +568,7 @@ def main(argv):
         print(__doc__)
         return 0
     cmd, args = argv[0], argv[1:]
-    {"apply": cmd_apply, "system": cmd_system, "tint": cmd_tint, "soft": cmd_soft, "match": cmd_match, "list": cmd_list, "auto": cmd_auto, "watch": cmd_watch, "status": cmd_status}.get(
+    {"apply": cmd_apply, "system": cmd_system, "tint": cmd_tint, "soft": cmd_soft, "match": cmd_match, "list": cmd_list, "auto": cmd_auto, "glass": cmd_glass, "watch": cmd_watch, "status": cmd_status}.get(
         cmd, lambda *a: sys.exit(f"unknown command '{cmd}' (try --help)"))(*args)
     return 0
 

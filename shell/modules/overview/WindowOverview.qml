@@ -84,6 +84,15 @@ Scope {
             anchors.left: true
             anchors.right: true
 
+            BackgroundEffect.blurRegion: Glass.enabled ? wholeScreen : null
+
+            Region {
+                id: wholeScreen
+
+                width: win.width
+                height: win.height
+            }
+
             Rectangle {
                 id: scrim
 
