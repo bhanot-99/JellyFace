@@ -129,9 +129,16 @@ jellyface theme match            # show the 5 best palettes for the current wall
 jellyface theme match photo.jpg  # ...or for any image
 jellyface theme apply            # apply the best match now
 jellyface theme apply 37         # force a palette (by number or name); turns automatic theming off
+jellyface theme apply grey       # the original grey scheme, applied exactly as shipped (palette 000)
+jellyface theme tint [0-6]       # how strongly palette colours show (default 3; 1 = palette exactly as written)
+jellyface theme soft [0-2]       # background lightness (default 0.7; 0 = near-black, 2 = much lighter)
 jellyface theme auto on|off      # follow the wallpaper (on) or keep the current palette (off)
 jellyface theme list | status
 ```
+
+The palettes in the pack are near-greys with only a faint tint, so by default their colour is strengthened (`tint`) and
+their backgrounds are lifted from near-black to a softer tinted mid-dark (`soft`), for every pack palette. The built-in
+**Original Grey** (palette 000, from `config/scheme.json`) is the one exception: it is never tinted or softened.
 
 To add palettes, drop another `.txt` file with the same layout into `Color_Palette/`. Needs `python3-gi`
 (preinstalled on Pop!_OS). With a wallpaper folder (slideshow), COSMIC does not say which image is showing, so the

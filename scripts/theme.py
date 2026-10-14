@@ -7,6 +7,8 @@ Color_Palette/*.txt, and writes it as the shell's colour scheme (scheme.json). T
   theme.py apply [PALETTE]     apply the best match for the current wallpaper (or force palette number/name)
   theme.py match [IMAGE]       show the best matches for the wallpaper (or IMAGE) without applying anything
   theme.py list                list all palettes
+  theme.py tint [0-6]          how strongly palette colours show (default 3; 1 = palette exactly as written)
+  theme.py soft [0-1]          background lightness 0-2 (default 0.7; 0 = near-black backgrounds)
   theme.py auto on|off         follow the wallpaper automatically (on) or keep the current palette (off)
   theme.py watch               apply automatically whenever the wallpaper changes (used by `jellyface start`)
   theme.py status              what is applied and why
@@ -31,6 +33,8 @@ SCHEME = os.path.join(STATE_HOME, "caelestia", "scheme.json")
 STATE = os.path.join(STATE_HOME, "jellyface", "theme.json")
 IMAGE_EXT = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".tif", ".tiff")
 
+DEFAULT_SOFT = 0.7  # 0 = backgrounds as dark as the palette's Deepest swatch, 1 = one full tonal step lighter, up to 2
+DEFAULT_TINT = 3.0  # palettes in the pack are near-greys (chroma 0.5-7); this makes their hue visible
 SWATCHES = ["Deepest", "Dark Base", "Mid Tone", "Surface", "Highlight"]
 
 
@@ -62,6 +66,31 @@ def rgb_to_lab(c):
     return (116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz))
 
 
+def lab_to_rgb(lab):
+    L, a, b = lab
+    fy = (L + 16) / 116
+    fx, fz = fy + a / 500, fy - b / 200
+
+    def finv(t):
+        return t ** 3 if t ** 3 > 0.008856 else (t - 16 / 116) / 7.787
+
+    x, y, z = finv(fx) * 0.95047, finv(fy), finv(fz) * 1.08883
+    lin = (3.2404542 * x - 1.5371385 * y - 0.4985314 * z, -0.9692660 * x + 1.8760108 * y + 0.0415560 * z,
+           0.0556434 * x - 0.2040259 * y + 1.0572252 * z)
+
+    def gamma(v):
+        v = max(0.0, min(1.0, v))
+        return 255 * (12.92 * v if v <= 0.0031308 else 1.055 * v ** (1 / 2.4) - 0.055)
+
+    return tuple(gamma(v) for v in lin)
+
+
+def boost(rgb, k):
+    """Scale the colour strength (chroma) by k, keeping hue and lightness."""
+    L, a, b = rgb_to_lab(rgb)
+    return lab_to_rgb((L, a * k, b * k))
+
+
 def luminance(c):
     r, g, b = (_lin(v) for v in c)
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
@@ -78,13 +107,14 @@ def mix(a, b, t):
 
 
 def ensure_contrast(fg, bg, ratio):
-    """Lighten (on a dark background) or darken fg, keeping its hue, until it reaches the contrast ratio."""
-    target = (255, 255, 255) if luminance(bg) < 0.5 else (0, 0, 0)
-    for step in range(0, 101):
-        c = mix(fg, target, step / 100.0)
+    """Make fg lighter (on a dark background) until it reaches the contrast ratio, keeping its hue and colour strength
+    as far as the sRGB gamut allows."""
+    L, a, b = rgb_to_lab(fg)
+    for lightness in range(int(L), 101):
+        c = lab_to_rgb((lightness, a, b))
         if contrast(c, bg) >= ratio:
             return c
-    return target
+    return (255, 255, 255)
 
 
 # ----------------------------------------------------------------------------- palettes
@@ -109,7 +139,20 @@ def load_palettes():
             p["rgb"] = [p["sw"][k] for k in SWATCHES]
             p["lab"] = [rgb_to_lab(c) for c in p["rgb"]]
             good.append(p)
+    try:
+        good.insert(0, original_grey())
+    except (OSError, ValueError, KeyError):
+        pass
     return good
+
+
+def original_grey():
+    """The grey scheme JellyFace shipped with (config/scheme.json). Applied exactly: no tint, no softness."""
+    path = os.path.join(ROOT, "config", "scheme.json")
+    c = json.load(open(path))["colours"]
+    rgb = [hex_to_rgb(c[k]) for k in ("background", "surfaceContainerHigh", "surfaceContainerHighest", "outline", "primary")]
+    return {"num": 0, "name": "Original Grey", "family": "Original", "rgb": rgb, "lab": [rgb_to_lab(x) for x in rgb],
+            "exact": path, "pack": "built-in"}
 
 
 # ----------------------------------------------------------------------------- wallpaper
@@ -173,8 +216,21 @@ def best_matches(ramp, palettes, top=5):
 
 
 # ----------------------------------------------------------------------------- scheme
-def build_scheme(p):
-    d, b, m, s, h = p["rgb"]  # deepest, dark base, mid tone, surface, highlight
+def build_scheme(p, tint=DEFAULT_TINT, soft=DEFAULT_SOFT):
+    if p.get("exact"):  # the original grey is applied exactly as written
+        scheme = json.load(open(p["exact"]))
+        scheme["name"] = p["name"]
+        return scheme
+    sw = [boost(c, tint) for c in p["rgb"]]
+    # soften: slide every swatch part of the way to the next lighter one (Highlight stays), so the background is a
+    # tinted mid-dark instead of near-black
+    def along(t):  # the colour t steps along the palette's ladder (Deepest=0 ... Highlight=4)
+        t = min(t, 4.0)
+        lo = int(t)
+        return mix(sw[lo], sw[min(lo + 1, 4)], t - lo)
+
+    sw = [along(i + soft) for i in range(5)]
+    d, b, m, s, h = sw  # background, panel, border, secondary text, highlight
     text = ensure_contrast(h, d, 7.0)
     text_dim = ensure_contrast(s, d, 4.5)
     accent2 = ensure_contrast(mix(s, h, 0.5), d, 5.5)
@@ -241,8 +297,10 @@ def wallpaper_ramp(image=None):
 
 
 def find_palette(palettes, key):
+    if str(key).lower() in ("0", "000", "grey", "gray", "original", "original grey"):
+        key = "0"
     for p in palettes:
-        if str(p["num"]) == str(key).lstrip("0") or str(p["num"]).zfill(3) == str(key) or p["name"].lower() == str(key).lower():
+        if str(p["num"]) == (str(key).lstrip("0") or "0") or str(p["num"]).zfill(3) == str(key) or p["name"].lower() == str(key).lower():
             return p
     raise SystemExit(f"no palette '{key}' (see: theme.py list)")
 
@@ -258,9 +316,11 @@ def cmd_match(image=None):
 
 
 def apply_palette(p, source, reason):
-    write_scheme(build_scheme(p))
+    tint, soft = read_state().get("tint", DEFAULT_TINT), read_state().get("soft", DEFAULT_SOFT)
+    write_scheme(build_scheme(p, tint, soft))
     write_state(palette=p["num"], name=p["name"], family=p["family"], source=source, reason=reason, applied=time.strftime("%F %T"))
-    print(f"applied [{p['num']:03d}] {p['name']} ({p['family']}) -- {reason}")
+    extra = "exact (tint and softness do not apply)" if p.get("exact") else f"tint {tint:g}, softness {soft:g}"
+    print(f"applied [{p['num']:03d}] {p['name']} ({p['family']}), {extra} -- {reason}")
 
 
 def cmd_apply(key=None):
@@ -274,6 +334,31 @@ def cmd_apply(key=None):
     ramp, src = wallpaper_ramp()
     sc, p = best_matches(ramp, palettes, 1)[0]
     apply_palette(p, src, f"best match for {os.path.basename(str(src))} (score {sc:.1f})")
+
+
+def set_param(key, val, lo, hi, default, doc):
+    st = read_state()
+    if val is None:
+        print(f"{key}: {st.get(key, default):g}  ({doc})")
+        return
+    try:
+        k = float(val)
+    except ValueError:
+        raise SystemExit(f"usage: theme.py {key} [{lo:g}-{hi:g}]")
+    if not lo <= k <= hi:
+        raise SystemExit(f"{key} must be between {lo:g} and {hi:g}")
+    write_state(**{key: k})
+    st = read_state()
+    if st.get("palette"):
+        apply_palette(find_palette(load_palettes(), st["palette"]), st.get("source", ""), st.get("reason", ""))
+
+
+def cmd_tint(val=None):
+    set_param("tint", val, 0, 6, DEFAULT_TINT, "how strongly the palette's colour shows: 0 greyscale, 1 as written, 3 default")
+
+
+def cmd_soft(val=None):
+    set_param("soft", val, 0, 2, DEFAULT_SOFT, "background lightness: 0 near-black, 1 one tonal step lighter, 2 two steps")
 
 
 def cmd_list():
@@ -332,7 +417,7 @@ def main(argv):
         print(__doc__)
         return 0
     cmd, args = argv[0], argv[1:]
-    {"apply": cmd_apply, "match": cmd_match, "list": cmd_list, "auto": cmd_auto, "watch": cmd_watch, "status": cmd_status}.get(
+    {"apply": cmd_apply, "tint": cmd_tint, "soft": cmd_soft, "match": cmd_match, "list": cmd_list, "auto": cmd_auto, "watch": cmd_watch, "status": cmd_status}.get(
         cmd, lambda *a: sys.exit(f"unknown command '{cmd}' (try --help)"))(*args)
     return 0
 
