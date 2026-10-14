@@ -53,7 +53,7 @@ Exec=env JELLYFACE_ROOT=$JF_ROOT $BIN
 Terminal=false
 Categories=COSMIC;
 Keywords=COSMIC;Applet;JellyFace;
-Icon=$JF_ROOT/assets/ghost.svg
+Icon=$JF_ROOT/assets/jellyface-app.svg
 StartupNotify=true
 NoDisplay=true
 X-CosmicApplet=true

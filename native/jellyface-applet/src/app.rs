@@ -1,4 +1,4 @@
-//! JellyFace as a native COSMIC panel applet: one ghost button, one popup menu.
+//! JellyFace as a native COSMIC panel applet: one logo button, one popup menu.
 //! It does not re-implement anything; it calls the `jellyface` command line, so the shell, the applet and the
 //! terminal always agree.
 use cosmic::app::{Core, Task};
@@ -11,7 +11,8 @@ use cosmic::Element;
 use std::{path::PathBuf, process::Command, time::Duration};
 
 const APP_ID: &str = "com.jellyface.Applet";
-const GHOST: &[u8] = include_bytes!("../../../assets/ghost.svg");
+// the one-colour mark: COSMIC tints it like its other panel icons (face bright, hair dimmer, eyes cut out)
+const LOGO: &[u8] = include_bytes!("../../../assets/jellyface-symbolic.svg");
 
 /// Where JellyFace lives: $JELLYFACE_ROOT, or ~/JellyFace.
 fn root() -> PathBuf {
@@ -143,7 +144,7 @@ impl cosmic::Application for App {
         let button = self
             .core
             .applet
-            .icon_button_from_handle(icon::from_svg_bytes(GHOST).symbolic(true))
+            .icon_button_from_handle(icon::from_svg_bytes(LOGO).symbolic(true))
             .on_press_with_rectangle(move |offset, bounds| {
                 if let Some(id) = have_popup {
                     Message::Surface(destroy_popup(id))

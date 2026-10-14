@@ -3,7 +3,7 @@
 //     "fullscreen":false,"maximized":false,"minimized":false,"workspace_active":true}, ...]}
 // "active" is the id of the focused window on the workspace you are looking at (0 = none); "fullscreen" is true when a
 // window on that workspace is fullscreen. Windows on other workspaces never count.
-// Read-only except for one command: "activate <id>" on stdin focuses that window. Exits when its parent goes away or the compositor connection breaks.
+// Read-only except for two commands on stdin: "activate <id>" focuses a window, "close <id>" asks it to close. Exits when its parent goes away or the compositor connection breaks.
 #include <errno.h>
 #include <poll.h>
 #include <signal.h>
@@ -235,13 +235,19 @@ static void reg(void *d, struct wl_registry *r, uint32_t name, const char *iface
 static void reg_rm(void *d, struct wl_registry *r, uint32_t name) {}
 static const struct wl_registry_listener reg_listener = { .global = reg, .global_remove = reg_rm };
 
-// "activate <id>" on stdin: focus that window (switching to its workspace if needed). Everything else stays read-only.
+// Commands on stdin: "activate <id>" focuses that window (switching to its workspace if needed); "close <id>" asks
+// it to close (the app decides, exactly like its own close button: unsaved work prompts as usual).
 static void handle_command(char *line) {
-    int id;
-    if (sscanf(line, "activate %d", &id) != 1 || !mgmt || !seat) return;
+    int id, close = 0;
+    if (sscanf(line, "activate %d", &id) != 1) {
+        if (sscanf(line, "close %d", &id) != 1) return;
+        close = 1;
+    }
+    if (!mgmt || (!close && !seat)) return;
     for (int i = 0; i < nwins; i++)
         if (wins[i]->id == id && wins[i]->cosmic) {
-            zcosmic_toplevel_manager_v1_activate(mgmt, wins[i]->cosmic, seat);
+            if (close) zcosmic_toplevel_manager_v1_close(mgmt, wins[i]->cosmic);
+            else zcosmic_toplevel_manager_v1_activate(mgmt, wins[i]->cosmic, seat);
             wl_display_flush(dpy);
             return;
         }

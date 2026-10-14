@@ -244,7 +244,7 @@ CustomMouseArea {
                 screenState.sidebar = false;
         }
 
-        // The launcher is opened by hovering (or clicking) the ghost button in the bar, see OsIcon. Close it again once
+        // The launcher is opened by hovering (or clicking) the JellyFace logo in the bar, see OsIcon. Close it again once
         // the cursor has really left it: the test uses the panel's final (not animated) size plus a margin and waits a
         // moment, so the slide-in animation or a small mouse movement can never close it and re-open it (flicker).
         if (Config.launcher.showOnHover && screenState.launcher && !pressed && x >= bar.implicitWidth) {

@@ -28,7 +28,7 @@ Item {
 
     ColouredIcon {
         anchors.centerIn: parent
-        source: `file://${Quickshell.shellPath("../assets/ghost.svg")}`
+        source: `file://${Quickshell.shellPath("../assets/jellyface-symbolic.svg")}`
         implicitSize: Math.round(Tokens.font.body.large.pointSize * 1.6)
         colour: Colours.palette.m3primary
     }

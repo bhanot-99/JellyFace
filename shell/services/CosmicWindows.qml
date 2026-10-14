@@ -18,6 +18,11 @@ Singleton {
         proc.write(`activate ${id}\n`);
     }
 
+    // asks the window to close, like its own close button (the app may still ask about unsaved work)
+    function close(id: int): void {
+        proc.write(`close ${id}\n`);
+    }
+
     Process {
         id: proc
 

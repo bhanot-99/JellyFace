@@ -1,6 +1,8 @@
+<p align="center"><img src="assets/jellyface-app.svg" width="128" alt="JellyFace logo"></p>
+
 # JellyFace
 
-A desktop shell for **COSMIC on Pop!_OS**: a slim left bar with a ghost logo, real workspace switcher and the focused
+A desktop shell for **COSMIC on Pop!_OS**: a slim left bar with the JellyFace logo, real workspace switcher and the focused
 app's name; a slide-down dashboard (weather, media, performance); an app launcher; a lock screen; and colours that follow
 your wallpaper, from a pack of 100 palettes, across the shell **and** COSMIC's own apps.
 
@@ -67,7 +69,7 @@ jellyface integrate               # shows a plan and asks, then wires it into th
 | **Starts with the session** | A systemd *user* service (`jellyface service on\|off\|status`) tied to COSMIC's graphical session. It restarts on failure and gives up after 5 failures in 5 minutes instead of looping. |
 | **Real window information** | `helpers/cosmic-windows` reads COSMIC's window list and states through its own protocol. The bar shows the focused app's name and icon, and hides for a fullscreen window **on the workspace you are looking at** (a fullscreen video on another workspace does not hide it). |
 | **COSMIC's own apps follow the palette** | `jellyface theme system on\|off`. The wallpaper palette is also written into COSMIC's theme, so Files, Terminal and Settings match. Windows that are already open pick it up the next time they start. Only keys your COSMIC already uses are written. |
-| **A native COSMIC applet** | `jellyface applet install`, then `applet panel-add`, puts a ghost button in COSMIC's *own* panel (Rust + COSMIC's toolkit). Its menu opens the launcher, dashboard and notifications, locks the screen, shows the current theme and toggles wallpaper-following and COSMIC theming. COSMIC's panel auto-hides; move the cursor to the top edge to see it. |
+| **A native COSMIC applet** | `jellyface applet install`, then `applet panel-add`, puts a JellyFace button in COSMIC's *own* panel (Rust + COSMIC's toolkit). Its menu opens the launcher, dashboard and notifications, locks the screen, shows the current theme and toggles wallpaper-following and COSMIC theming. COSMIC's panel auto-hides; move the cursor to the top edge to see it. |
 | **Panel and shortcuts** | `jellyface cosmic-tweaks` makes COSMIC's top panel auto-hide (so it doesn't cover JellyFace's drop-downs) and adds **Super+L** (JellyFace's lock screen), **Super+V** (clipboard history) and **Super+Shift+F** (focus mode) as COSMIC custom shortcuts. Shortcuts you already have are kept; a key you already use is left alone. |
 
 **Safety.** Every file changed outside `~/JellyFace` is recorded together with a copy of the original in `backups/`.
@@ -78,7 +80,7 @@ touched and no `sudo` is used on the host. Backups are never deleted automatical
 
 | Do this | To get this |
 |---|---|
-| Click the **ghost** in the bar, or move the cursor to the **bottom edge** | Open the app launcher (type to search, Enter to launch) |
+| Click the **JellyFace logo** in the bar, or move the cursor to the **bottom edge** | Open the app launcher (type to search, Enter to launch) |
 | Move the cursor to the **top edge** | Slide down the dashboard (Dashboard, Media, Performance, Weather) |
 | Click a **number** in the workspace pill | Switch to that COSMIC workspace |
 | Click the **clock, Wi-Fi, Bluetooth, sound** icons, or hover the app label | Open their pop-outs |
@@ -248,7 +250,7 @@ JellyFace gets less information from COSMIC than Jellyface gets from Hyprland.
   Start with `JF_DEV=1 jellyface start` while you work on `shell/`.
 - **Nothing is visible.** If a window on the current workspace is fullscreen (a video, for example), JellyFace hides on
   purpose; switch workspace or leave fullscreen. Otherwise run `jellyface status`, then `jellyface restart`.
-- **The ghost applet is not visible.** COSMIC's panel auto-hides: move the cursor to the top edge. Add it with
+- **The panel applet is not visible.** COSMIC's panel auto-hides: move the cursor to the top edge. Add it with
   `jellyface applet panel-add`.
 - **Screen turned grey and needed a hard restart.** Seen once during development, right after an NVIDIA driver update
   that had not been rebooted into. If `nvidia-smi` prints "API mismatch", reboot first. Try new builds with

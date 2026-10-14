@@ -15,7 +15,7 @@ JellyFace/
 │                            cosmic-toplevel-info, ext-workspace)      -> JSON lines
 ├── tools/cosmic-theme/      Rust: writes the palette into COSMIC's own theme (built against COSMIC's theme library)
 ├── native/jellyface-applet/ Rust + libcosmic: the JellyFace menu as a native COSMIC panel applet
-├── assets/                  ghost logo
+├── assets/                  JellyFace logo: jellyface.svg (colour), -symbolic.svg (one colour, tinted), -app.svg (icon)
 ├── config/                  default shell.json, shell-tokens.json, scheme.json (the Original Grey palette), PAM
 │                            template, icon aliases, COSMIC shortcut template
 ├── Color_Palette/           palette packs (*.txt) that wallpaper theming chooses from
@@ -41,7 +41,7 @@ COSMIC session (Pop!_OS host)
    │                                                        └─ helpers/cosmic-windows/wind focused window, fullscreen
    │
    ├── scripts/theme.py watch ──► scheme.json (live shell colours) ──► tools/cosmic-theme ──► COSMIC's own theme
-   └── COSMIC panel ──► native/jellyface-applet (ghost button + menu, calls `jellyface`)
+   └── COSMIC panel ──► native/jellyface-applet (logo button + menu, calls `jellyface`)
 ```
 
 The shell runs in an Arch container because Quickshell, the Qt 6 build and Jellyface's plugins are packaged for Arch.
@@ -63,7 +63,7 @@ recorder) are handed to the host with `distrobox-host-exec`.
 | `assets/pam.d/passwd` (generated from `config/pam-passwd.tmpl`), `scripts/pam-host-check.sh` | The lock screen used `pam_unix` inside the container, whose account has an empty password, so any input unlocked it. It now checks the password on the host and fails closed. |
 | `services/Colours.qml`, `scripts/theme.py` | Jellyface derives colours from the wallpaper with its own CLI (not installed here). `theme.py` replaces it: it matches the COSMIC wallpaper to a palette from `Color_Palette/` and writes `scheme.json`, which the shell reloads live (the shell logs each load). |
 | `Shortcuts.qml` | New IPC function `drawers dashboardTab <n>`. |
-| `OsIcon.qml` | Ghost logo instead of the distro logo. |
+| `OsIcon.qml` | JellyFace logo instead of the distro logo. |
 | `WeatherTab.qml` | Re-laid out as a wide two-column tab so it has the same height as the Media tab. |
 
 Configuration-only changes (no code) live in `config/`: greyscale fallback scheme, square border corners, Jellyface's
@@ -100,13 +100,13 @@ one in `git log`).
 
 ## Dock (shell/modules/dock)
 
-A ghost badge at the bottom centre of the desktop, on the Bottom layer (every window covers it), that opens a single row of apps
+A JellyFace-logo badge at the bottom centre of the desktop, on the Bottom layer (every window covers it), that opens a single row of apps
 on hover. Apps are listed in `~/.config/jellyface/dock.json` (default: `config/dock.json`): `id` is a desktop-file id;
 Brave web apps use `name`, `command`, `icon` (relative to the project) and `match` (a substring of the window class).
 A dot under a tile means the app has a window; a wide pill means it is focused. Clicking a running app focuses its
 window (again: the next one) through `wind`'s `activate <id>` command; otherwise it is launched on the host.
 
-The launcher (app drawer) slides out of the bar at the left-centre of the screen. Hover (or click) the ghost button in the
+The launcher (app drawer) slides out of the bar at the left-centre of the screen. Hover (or click) the JellyFace logo in the
 bar to open it; it closes when the cursor leaves it. Its search box is at the top and keeps its place while the list
 changes. Edits: `drawers/Panels.qml`, `drawers/Regions.qml`, `drawers/ContentWindow.qml`, `drawers/Interactions.qml`,
 `launcher/Wrapper.qml`, `launcher/Content.qml`, `bar/components/OsIcon.qml`.
