@@ -21,17 +21,26 @@ case "${1:-status}" in
         [ -f "$scheme" ] || die "no scheme at $scheme"
         tmp="$(mktemp -d)"; trap 'rm -rf -- "$tmp"' EXIT
         XDG_CONFIG_HOME="$tmp" "$TOOL" "$scheme" >/dev/null || die "theme tool failed"
+        # COSMIC keeps one theme folder per config format version (v1, v2, ...) and its apps watch the newest one
+        # (they were watching v2 while we only wrote v1, so nothing changed after a wallpaper switch). Write every
+        # version the installed COSMIC ships, and only the keys it already knows.
+        wrote=0
         for d in "${DIRS[@]}"; do
-            [ -d "$tmp/cosmic/$d/v1" ] || die "tool wrote no $d/v1 (COSMIC format mismatch?); nothing changed"
-        done
-        for d in "${DIRS[@]}"; do
-            sys_track "$COSMIC_CFG/$d"
-            mkdir -p "$COSMIC_CFG/$d/v1"
-            for f in "$tmp/cosmic/$d/v1/"*; do
-                k="$(basename "$f")"
-                [ -e "$SYS/$d/v1/$k" ] && cp "$f" "$COSMIC_CFG/$d/v1/$k"   # only keys your COSMIC already knows
+            for vdir in "$SYS/$d"/v*; do
+                [ -d "$vdir" ] || continue
+                v="$(basename "$vdir")"
+                [ -d "$tmp/cosmic/$d/$v" ] || { warn "tool wrote no $d/$v (COSMIC format changed?); skipped"; continue; }
+                sys_track "$COSMIC_CFG/$d"
+                mkdir -p "$COSMIC_CFG/$d/$v"
+                for f in "$tmp/cosmic/$d/$v/"*; do
+                    k="$(basename "$f")"
+                    [ -e "$vdir/$k" ] || continue
+                    cmp -s "$f" "$COSMIC_CFG/$d/$v/$k" || cp "$f" "$COSMIC_CFG/$d/$v/$k"
+                    wrote=1
+                done
             done
         done
+        [ "$wrote" = 1 ] || die "nothing written; COSMIC theme format not recognised"
         log "COSMIC theme updated from $(basename "$(dirname "$scheme")")/$(basename "$scheme")"
         ;;
     reset)
