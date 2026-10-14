@@ -1,0 +1,22 @@
+[package]
+name = "jellyface-applet"
+version = "0.1.0"
+edition = "2021"
+description = "JellyFace menu as a native COSMIC panel applet"
+
+[dependencies]
+serde_json = "1"
+
+[dependencies.libcosmic]
+# same library (and commit) as tools/cosmic-theme: the one that matches the installed COSMIC's config format
+git = "https://github.com/pop-os/libcosmic"
+rev = "adb3e34"
+default-features = false
+features = ["applet"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
+
+

@@ -14,6 +14,11 @@ if [ "${JF_SKIP_RUST:-0}" != 1 ]; then
     "$JF_ROOT/tools/cosmic-theme/build.sh" || warn "theme tool not built; COSMIC's own theme will not follow the palette"
 fi
 
+if [ "${JF_SKIP_RUST:-0}" != 1 ]; then
+    log "building the native COSMIC applet"
+    "$JF_ROOT/native/build.sh" || warn "applet not built (the shell itself is unaffected)"
+fi
+
 log "building shell plugin (container: $JF_CONTAINER) -- this takes a few minutes"
 container_exists || die "container '$JF_CONTAINER' does not exist. Run: jellyface install"
 rev="$(git -C "$JF_SHELL" rev-parse HEAD 2>/dev/null || echo unknown)"

@@ -68,6 +68,30 @@ To start JellyFace at every login:
 jellyface autostart on             # undo with:  jellyface autostart off
 ```
 
+## Making it part of your COSMIC session
+
+JellyFace runs as a layer on top of COSMIC, so `jellyface integrate` wires it into the session properly. It shows
+the plan, asks first, and changes only things in your own account:
+
+```bash
+jellyface integrate           # service + panel/lock + native applet + COSMIC theming, after a confirmation
+jellyface revert-system       # undo everything it changed (restores your original COSMIC settings)
+jellyface revert-system --list
+```
+
+| What | How |
+|---|---|
+| **Starts with the session** | A systemd *user* service (`jellyface service on|off|status`) tied to COSMIC's graphical session. It restarts on failure and stops after 5 failures in 5 minutes instead of looping. |
+| **Real window information** | `helpers/cosmic-windows` reads COSMIC's window list through its own protocol. The bar's label and icon show the focused app, and the bar hides for fullscreen windows. |
+| **COSMIC's apps follow the palette** | `jellyface theme system on|off`. The wallpaper palette is also written into COSMIC's own theme, so Files, Terminal and Settings match (windows that are already open pick it up the next time they start). Only keys your COSMIC already uses are written. |
+| **One lock, one idle policy** | `Super+L` runs COSMIC's own lock (`loginctl lock-session`), and JellyFace's own idle timers are off, so COSMIC Settings (Power) is the only place that decides. `jellyface lock` still opens JellyFace's own lock screen if you want it. |
+| **A native COSMIC applet** | `jellyface applet install` then `jellyface applet panel-add` puts a ghost button in COSMIC's *own* panel (written in Rust with COSMIC's toolkit). Its menu opens the launcher, dashboard and notifications, locks the screen, shows the current theme and switches wallpaper-following and COSMIC theming on or off. `jellyface applet panel-remove` takes it out again. |
+
+Safety: every file changed outside `~/JellyFace` is recorded with a copy of the original in `backups/`, nothing under
+`/usr` or `/etc` is touched, and no `sudo` is used. The Rust toolchain used for the theme tool and the applet is
+installed **inside the project** (`.rust/`, about 600 MB, safe to delete) and the build uses small project-local
+stand-ins instead of installing system development packages.
+
 ## Using it
 
 | Do this | To get this |
@@ -190,10 +214,10 @@ a cold container (as after a reboot), 125 drawer toggles with a scan for QML run
 
 JellyFace gets less information from COSMIC than Caelestia gets from Hyprland. Some features can't work yet:
 
-- **Fullscreen detection.** COSMIC doesn't expose window state to Quickshell, so the bar does not hide by
-  itself for fullscreen windows. A **maximized** window fits inside the bar; true fullscreen (F11) is up to
-  COSMIC. A helper reading `zcosmic_toplevel_info_v1` could fix this.
-- **Active-window label.** The bar's window title always reads "Desktop", and its hover pop-out is off.
+- **Window thumbnails and window actions** (the live preview in the active-window pop-out, "detach") need a Hyprland-only
+  capture feature and are not available.
+- **COSMIC's window outline** (the accent-coloured frame) is drawn by the compositor, which seems to read its colour at
+  login: log out and in once after the first `jellyface theme system on`.
 - **Workspace pill** shows numbers only, with no per-workspace app icons.
 - **Global shortcuts.** Caelestia's built-in hotkeys need Hyprland; use COSMIC custom shortcuts and
   `jellyface ipc` instead.
