@@ -81,6 +81,7 @@ cmd_doctor() {
     chk "COSMIC session"          '[ "${XDG_CURRENT_DESKTOP:-}" = "COSMIC" ]' "run this from a COSMIC desktop session"
     chk "distrobox installed"     'command -v distrobox' "sudo apt install distrobox podman"
     chk "container '$JF_CONTAINER'" container_exists "run: jellyface install"
+    chk "wallpaper theming (python3-gi + palette pack)" 'python3 -I -c "import gi; gi.require_version(\"GdkPixbuf\",\"2.0\")" && [ "$(python3 -I "$JF_ROOT/scripts/theme.py" list | wc -l)" -gt 0 ]' "sudo apt install python3-gi gir1.2-gdkpixbuf-2.0; put a palette pack in Color_Palette/"
     chk "workspace helper built"  '[ -x "$JF_ROOT/helpers/cosmic-ws/wsd" ]' "run: jellyface build"
     chk "shell plugin built"      '[ -d "$JF_INSTALL/qml" ]' "run: jellyface build"
     chk "workspace protocol"      ws_protocol_ok "compositor lacks ext-workspace-v1?"
@@ -105,6 +106,7 @@ JellyFace -- a Caelestia-based shell for COSMIC (Pop!_OS)
   jellyface stop | restart | status
   jellyface ipc <target> <fn> [args]   e.g.  jellyface ipc drawers toggle launcher
   jellyface autostart on|off      start JellyFace at login
+  jellyface theme apply|match|list|auto|status   wallpaper-driven colour themes (see: jellyface theme --help)
   jellyface fix-icons             create icon aliases from config/icon-aliases.txt (e.g. Flatpak VLC tray icon)
   jellyface cosmic-tweaks [--revert]   auto-hide COSMIC's own top panel (backs it up first)
   jellyface doctor                check that everything is in place
@@ -120,6 +122,7 @@ case "${1:-help}" in
     status)        cmd_status ;;
     ipc)           shift; cmd_ipc "$@" ;;
     autostart)     shift; cmd_autostart "$@" ;;
+    theme)         shift; exec python3 -I "$JF_ROOT/scripts/theme.py" "$@" ;;
     fix-icons)     shift; exec "$JF_ROOT/scripts/fix-icons.sh" "$@" ;;
     cosmic-tweaks) shift; exec "$JF_ROOT/scripts/cosmic-tweaks.sh" "$@" ;;
     doctor)        cmd_doctor ;;

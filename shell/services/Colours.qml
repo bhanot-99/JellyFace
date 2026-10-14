@@ -62,6 +62,7 @@ Singleton {
     function load(data: string, isPreview: bool): void {
         const colours = isPreview ? preview : current;
         const scheme = JSON.parse(data);
+        console.log(`Colours: scheme "${scheme.name}" loaded${isPreview ? " (preview)" : ""}`);
 
         if (!isPreview) {
             root.scheme = scheme.name;

@@ -47,6 +47,7 @@ packaged for Arch; the container shares the Wayland socket, so its windows appea
 | `Interactions.qml` (launcher hover) | The launcher opens on hover at the bottom edge and closes when the cursor leaves. |
 | `launcher/services/Apps.qml` | The launcher started apps inside the Arch container, where none of your desktop's apps exist; it now asks the host (`distrobox-host-exec gtk-launch <desktop id>`). |
 | `assets/pam.d/passwd` (generated from `config/pam-passwd.tmpl`), `scripts/pam-host-check.sh` | The lock screen used `pam_unix` inside the container, whose account has an empty password, so any input unlocked it. It now checks the password on the host and fails closed. |
+| `services/Colours.qml`, `scripts/theme.py` | Caelestia derives colours from the wallpaper with its own CLI (not installed here); `theme.py` replaces it: it matches the COSMIC wallpaper to a palette from `Color_Palette/` and writes `scheme.json`, which the shell reloads live. |
 | `OsIcon.qml` | Ghost logo instead of the distro logo. |
 | `WeatherTab.qml` | Hard-coded 840px minimum width lowered to 640px so the dashboard can be smaller. |
 

@@ -101,7 +101,7 @@ Edit these files, and the shell reloads them (restart it if a change doesn't sho
 |---|---|
 | `~/.config/caelestia/shell.json` | Behaviour: border rounding, weather location and unit, which bar entries and pop-outs are on |
 | `~/.config/caelestia/shell-tokens.json` | Sizes: the dashboard and its cards, and other component dimensions |
-| `~/.local/state/caelestia/scheme.json` | Colours (a 5-grey palette mapped onto the Material You colour roles) |
+| `~/.local/state/caelestia/scheme.json` | Colours. Written automatically from your wallpaper (see above); edit by hand only with `jellyface theme auto off` |
 
 Defaults live in `config/`. Examples:
 
@@ -111,6 +111,31 @@ Defaults live in `config/`. Examples:
 ```
 
 The wallpaper feature of Caelestia is switched off on purpose: JellyFace leaves your COSMIC wallpaper alone.
+
+## Wallpaper-driven colour themes
+
+The whole shell (bar, drawers, lock screen) takes its colours from a palette chosen to match your wallpaper.
+Palettes come from the packs in `Color_Palette/*.txt` (100 sets of 5 swatches: Deepest, Dark Base, Mid Tone,
+Surface, Highlight). When you change the wallpaper in COSMIC Settings, the new palette is applied within a few
+seconds, with no restart.
+
+How a palette is chosen: the wallpaper is reduced to a 5-step tonal ramp (darkest to lightest 20% of its pixels,
+in CIELAB colour). Each palette's 5 swatches are compared with it step by step on hue and colour strength, plus a small
+overall-brightness term, and the closest palette wins. Text colours are lightened if needed to keep strong contrast
+(at least 7:1 for main text) on the palette's background.
+
+```bash
+jellyface theme match            # show the 5 best palettes for the current wallpaper (changes nothing)
+jellyface theme match photo.jpg  # ...or for any image
+jellyface theme apply            # apply the best match now
+jellyface theme apply 37         # force a palette (by number or name); turns automatic theming off
+jellyface theme auto on|off      # follow the wallpaper (on) or keep the current palette (off)
+jellyface theme list | status
+```
+
+To add palettes, drop another `.txt` file with the same layout into `Color_Palette/`. Needs `python3-gi`
+(preinstalled on Pop!_OS). With a wallpaper folder (slideshow), COSMIC does not say which image is showing, so the
+first image of the folder is used.
 
 ## Lock screen
 

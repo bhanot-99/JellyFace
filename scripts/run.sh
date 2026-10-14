@@ -57,6 +57,11 @@ done
 ICON_THEME="$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'")"
 ICON_THEME="${ICON_THEME:-Cosmic}"
 
+# Wallpaper-driven theme: re-applies the best matching palette whenever the COSMIC wallpaper changes
+# (stops with the supervisor; `jellyface theme auto off` keeps one palette). fd 9 is closed so it can never hold the lock.
+mkdir -p "$JF_ROOT/logs"
+python3 -I "$JF_ROOT/scripts/theme.py" watch >>"$JF_ROOT/logs/theme.log" 2>&1 9>&- &
+
 # --- supervise ---------------------------------------------------------------
 end=$((SECONDS + T))
 fast_fails=0
