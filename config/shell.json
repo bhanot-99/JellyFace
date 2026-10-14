@@ -58,5 +58,15 @@
     },
     "launcher": {
         "showOnHover": true
+    },
+    "general": {
+        "idle": {
+            "timeouts": [
+                {
+                    "timeout": 180,
+                    "idleAction": "lock"
+                }
+            ]
+        }
     }
 }

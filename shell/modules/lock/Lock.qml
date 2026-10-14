@@ -20,6 +20,32 @@ Scope {
         }
     }
 
+    // While locked, keep a flag file for the supervisor (scripts/lib.sh lock_handover): if this shell ever dies while
+    // holding the session lock, COSMIC's own lock screen takes over instead of leaving a locked screen with no way in.
+    // The state is read a moment after the change: Quickshell announces an unlock before `locked` reads false.
+    Connections {
+        function onLockedChanged(): void {
+            flagSync.restart();
+        }
+
+        function onSecureChanged(): void {
+            flagSync.restart();
+        }
+
+        target: lock
+    }
+
+    Timer {
+        id: flagSync
+
+        interval: 100
+        running: true // once at start: a fresh shell is not locked, so a flag left by an earlier one is cleared
+        onTriggered: {
+            const flag = `${Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"}/jellyface-locked`;
+            Quickshell.execDetached(lock.locked ? ["touch", flag] : ["rm", "-f", flag]);
+        }
+    }
+
     Pam {
         id: pam
 

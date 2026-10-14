@@ -15,15 +15,22 @@ flock -n 9 || { log "already running"; exit 0; }
 echo $$ > "$PIDFILE"
 
 child=0 guard=0
-TOOK="$RUNTIME/jellyface.took-notifications"; rm -f "$TOOK"
+# set while COSMIC's notification daemon has been displaced; kept across a restart, so the final stop still hands back
+TOOK="$RUNTIME/jellyface.took-notifications"
+RESTARTING="$RUNTIME/jellyface.restarting"
 cleanup() {   # stop our own children and the shell, never anything else
     rm -f "$PIDFILE"
     [ "$guard" -gt 0 ] && { pkill -P "$guard" 2>/dev/null; kill "$guard" 2>/dev/null; }
     [ "$child" -gt 0 ] && kill "$child" 2>/dev/null
     pkill -P $$ 2>/dev/null
     pkill -f "$JF_QS_RE" 2>/dev/null
-    # give the notification name back to COSMIC (its session restarts the daemon, which then registers again)
-    [ -e "$TOOK" ] && { rm -f "$TOOK"; pkill -x cosmic-notifica 2>/dev/null; }
+    # give the notification name back to COSMIC (its session restarts the daemon, which then registers again). COSMIC
+    # restarts its top panel together with the daemon, so not during `jellyface restart`: the new shell takes the
+    # name straight back.
+    if [ -e "$RESTARTING" ] && [ $(( $(date +%s) - $(stat -c %Y "$RESTARTING") )) -lt 60 ]; then :
+    elif [ -e "$TOOK" ]; then rm -f "$TOOK"; pkill -x cosmic-notifica 2>/dev/null; fi
+    rm -f "$RESTARTING"
+    lock_handover
     return 0
 }
 trap cleanup EXIT
@@ -137,6 +144,7 @@ while :; do
     wait "$child"
     rc=$?
     child=0
+    lock_handover     # died while locked: COSMIC's lock screen takes over at once, the restarted shell does not re-lock
     [ "$rc" -eq 124 ] && { log "timeout reached, stopping"; break; }
     [ "$rc" -eq 0 ]   && { log "shell exited normally"; break; }
 

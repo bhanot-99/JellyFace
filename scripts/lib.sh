@@ -75,3 +75,30 @@ ws_ready() {
 # to let go of it (COSMIC restarts it by itself) and is restarted again when JellyFace stops.
 JF_NOTIF_NAME=org.freedesktop.Notifications
 notif_owner_pid() { busctl --user status "$JF_NOTIF_NAME" 2>/dev/null | sed -n 's/^PID=//p'; }
+
+# --- lock screen safety ------------------------------------------------------------------------------------------
+# While JellyFace's lock screen holds the session lock, the shell keeps this flag file (modules/lock/Lock.qml).
+# If the shell dies while locked (a crash, a restart, the service being stopped), COSMIC keeps the session locked - as
+# it must - but nothing is drawn to type the password into: no apps, no shortcuts, only a hard reboot helped.
+# COSMIC lets a new locker replace a dead one, so we hand over to COSMIC's own lock screen right away.
+JF_LOCK_FLAG="${XDG_RUNTIME_DIR:-/tmp}/jellyface-locked"
+# true while the running shell's lock screen is up (the flag alone could be stale; when the shell cannot be asked,
+# assume locked: the safe answer)
+locked_by_shell() {
+    [ -e "$JF_LOCK_FLAG" ] && pgrep -f "$JF_QS_RE" >/dev/null || return 1
+    [ "$(timeout 5 "$JF_ROOT/bin/jellyface" ipc lock isLocked 2>/dev/null)" != false ]
+}
+lock_handover() {
+    [ -e "$JF_LOCK_FLAG" ] || return 0
+    # Called when the shell is being stopped or has died. Make sure it is really gone (it may take a few seconds to exit
+    # inside the container), then hand over; COSMIC refuses a second locker while the first one is alive.
+    local _
+    for _ in $(seq 1 25); do pgrep -f "$JF_QS_RE" >/dev/null || break; sleep 0.2; done
+    pkill -9 -f "$JF_QS_RE" 2>/dev/null && sleep 1
+    rm -f "$JF_LOCK_FLAG"
+    # a systemd service has no login session of its own: name the user's graphical session explicitly
+    local sid; sid="$(loginctl show-user "$(id -un)" -p Display --value 2>/dev/null)"
+    if loginctl lock-session ${sid:+"$sid"} 2>/dev/null || loginctl lock-sessions 2>/dev/null; then
+        warn "the shell stopped while the screen was locked; COSMIC's lock screen took over"
+    fi
+}

@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Optional: makes COSMIC's own top panel auto-hide and stop reserving space, so JellyFace's bar and
-# dashboard are not covered. Backs up the panel config first. Undo with: cosmic-tweaks.sh --revert
+# dashboard are not covered; keeps the screen on while idle, so the lock screen stays visible instead of going black;
+# adds JellyFace's shortcuts. Backs everything up first. Undo with: cosmic-tweaks.sh --revert
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 
 P="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicPanel.Panel/v1"
+IDLE="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicIdle/v1"
+IDLE_KEYS="screen_off_time suspend_on_ac_time suspend_on_battery_time"
 [ -d "$P" ] || die "COSMIC panel config not found at $P"
 
 if [ "${1:-}" = "--revert" ]; then
@@ -16,6 +19,12 @@ if [ "${1:-}" = "--revert" ]; then
         else printf 'true' > "$P/$k"; fi
     done
     log "COSMIC panel restored to how it was before"
+    # COSMIC's idle timers: the user's own values if there were any, otherwise COSMIC's defaults (no file)
+    orig="$(awk -F'\t' -v p="$IDLE" '$1==p{print $2}' "$JF_MANIFEST" 2>/dev/null | head -1)"
+    for k in $IDLE_KEYS; do
+        if [ -n "$orig" ] && [ -f "$orig/$k" ]; then cp "$orig/$k" "$IDLE/$k"; else rm -f "$IDLE/$k"; fi
+    done
+    log "COSMIC screen-off and suspend timers restored"
     exit 0
 fi
 backup "$P"
@@ -23,6 +32,15 @@ sys_track "$P"
 printf 'Always' > "$P/autohide"       # hide until the cursor touches the top edge
 printf 'false'  > "$P/exclusive_zone" # don't reserve space while hidden
 log "COSMIC top panel now auto-hides (it re-appears on hover at the top edge)"
+
+# Always-on lock screen: COSMIC's idle daemon would turn the screen off (and suspend) a few minutes after JellyFace's
+# idle lock, so the lock screen went black. Its timers are set to "never"; JellyFace still locks after 3 idle minutes
+# (shell.json general.idle), and closing the lid still suspends.
+mkdir -p "$IDLE"
+backup "$IDLE"
+sys_track "$IDLE"
+for k in $IDLE_KEYS; do printf 'None' > "$IDLE/$k"; done
+log "screen stays on while idle (COSMIC screen-off and idle suspend: never)"
 
 # Super+L locks the screen with JellyFace's own lock screen (this replaces COSMIC's default Super+L = "focus window to the right"; COSMIC's own Super+Escape is untouched)
 # Super+V clipboard history, Super+Shift+F focus mode and Super alone = JellyFace's JellyPanel (instead of COSMIC's

@@ -55,12 +55,18 @@ cmd_start() {
 }
 
 cmd_stop() {
+    # Stopping the shell while its lock screen is up is safe (COSMIC's lock screen takes over) but makes you type the
+    # password again; from a terminal or script it is almost always a mistake (e.g. a restart while you are away).
+    if [ -z "${INVOCATION_ID:-}" ] && [ "${JF_FORCE:-0}" != 1 ] && locked_by_shell; then
+        die "the screen is locked by JellyFace; not stopping it now (JF_FORCE=1 overrides)"
+    fi
     if use_service && systemctl --user is-active --quiet jellyface.service; then
         systemctl --user stop jellyface.service    # its ExecStopPost runs this command again, inside the service
     fi
     local p; p="$(supervisor_pid || true)"
     if [ -z "$p" ]; then
         pkill -f "$JF_QS_RE" 2>/dev/null && log "stopped stray shell" || log "not running"
+        lock_handover
         return 0
     fi
     kill "$p" 2>/dev/null || true       # the supervisor's trap stops the shell and helper too
@@ -72,6 +78,7 @@ cmd_stop() {
         sleep 0.2
     done
     pkill -9 -f "$JF_QS_RE|$JF_WSD_RE|$JF_WIND_RE" 2>/dev/null || true
+    lock_handover
     log "stopped"
 }
 
@@ -165,7 +172,7 @@ case "${1:-help}" in
     build)         shift; exec "$JF_ROOT/scripts/build.sh" "$@" ;;
     start)         shift; cmd_start "$@" ;;
     stop)          cmd_stop ;;
-    restart)       shift; cmd_stop; sleep 1; cmd_start "$@" ;;
+    restart)       shift; : > "${XDG_RUNTIME_DIR:-/tmp}/jellyface.restarting"; cmd_stop; sleep 1; cmd_start "$@" ;;
     status)        cmd_status ;;
     ipc)           shift; cmd_ipc "$@" ;;
     autostart)     shift; cmd_autostart "$@" ;;
