@@ -11,6 +11,7 @@ import "modules/clipboard"
 import "modules/agenda"
 import "modules/areapicker"
 import "modules/lock"
+import "modules/overview"
 import QtQuick
 import Quickshell
 import qs.services
@@ -39,6 +40,12 @@ ShellRoot {
     EventForm {}
     Lock {
         id: lock
+    }
+    WindowOverview {
+        lock: lock
+    }
+    CosmicOverview {
+        lock: lock
     }
 
     Shortcuts {}

@@ -147,6 +147,30 @@ jellyface agenda status
 A local `.ics` file path works too. The card re-reads the calendar every 15 minutes; `"enabled": false` in
 `~/.config/jellyface/desktop.json` hides it.
 
+## Touchpad gestures
+
+**Swipe up with three fingers** to open COSMIC's own workspace overview (the same as Super+W: live previews of your
+windows and workspaces); **swipe down with three fingers** (or press Esc) to go back to your desktop. While you swipe
+up, the desktop dims and shrinks with your fingers; let go after a short swipe or a flick and the overview opens, let go
+earlier and it springs back.
+
+JellyFace also has its own overview of the windows on the current workspace, as a grid of cards (app icon, name and
+window title): `jellyface ipc overview toggle`. Click a card or press Enter to switch to that window, the x on a card
+closes it, and Esc or a click outside closes the overview.
+
+COSMIC keeps every swipe of three or more fingers to itself, so `helpers/gestures/gestured` reads the touchpad
+directly on the host, next to COSMIC (which keeps its own four-finger workspace swipe). That needs read access to the
+touchpad, given once by a udev rule (only the touchpad, only to whoever is logged in at the screen; keyboards stay
+private). Gestures start working within half a minute, no restart needed:
+
+```bash
+sudo cp ~/JellyFace/config/udev/70-jellyface-touchpad.rules /etc/udev/rules.d/
+sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=input --action=change
+# undo: sudo rm /etc/udev/rules.d/70-jellyface-touchpad.rules, then the same two udevadm commands
+```
+
+`jellyface doctor` shows whether it works; `logs/gestures.log` lists each recognised swipe.
+
 ## Lock screen
 
 `Super + L`, or 3 minutes without input, locks the screen with JellyFace's own lock screen (clock, weather, media,
