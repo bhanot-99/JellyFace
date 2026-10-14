@@ -23,7 +23,9 @@ Variants {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         color: "#232423"
 
+        // A Loader is a focus scope: without focus: true the keyboard never reaches the password field
         Loader {
+            focus: true
             anchors.fill: parent
             sourceComponent: content
         }
