@@ -277,6 +277,12 @@ Singleton {
                 });
             }
             hourlyForecast = hourlyList;
+            fetchFailures = 0;
+        }, error => {
+            // The weather service sometimes answers 503 for a while: try again soon (1, 2, 4 ... up to 10 minutes)
+            console.warn(lc, `weather request failed: ${error}`);
+            fetchRetryTimer.interval = Math.min(600000, 60000 * Math.pow(2, fetchFailures++));
+            fetchRetryTimer.restart();
         });
     }
 
@@ -341,6 +347,15 @@ Singleton {
         }
 
         target: GlobalConfig.services
+    }
+
+    property int fetchFailures: 0
+
+    Timer {
+        id: fetchRetryTimer
+
+        repeat: false
+        onTriggered: root.fetchWeatherData()
     }
 
     Timer {
