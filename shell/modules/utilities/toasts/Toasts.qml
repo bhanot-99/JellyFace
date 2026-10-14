@@ -2,8 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import Jellyface
-import Jellyface.Config
+import JellyFace
+import JellyFace.Config
 import qs.components
 import qs.services
 

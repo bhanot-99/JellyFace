@@ -1,5 +1,5 @@
 qml_module(jellyface-images
-    URI Jellyface.Images
+    URI JellyFace.Images
     SOURCES
         cachingimageprovider.cpp
         imagecacher.cpp

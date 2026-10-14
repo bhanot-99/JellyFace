@@ -150,7 +150,7 @@ Defaults live in `config/`. For example, to pick your own weather location (a ci
 { "services": { "weatherLocation": "30.70547,76.22196", "weatherUnits": "Celsius" } }
 ```
 
-Jellyface's own wallpaper feature is off on purpose: JellyFace never changes your COSMIC wallpaper.
+JellyFace's own wallpaper feature is off on purpose: JellyFace never changes your COSMIC wallpaper.
 
 **Icons.** The shell runs in a container, so `jellyface start` points it at your host's icon theme and at the host's
 apps and Flatpak exports. Some apps still ask for a tray icon by a name nobody ships (Flatpak VLC asks for `vlc` but
@@ -177,14 +177,14 @@ container (as after a reboot), 125 drawer toggles with a scan for QML runtime er
 
 ## Known limitations
 
-JellyFace gets less information from COSMIC than Jellyface gets from Hyprland.
+JellyFace gets less information from COSMIC than JellyFace gets from Hyprland.
 
 - **Window thumbnails and "detach"** in the active-window pop-out need a Hyprland-only capture feature and are not available.
 - **COSMIC's window outline** (the accent-coloured frame) is drawn by the compositor, which seems to read its colour at
   login: log out and in once after the first `jellyface theme system on`.
 - **Workspace pill** shows numbers only, with no per-workspace app icons.
-- **Global shortcuts.** Jellyface's built-in hotkeys need Hyprland; use COSMIC custom shortcuts and `jellyface ipc`.
-- **Notifications.** COSMIC owns the notification service, so Jellyface's notification pop-ups are inactive.
+- **Global shortcuts.** JellyFace's built-in hotkeys need Hyprland; use COSMIC custom shortcuts and `jellyface ipc`.
+- **Notifications.** COSMIC owns the notification service, so JellyFace's notification pop-ups are inactive.
 - **Screen recording** is controlled in Kooha's window, not from the sidebar card.
 - **Transparency and blur** were tried and removed: at useful strengths they were barely visible over the wallpaper.
 - **Single screen.** All workspaces are treated as one group; multi-monitor setups are untested.

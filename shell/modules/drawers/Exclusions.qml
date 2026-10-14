@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import Jellyface.Config
+import JellyFace.Config
 import qs.components.containers
 import qs.modules.bar as Bar
 

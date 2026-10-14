@@ -2,8 +2,8 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Jellyface
-import Jellyface.Config
+import JellyFace
+import JellyFace.Config
 
 Singleton {
     id: root

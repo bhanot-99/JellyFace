@@ -4,8 +4,8 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Bluetooth
-import Jellyface.Config
-import Jellyface.I18n
+import JellyFace.Config
+import JellyFace.I18n
 import qs.components
 import qs.components.controls
 import qs.services

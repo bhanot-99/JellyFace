@@ -40,7 +40,7 @@ if(JELLYFACE_TEST_TRS)
 endif()
 
 qml_module(jellyface-i18n
-    URI Jellyface.I18n
+    URI JellyFace.I18n
     INCLUDE_PREFIX i18n
     SOURCES
         translator.cpp
@@ -54,5 +54,5 @@ qml_module(jellyface-i18n
         jellyface-util
         jellyface-config
     DEPENDENCIES
-        Jellyface.Config
+        JellyFace.Config
 )

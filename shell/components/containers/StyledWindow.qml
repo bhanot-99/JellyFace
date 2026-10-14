@@ -1,6 +1,6 @@
 import Quickshell
 import Quickshell.Wayland
-import Jellyface.Config
+import JellyFace.Config
 
 // qmllint disable uncreatable-type
 PanelWindow {

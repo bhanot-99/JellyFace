@@ -1,8 +1,8 @@
 pragma Singleton
 
 import Quickshell
-import Jellyface.Config
-import Jellyface.Models
+import JellyFace.Config
+import JellyFace.Models
 import qs.utils
 
 Searcher {

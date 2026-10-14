@@ -70,7 +70,7 @@
 
   extras = stdenv.mkDerivation {
     inherit cmakeBuildType;
-    name = "jellyface-extras${lib.optionalString debug "-debug"}";
+    name = "JellyFace${lib.optionalString debug "-debug"}";
     src = lib.fileset.toSource {
       root = ./..;
       fileset = lib.fileset.union ./../CMakeLists.txt ./../extras;
@@ -88,7 +88,7 @@
 
   plugin = stdenv.mkDerivation {
     inherit cmakeBuildType;
-    name = "jellyface-qml-plugin${lib.optionalString debug "-debug"}";
+    name = "JellyFace${lib.optionalString debug "-debug"}";
     src = lib.fileset.toSource {
       root = ./..;
       fileset = lib.fileset.union ./../CMakeLists.txt ./../plugin;
@@ -108,7 +108,7 @@
 in
   stdenv.mkDerivation {
     inherit version cmakeBuildType;
-    pname = "jellyface-shell${lib.optionalString debug "-debug"}";
+    pname = "JellyFace${lib.optionalString debug "-debug"}";
     src = ./..;
 
     nativeBuildInputs = [cmake ninja makeWrapper qt6.wrapQtAppsHook];
@@ -118,7 +118,7 @@ in
     cmakeFlags =
       [
         (lib.cmakeFeature "ENABLE_MODULES" "shell")
-        (lib.cmakeFeature "INSTALL_QSCONFDIR" "${placeholder "out"}/share/jellyface-shell")
+        (lib.cmakeFeature "INSTALL_QSCONFDIR" "${placeholder "out"}/share/JellyFace")
       ]
       ++ cmakeVersionFlags;
 
@@ -132,12 +132,12 @@ in
     '';
 
     postInstall = ''
-      makeWrapper ${qs}/bin/qs $out/bin/jellyface-shell \
+      makeWrapper ${qs}/bin/qs $out/bin/JellyFace \
         --prefix PATH : "${lib.makeBinPath runtimeDeps}" \
         --set FONTCONFIG_FILE "${fontconfig}" \
         --set JELLYFACE_LIB_DIR ${extras}/lib \
         --set JELLYFACE_XKB_RULES_PATH ${xkeyboard-config}/share/xkeyboard-config-2/rules/base.lst \
-        --add-flags "-p $out/share/jellyface-shell"
+        --add-flags "-p $out/share/JellyFace"
 
       mkdir -p $out/lib
       ln -s ${extras}/lib/* $out/lib/
@@ -151,6 +151,6 @@ in
       description = "A fluid, morphing shell for your Linux desktop";
       homepage = "https://github.com/caelestia-dots/shell";
       license = lib.licenses.gpl3Only;
-      mainProgram = "jellyface-shell";
+      mainProgram = "JellyFace";
     };
   }

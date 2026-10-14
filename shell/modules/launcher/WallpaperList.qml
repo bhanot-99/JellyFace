@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import "items"
 import QtQuick
 import Quickshell
-import Jellyface.Config
+import JellyFace.Config
 import qs.components.controls
 import qs.services
 

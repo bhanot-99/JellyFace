@@ -2,7 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Jellyface.I18n
+import JellyFace.I18n
 
 Singleton {
     property alias enabled: clock.enabled

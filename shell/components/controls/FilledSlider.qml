@@ -1,7 +1,7 @@
 import "../effects"
 import QtQuick
 import QtQuick.Templates
-import Jellyface.Config
+import JellyFace.Config
 import qs.components
 import qs.services
 

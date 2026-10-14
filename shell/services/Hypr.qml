@@ -4,8 +4,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
-import Jellyface.I18n
-import Jellyface.Services
+import JellyFace.I18n
+import JellyFace.Services
 import qs.components.misc
 
 Singleton {

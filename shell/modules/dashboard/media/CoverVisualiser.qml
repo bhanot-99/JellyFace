@@ -4,8 +4,8 @@ import QtQuick
 import QtQuick.Shapes
 import Quickshell
 import M3Shapes
-import Jellyface.Config
-import Jellyface.Services
+import JellyFace.Config
+import JellyFace.Services
 import qs.components
 import qs.components.widgets
 import qs.services

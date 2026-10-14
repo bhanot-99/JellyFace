@@ -1,6 +1,6 @@
 pragma Singleton
 
-import Jellyface.I18n
+import JellyFace.I18n
 
 TranslatorInternal {
     // No-op so the flag var isn't optimised away

@@ -1,5 +1,5 @@
 qml_module(jellyface-settings
-    URI Jellyface.Settings
+    URI JellyFace.Settings
     INCLUDE_PREFIX settings
     SOURCES
         common.cpp

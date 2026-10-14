@@ -6,8 +6,8 @@ import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Wayland
-import Jellyface.Blobs
-import Jellyface.Config
+import JellyFace.Blobs
+import JellyFace.Config
 import qs.components
 import qs.components.containers
 import qs.services

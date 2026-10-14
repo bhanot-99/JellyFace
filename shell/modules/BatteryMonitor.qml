@@ -1,10 +1,10 @@
 import QtQuick
 import Quickshell
 import Quickshell.Services.UPower
-import Jellyface
-import Jellyface.Config
-import Jellyface.I18n
-import Jellyface.Services
+import JellyFace
+import JellyFace.Config
+import JellyFace.I18n
+import JellyFace.Services
 
 Scope {
     id: root

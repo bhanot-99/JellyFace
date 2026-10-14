@@ -4,7 +4,7 @@ import ".."
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Jellyface.Config
+import JellyFace.Config
 import qs.utils
 
 Searcher {

@@ -16,28 +16,28 @@ in {
   ];
   options = with lib; {
     programs.jellyface = {
-      enable = mkEnableOption "Enable Jellyface shell";
+      enable = mkEnableOption "Enable JellyFace shell";
       package = mkOption {
         type = types.package;
         default = shell-default;
-        description = "The package of Jellyface shell";
+        description = "The package of JellyFace shell";
       };
       systemd = {
         enable = mkOption {
           type = types.bool;
           default = true;
-          description = "Enable the systemd service for Jellyface shell";
+          description = "Enable the systemd service for JellyFace shell";
         };
         target = mkOption {
           type = types.str;
           description = ''
-            The systemd target that will automatically start the Jellyface shell.
+            The systemd target that will automatically start the JellyFace shell.
           '';
           default = config.wayland.systemd.target;
         };
         environment = mkOption {
           type = types.listOf types.str;
-          description = "Extra Environment variables to pass to the Jellyface shell systemd service.";
+          description = "Extra Environment variables to pass to the JellyFace shell systemd service.";
           default = [];
           example = [
             "QT_QPA_PLATFORMTHEME=gtk3"
@@ -47,29 +47,29 @@ in {
       settings = mkOption {
         type = types.attrsOf types.anything;
         default = {};
-        description = "Jellyface shell settings";
+        description = "JellyFace shell settings";
       };
       extraConfig = mkOption {
         type = types.str;
         default = "";
-        description = "Jellyface shell extra configs written to shell.json";
+        description = "JellyFace shell extra configs written to shell.json";
       };
       cli = {
-        enable = mkEnableOption "Enable Jellyface CLI";
+        enable = mkEnableOption "Enable JellyFace CLI";
         package = mkOption {
           type = types.package;
           default = cli-default;
-          description = "The package of Jellyface CLI"; # Doesn't override the shell's CLI, only change from home.packages
+          description = "The package of JellyFace CLI"; # Doesn't override the shell's CLI, only change from home.packages
         };
         settings = mkOption {
           type = types.attrsOf types.anything;
           default = {};
-          description = "Jellyface CLI settings";
+          description = "JellyFace CLI settings";
         };
         extraConfig = mkOption {
           type = types.str;
           default = "";
-          description = "Jellyface CLI extra configs written to cli.json";
+          description = "JellyFace CLI extra configs written to cli.json";
         };
       };
     };
@@ -82,7 +82,7 @@ in {
     lib.mkIf cfg.enable {
       systemd.user.services.jellyface = lib.mkIf cfg.systemd.enable {
         Unit = {
-          Description = "Jellyface Shell Service";
+          Description = "JellyFace Shell Service";
           After = [cfg.systemd.target];
           PartOf = [cfg.systemd.target];
           X-Restart-Triggers = lib.mkIf (cfg.settings != {}) [
@@ -92,7 +92,7 @@ in {
 
         Service = {
           Type = "exec";
-          ExecStart = "${shell}/bin/jellyface-shell";
+          ExecStart = "${shell}/bin/JellyFace";
           Restart = "on-failure";
           RestartSec = "5s";
           TimeoutStopSec = "5s";

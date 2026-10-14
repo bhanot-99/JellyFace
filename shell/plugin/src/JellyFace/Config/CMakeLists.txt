@@ -1,5 +1,5 @@
 qml_module(jellyface-config
-    URI Jellyface.Config
+    URI JellyFace.Config
     INCLUDE_PREFIX config
     SOURCES
         common.cpp
@@ -31,7 +31,7 @@ qml_module(jellyface-config
         Qt::Quick
         Qt::QuickControls2
     DEPENDENCIES
-        Jellyface.Settings
+        JellyFace.Settings
 )
 target_link_libraries(jellyface-config PUBLIC
     Qt::Gui

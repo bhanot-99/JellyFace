@@ -1,4 +1,4 @@
-<h1 align=center>jellyface-shell</h1>
+<h1 align=center>JellyFace</h1>
 
 <div align=center>
 
@@ -21,7 +21,7 @@ https://github.com/user-attachments/assets/0840f496-575c-4ca6-83a8-87bb01a85c5f
 ## Installation
 
 > [!NOTE]
-> This repo is for Jellyface's desktop shell only. If you want installation instructions
+> This repo is for JellyFace's desktop shell only. If you want installation instructions
 > for the entire dotfiles (which include this shell), head to [the main repo][dots-repo] instead.
 
 ### Arch Linux
@@ -30,11 +30,11 @@ https://github.com/user-attachments/assets/0840f496-575c-4ca6-83a8-87bb01a85c5f
 > If you want to make your own changes/tweaks to the shell, do NOT edit the files installed by the AUR
 > package. Instead, follow the instructions in the [manual installation section](#manual-installation).
 
-The shell is available from the AUR as `jellyface-shell`. You can install it with an AUR helper (recommended),
+The shell is available from the AUR as `JellyFace`. You can install it with an AUR helper (recommended),
 like [`paru`](https://github.com/morganamilo/paru), or by manually downloading the PKGBUILD and running `makepkg -si`.
 
-A package following the latest commit also exists as `jellyface-shell-git`. This is bleeding-edge
-and likely to be unstable/have bugs. Regular users are recommended to use the stable package (`jellyface-shell`).
+A package following the latest commit also exists as `JellyFace`. This is bleeding-edge
+and likely to be unstable/have bugs. Regular users are recommended to use the stable package (`JellyFace`).
 
 ### Nix
 
@@ -51,7 +51,7 @@ Or add it to your system configuration:
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
-    jellyface-shell = {
+    JellyFace = {
       url = "github:caelestia-dots/shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -59,12 +59,12 @@ Or add it to your system configuration:
 }
 ```
 
-For full functionality, use `jellyface-shell.packages.<system>.with-cli`, which can be added to your
+For full functionality, use `JellyFace.packages.<system>.with-cli`, which can be added to your
 `environment.systemPackages`, `users.users.<username>.packages`, `home.packages` if using home-manager,
 or a devshell. The `default` package does not include the CLI.
-You can then run the shell with `jellyface-shell`.
+You can then run the shell with `JellyFace`.
 
-For home-manager, you can also use Jellyface's Home Manager module (explained in [the configuration section](#home-manager-module)), which installs and configures the shell and CLI.
+For home-manager, you can also use JellyFace's Home Manager module (explained in [the configuration section](#home-manager-module)), which installs and configures the shell and CLI.
 
 ### Manual installation
 
@@ -139,13 +139,13 @@ You can start the shell by running `jellyface shell -d` (preferred) or `qs -c je
 You may omit `-d` from the command to keep the shell attached to the current terminal if necessary,
 though you likely want it to be detached (so it doesn't close when the terminal is closed).
 
-If using the [Jellyface dotfiles][dots-repo], the shell will be autostarted on login
+If using the [JellyFace dotfiles][dots-repo], the shell will be autostarted on login
 via a `hl.on("hyprland.start", ...)` function in the Hyprland config.
 
 ### Shortcuts/IPC
 
 All keybinds are accessible via Hyprland [global shortcuts](https://wiki.hypr.land/Configuring/Basics/Binds/#dbus-global-shortcuts).
-If using the [Jellyface dotfiles][dots-repo], the keybinds are already configured for you.
+If using the [JellyFace dotfiles][dots-repo], the keybinds are already configured for you.
 Otherwise, the [`keybinds.lua`](https://github.com/caelestia-dots/caelestia/blob/main/hypr/hyprland/keybinds.lua#L63-L67) file
 contains an example of how to use global shortcuts.
 
@@ -1001,7 +1001,7 @@ The module automatically adds the shell to the path with **full functionality**.
 
 ### Need help or support?
 
-You can join the Jellyface Discord server for assistance and discussion [here][discord].
+You can join the JellyFace Discord server for assistance and discussion [here][discord].
 
 ### I want to make my own changes to the Hyprland config!
 
@@ -1058,4 +1058,4 @@ Finally, another thank you to all the configs I took inspiration from (only one 
 </a>
 
 [dots-repo]: https://github.com/caelestia-dots/caelestia
-[discord]: https://jellyfaceshell.com/discord
+[discord]: https://JellyFace.com/discord

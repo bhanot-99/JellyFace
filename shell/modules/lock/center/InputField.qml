@@ -3,8 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import M3Shapes
-import Jellyface.Config
-import Jellyface.I18n
+import JellyFace.Config
+import JellyFace.I18n
 import qs.components
 import qs.services
 import qs.modules.lock

@@ -5,8 +5,8 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
 import M3Shapes
-import Jellyface.Components
-import Jellyface.Config
+import JellyFace.Components
+import JellyFace.Config
 import qs.components
 import qs.services
 import qs.utils

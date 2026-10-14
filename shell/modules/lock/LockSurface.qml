@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Effects
 import Quickshell.Wayland
-import Jellyface.Config
+import JellyFace.Config
 import qs.components
 import qs.components.images
 import qs.services

@@ -1,10 +1,10 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Jellyface.Components
-import Jellyface.Config
-import Jellyface.I18n
-import Jellyface.Services
+import JellyFace.Components
+import JellyFace.Config
+import JellyFace.I18n
+import JellyFace.Services
 import qs.components
 import qs.components.controls
 import qs.components.widgets

@@ -4,9 +4,9 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Widgets
-import Jellyface
-import Jellyface.Config
-import Jellyface.I18n
+import JellyFace
+import JellyFace.Config
+import JellyFace.I18n
 import qs.components
 import qs.components.filedialog
 

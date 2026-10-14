@@ -1,9 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Jellyface.Components
-import Jellyface.Config
-import Jellyface.I18n
+import JellyFace.Components
+import JellyFace.Config
+import JellyFace.I18n
 import qs.components
 import qs.components.controls
 import qs.components.images

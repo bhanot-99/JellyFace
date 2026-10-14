@@ -128,7 +128,7 @@ def import_group(module: str) -> tuple[int, int] | None:
         return (3, depth)
     if module == "M3Shapes":
         return (4, depth)
-    if module == "Jellyface" or module.startswith("Jellyface."):
+    if module == "JellyFace" or module.startswith("JellyFace."):
         return (5, depth)
     if module == "qs.components" or module.startswith("qs.components."):
         return (6, depth)

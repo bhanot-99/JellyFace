@@ -1,5 +1,5 @@
 qml_module(jellyface-components
-    URI Jellyface.Components
+    URI JellyFace.Components
     SOURCES
         animatedrepeater.cpp
         lazylistview.cpp
@@ -14,5 +14,5 @@ qml_module(jellyface-components
         Qt::Quick
         jellyface-core
     DEPENDENCIES
-        Jellyface
+        JellyFace
 )

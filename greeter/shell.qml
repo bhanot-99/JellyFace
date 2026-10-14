@@ -476,7 +476,7 @@ ShellRoot {
                                         color: root.col("onSurface", "#B0ADAD")
                                         font.family: root.monoFamily
                                         font.pixelSize: 14 * lay.u
-                                        text: "jellyfacefetch.sh"
+                                        text: "JellyFace.sh"
                                     }
                                 }
 

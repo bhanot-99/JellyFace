@@ -1,6 +1,6 @@
 import "dash"
 import QtQuick.Layouts
-import Jellyface.Config
+import JellyFace.Config
 import qs.components
 import qs.components.filedialog
 import qs.services

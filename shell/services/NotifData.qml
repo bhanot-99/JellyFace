@@ -3,9 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Services.Notifications
-import Jellyface
-import Jellyface.Config
-import Jellyface.I18n
+import JellyFace
+import JellyFace.Config
+import JellyFace.I18n
 import qs.services
 import qs.utils
 

@@ -1,5 +1,5 @@
 qml_module(jellyface-services
-    URI Jellyface.Services
+    URI JellyFace.Services
     SOURCES
         service.cpp
         serviceref.cpp
@@ -32,6 +32,6 @@ qml_module(jellyface-services
         jellyface-core
         jellyface-config
     DEPENDENCIES
-        Jellyface
-        Jellyface.Config
+        JellyFace
+        JellyFace.Config
 )

@@ -2,9 +2,9 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell.Io
-import Jellyface
-import Jellyface.Config
-import Jellyface.I18n
+import JellyFace
+import JellyFace.Config
+import JellyFace.I18n
 
 // TODO: handle this better later
 

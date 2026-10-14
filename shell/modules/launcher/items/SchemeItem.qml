@@ -1,5 +1,5 @@
 import QtQuick
-import Jellyface.Config
+import JellyFace.Config
 import qs.components
 import qs.services
 import qs.modules.launcher.services

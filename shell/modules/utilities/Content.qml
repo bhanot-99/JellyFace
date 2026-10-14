@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import "cards"
 import QtQuick
 import QtQuick.Layouts
-import Jellyface.Config
+import JellyFace.Config
 import qs.components
 import qs.modules.bar.popouts as BarPopouts
 

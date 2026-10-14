@@ -4,9 +4,9 @@ import QtQml
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
-import Jellyface
-import Jellyface.Config
-import Jellyface.I18n
+import JellyFace
+import JellyFace.Config
+import JellyFace.I18n
 import qs.components.misc
 
 Singleton {

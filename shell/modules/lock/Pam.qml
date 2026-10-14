@@ -5,8 +5,8 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Pam
-import Jellyface.Config
-import Jellyface.Services
+import JellyFace.Config
+import JellyFace.Services
 
 Scope {
     id: root

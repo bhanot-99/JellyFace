@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell
-import Jellyface.Images
+import JellyFace.Images
 
 Image {
     id: root

@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
-import Jellyface.Config
+import JellyFace.Config
 import qs.components
 import qs.components.containers
 import qs.components.effects

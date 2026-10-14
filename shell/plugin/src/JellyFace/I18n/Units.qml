@@ -1,8 +1,8 @@
 pragma Singleton
 
 import QtQuick
-import Jellyface.Config
-import Jellyface.I18n
+import JellyFace.Config
+import JellyFace.I18n
 
 QtObject {
     // Whether to show a 12-hour clock, guessing from the locale when Auto

@@ -1,5 +1,5 @@
 qml_module(jellyface-blobs
-    URI Jellyface.Blobs
+    URI JellyFace.Blobs
     SOURCES
         blobgroup.cpp
         blobshape.cpp

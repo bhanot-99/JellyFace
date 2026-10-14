@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell.Widgets
-import Jellyface.Images
+import JellyFace.Images
 
 IconImage {
     id: root

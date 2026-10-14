@@ -3,8 +3,8 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Jellyface.Config
-import Jellyface.I18n
+import JellyFace.Config
+import JellyFace.I18n
 import qs.utils
 
 Singleton {

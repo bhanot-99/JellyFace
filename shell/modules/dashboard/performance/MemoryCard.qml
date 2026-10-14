@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Layouts
-import Jellyface.Config
-import Jellyface.I18n
-import Jellyface.Services
+import JellyFace.Config
+import JellyFace.I18n
+import JellyFace.Services
 import qs.components
 import qs.components.controls
 import qs.services
