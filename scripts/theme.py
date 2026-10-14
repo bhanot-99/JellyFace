@@ -9,6 +9,7 @@ Color_Palette/*.txt, and writes it as the shell's colour scheme (scheme.json). T
   theme.py list                list all palettes
   theme.py tint [0-6]          how strongly palette colours show (default 3; 1 = palette exactly as written)
   theme.py soft [0-1]          background lightness 0-2 (default 0.7; 0 = near-black backgrounds)
+  theme.py system on|off       also theme COSMIC itself (Files, Terminal, Settings, panel) from the palette (default on)
   theme.py auto on|off         follow the wallpaper automatically (on) or keep the current palette (off)
   theme.py watch               apply automatically whenever the wallpaper changes (used by `jellyface start`)
   theme.py status              what is applied and why
@@ -20,6 +21,7 @@ import json
 import math
 import os
 import re
+import subprocess
 import sys
 import time
 
@@ -276,6 +278,20 @@ def write_state(**kw):
     os.replace(tmp, STATE)
 
 
+def update_cosmic_theme():
+    """Also theme COSMIC itself (Files, Terminal, Settings, panel...) from the same scheme. Never fatal."""
+    if not read_state().get("system", True):
+        return
+    script = os.path.join(ROOT, "scripts", "cosmic-theme.sh")
+    tool = os.path.join(ROOT, "tools", "cosmic-theme", "target", "release", "jellyface-cosmic-theme")
+    if not os.path.exists(tool):
+        return
+    try:
+        subprocess.run([script, "apply"], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=30, check=True)
+    except Exception as e:
+        print(f"theme: could not update COSMIC's theme: {getattr(e, 'stderr', b'') or e}", file=sys.stderr)
+
+
 def write_scheme(scheme):
     os.makedirs(os.path.dirname(SCHEME), exist_ok=True)
     # written in place (not renamed over) so the shell's file watcher keeps following the same file
@@ -283,6 +299,7 @@ def write_scheme(scheme):
         json.dump(scheme, f, indent=1)
         f.flush()
         os.fsync(f.fileno())
+    update_cosmic_theme()
 
 
 def wallpaper_ramp(image=None):
@@ -361,6 +378,22 @@ def cmd_soft(val=None):
     set_param("soft", val, 0, 2, DEFAULT_SOFT, "background lightness: 0 near-black, 1 one tonal step lighter, 2 two steps")
 
 
+def cmd_system(val=None):
+    st = read_state()
+    script = os.path.join(ROOT, "scripts", "cosmic-theme.sh")
+    if val is None:
+        print(f"COSMIC system theme: {'on' if st.get('system', True) else 'off'}")
+        subprocess.run([script, "status"])
+        return
+    if val not in ("on", "off"):
+        raise SystemExit("usage: theme.py system on|off")
+    write_state(system=(val == "on"))
+    if val == "on":
+        subprocess.run([script, "apply"], check=False)
+    else:
+        subprocess.run([script, "reset"], check=False)
+
+
 def cmd_list():
     for p in load_palettes():
         print(f"[{p['num']:03d}] {p['name']:<22} {p['family']:<18} " + " ".join("#" + rgb_to_hex(c) for c in p["rgb"]))
@@ -417,7 +450,7 @@ def main(argv):
         print(__doc__)
         return 0
     cmd, args = argv[0], argv[1:]
-    {"apply": cmd_apply, "tint": cmd_tint, "soft": cmd_soft, "match": cmd_match, "list": cmd_list, "auto": cmd_auto, "watch": cmd_watch, "status": cmd_status}.get(
+    {"apply": cmd_apply, "system": cmd_system, "tint": cmd_tint, "soft": cmd_soft, "match": cmd_match, "list": cmd_list, "auto": cmd_auto, "watch": cmd_watch, "status": cmd_status}.get(
         cmd, lambda *a: sys.exit(f"unknown command '{cmd}' (try --help)"))(*args)
     return 0
 

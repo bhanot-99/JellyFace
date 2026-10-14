@@ -1,0 +1,16 @@
+[package]
+name = "jellyface-cosmic-theme"
+version = "0.1.0"
+edition = "2021"
+description = "Writes a JellyFace palette into COSMIC's own theme so COSMIC apps follow it too"
+
+[dependencies]
+# same library COSMIC itself is built with, so the theme files have exactly the format COSMIC expects
+cosmic-theme = { git = "https://github.com/pop-os/libcosmic", rev = "adb3e34", default-features = false }
+cosmic-config = { git = "https://github.com/pop-os/libcosmic", rev = "adb3e34", default-features = false }
+serde_json = "1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
