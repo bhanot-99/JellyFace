@@ -1,0 +1,17 @@
+{
+    "apps": [
+        { "id": "brave-browser" },
+        { "id": "com.system76.CosmicFiles" },
+        { "id": "com.system76.CosmicTerm" },
+        { "id": "org.videolan.VLC" },
+        { "id": "com.system76.CosmicMonitor" },
+        { "id": "org.gnome.baobab" },
+        { "id": "com.system76.CosmicScreenshot" },
+        { "id": "io.github.seadve.Kooha" },
+        { "id": "com.system76.CosmicSettings" },
+        { "id": "com.system76.CosmicStore" },
+        { "id": "md.obsidian.Obsidian" },
+        { "id": "code" },
+        { "id": "com.sublimehq.SublimeText" }
+    ]
+}

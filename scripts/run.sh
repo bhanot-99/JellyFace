@@ -58,6 +58,7 @@ validate_json() {
 validate_json "$JF_CONFIG_DIR/shell.json"        "$JF_ROOT/config/shell.json"
 validate_json "$JF_CONFIG_DIR/shell-tokens.json" "$JF_ROOT/config/shell-tokens.json"
 validate_json "$JF_STATE_DIR/scheme.json"        "$JF_ROOT/config/scheme.json"
+validate_json "$JF_CONFIG_DIR/dock.json"         "$JF_ROOT/config/dock.json"
 
 # The lock screen's PAM stack checks the typed password against the HOST account; it needs the absolute path to
 # this checkout, so (re)generate it from the template (only when it changed, to leave the file alone otherwise).
