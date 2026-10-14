@@ -9,7 +9,7 @@ cat <<PLAN
 JellyFace will integrate with your COSMIC session:
   1. snapshot your COSMIC settings into backups/ (kept forever)
   2. start JellyFace with the session as a systemd user service (restarts on failure)
-  3. auto-hide COSMIC's top panel and set Super+L to COSMIC's own lock screen
+  3. auto-hide COSMIC's top panel and set Super+L to JellyFace's lock screen
   4. register the JellyFace menu as a native panel applet and add it to your panel
   5. make COSMIC's own apps (Files, Terminal, Settings...) follow the palette
 Nothing under /usr or /etc is touched, no sudo is used, and 'jellyface revert-system' puts it all back.

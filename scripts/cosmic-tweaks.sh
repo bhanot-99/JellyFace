@@ -17,12 +17,12 @@ printf 'Always' > "$P/autohide"       # hide until the cursor touches the top ed
 printf 'false'  > "$P/exclusive_zone" # don't reserve space while hidden
 log "COSMIC top panel now auto-hides (it re-appears on hover at the top edge)"
 
-# Super+L locks the screen with COSMIC's own lock (this replaces COSMIC's default Super+L = "focus window to the right")
+# Super+L locks the screen with JellyFace's own lock screen (this replaces COSMIC's default Super+L = "focus window to the right"; COSMIC's own Super+Escape is untouched)
 SC="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom"
 if [ -e "$SC" ]; then
     warn "you already have custom shortcuts ($SC); add the Super+L lock shortcut yourself from config/cosmic-shortcuts.ron"
 else
     mkdir -p "$(dirname "$SC")"
     sed "s#@JF_ROOT@#$JF_ROOT#g" "$JF_ROOT/config/cosmic-shortcuts.ron" > "$SC"
-    log "added shortcut Super+L -> COSMIC lock screen"
+    log "added shortcut Super+L -> JellyFace lock screen"
 fi

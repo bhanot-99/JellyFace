@@ -1,3 +1,3 @@
 {
-    (modifiers: [Super], key: "l"): Spawn("loginctl lock-session"),
+    (modifiers: [Super], key: "l"): Spawn("@JF_ROOT@/bin/jellyface lock"),
 }

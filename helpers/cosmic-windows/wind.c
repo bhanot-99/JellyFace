@@ -1,7 +1,8 @@
 // Prints COSMIC's windows (ext-foreign-toplevel-list + cosmic-toplevel-info) as JSON lines whenever anything changes:
 //   {"active":2,"fullscreen":false,"windows":[{"id":1,"app_id":"firefox","title":"...","activated":false,
-//     "fullscreen":false,"maximized":false,"minimized":false}, ...]}
-// "active" is the id of the focused window (0 = none); "fullscreen" is true when that window is fullscreen.
+//     "fullscreen":false,"maximized":false,"minimized":false,"workspace_active":true}, ...]}
+// "active" is the id of the focused window on the workspace you are looking at (0 = none); "fullscreen" is true when a
+// window on that workspace is fullscreen. Windows on other workspaces never count.
 // Read-only: it never changes windows. Exits when its parent goes away or the compositor connection breaks.
 #include <errno.h>
 #include <poll.h>
@@ -13,6 +14,7 @@
 #include <wayland-client.h>
 #include "cosmic-toplevel-info-unstable-v1-client.h"
 #include "ext-foreign-toplevel-list-v1-client.h"
+#include "ext-workspace-v1-client.h"
 
 #define MAXWIN 256
 struct win {
@@ -21,7 +23,27 @@ struct win {
     struct zcosmic_toplevel_handle_v1 *cosmic;
     char title[512], app_id[256];
     uint32_t state;  // bit n set = state n active (0 maximized, 1 minimized, 2 activated, 3 fullscreen)
+    struct ext_workspace_handle_v1 *wsh[4];  // the workspaces this window is on (usually one)
+    int nws;
 };
+
+// workspaces and whether each is the one currently shown
+struct wsinfo { struct ext_workspace_handle_v1 *h; uint32_t state; };
+static struct wsinfo wss[64];
+static int nwss;
+static struct ext_workspace_manager_v1 *wsmgr;
+
+static int ws_active(struct ext_workspace_handle_v1 *h) {
+    for (int i = 0; i < nwss; i++) if (wss[i].h == h) return wss[i].state & 1;
+    return 0;
+}
+
+// A window counts for the current view when it is on the shown workspace (or its workspace is unknown / it is on all)
+static int on_current_ws(const struct win *w) {
+    if (w->nws == 0) return 1;
+    for (int i = 0; i < w->nws; i++) if (ws_active(w->wsh[i])) return 1;
+    return 0;
+}
 static struct win *wins[MAXWIN];
 static int nwins, next_id = 1, dirty;
 static struct ext_foreign_toplevel_list_v1 *list;
@@ -41,8 +63,12 @@ static void json_str(const char *s) {
 
 static void emit(void) {
     int active = 0, fullscreen = 0;
-    for (int i = 0; i < nwins; i++)
-        if (wins[i]->state & (1u << 2)) { active = wins[i]->id; fullscreen = (wins[i]->state >> 3) & 1; }
+    for (int i = 0; i < nwins; i++) {
+        struct win *w = wins[i];
+        if (!on_current_ws(w)) continue;  // windows on other workspaces never count (a fullscreen video elsewhere must not hide the shell here)
+        if (w->state & (1u << 2)) active = w->id;
+        if (((w->state >> 3) & 1) && !((w->state >> 1) & 1)) fullscreen = 1;
+    }
     printf("{\"active\":%d,\"fullscreen\":%s,\"windows\":[", active, fullscreen ? "true" : "false");
     for (int i = 0; i < nwins; i++) {
         struct win *w = wins[i];
@@ -50,9 +76,9 @@ static void emit(void) {
         json_str(w->app_id);
         printf(",\"title\":");
         json_str(w->title);
-        printf(",\"activated\":%s,\"fullscreen\":%s,\"maximized\":%s,\"minimized\":%s}",
+        printf(",\"activated\":%s,\"fullscreen\":%s,\"maximized\":%s,\"minimized\":%s,\"workspace_active\":%s}",
                (w->state >> 2) & 1 ? "true" : "false", (w->state >> 3) & 1 ? "true" : "false",
-               (w->state >> 0) & 1 ? "true" : "false", (w->state >> 1) & 1 ? "true" : "false");
+               (w->state >> 0) & 1 ? "true" : "false", (w->state >> 1) & 1 ? "true" : "false", on_current_ws(w) ? "true" : "false");
     }
     printf("]}\n");
     fflush(stdout);
@@ -84,7 +110,16 @@ static void c_title(void *d, struct zcosmic_toplevel_handle_v1 *h, const char *t
 static void c_app_id(void *d, struct zcosmic_toplevel_handle_v1 *h, const char *a) {}
 static void c_output(void *d, struct zcosmic_toplevel_handle_v1 *h, struct wl_output *o) {}
 static void c_ws(void *d, struct zcosmic_toplevel_handle_v1 *h, struct zcosmic_workspace_handle_v1 *w) {}
-static void c_ext_ws(void *d, struct zcosmic_toplevel_handle_v1 *h, struct ext_workspace_handle_v1 *w) {}
+static void c_ext_ws_enter(void *d, struct zcosmic_toplevel_handle_v1 *h, struct ext_workspace_handle_v1 *ws) {
+    struct win *w = d;
+    for (int i = 0; i < w->nws; i++) if (w->wsh[i] == ws) return;
+    if (w->nws < 4) { w->wsh[w->nws++] = ws; dirty = 1; }
+}
+static void c_ext_ws_leave(void *d, struct zcosmic_toplevel_handle_v1 *h, struct ext_workspace_handle_v1 *ws) {
+    struct win *w = d;
+    for (int i = 0; i < w->nws; i++)
+        if (w->wsh[i] == ws) { w->wsh[i] = w->wsh[--w->nws]; dirty = 1; return; }
+}
 static void c_geometry(void *d, struct zcosmic_toplevel_handle_v1 *h, struct wl_output *o, int32_t x, int32_t y, int32_t w, int32_t hh) {}
 static void c_state(void *d, struct zcosmic_toplevel_handle_v1 *h, struct wl_array *arr) {
     struct win *w = d;
@@ -95,7 +130,7 @@ static void c_state(void *d, struct zcosmic_toplevel_handle_v1 *h, struct wl_arr
 static const struct zcosmic_toplevel_handle_v1_listener cosmic_listener = {
     .closed = c_closed, .done = c_done, .title = c_title, .app_id = c_app_id,
     .output_enter = c_output, .output_leave = c_output, .workspace_enter = c_ws, .workspace_leave = c_ws,
-    .state = c_state, .geometry = c_geometry, .ext_workspace_enter = c_ext_ws, .ext_workspace_leave = c_ext_ws,
+    .state = c_state, .geometry = c_geometry, .ext_workspace_enter = c_ext_ws_enter, .ext_workspace_leave = c_ext_ws_leave,
 };
 
 // --- list ------------------------------------------------------------------------------------------------------
@@ -119,9 +154,39 @@ static void i_finished(void *d, struct zcosmic_toplevel_info_v1 *i) {}
 static void i_done(void *d, struct zcosmic_toplevel_info_v1 *i) { dirty = 1; }
 static const struct zcosmic_toplevel_info_v1_listener info_listener = { .toplevel = i_toplevel, .finished = i_finished, .done = i_done };
 
+static void wh_id(void *d, struct ext_workspace_handle_v1 *h, const char *id) {}
+static void wh_name(void *d, struct ext_workspace_handle_v1 *h, const char *n) {}
+static void wh_coord(void *d, struct ext_workspace_handle_v1 *h, struct wl_array *c) {}
+static void wh_caps(void *d, struct ext_workspace_handle_v1 *h, uint32_t c) {}
+static void wh_state(void *d, struct ext_workspace_handle_v1 *h, uint32_t st) {
+    for (int i = 0; i < nwss; i++) if (wss[i].h == h) { if (wss[i].state != st) { wss[i].state = st; dirty = 1; } return; }
+}
+static void wh_removed(void *d, struct ext_workspace_handle_v1 *h) {
+    for (int i = 0; i < nwss; i++)
+        if (wss[i].h == h) { ext_workspace_handle_v1_destroy(h); memmove(&wss[i], &wss[i + 1], (nwss - i - 1) * sizeof *wss); nwss--; dirty = 1; return; }
+}
+static const struct ext_workspace_handle_v1_listener wh_listener = { wh_id, wh_name, wh_coord, wh_state, wh_caps, wh_removed };
+static void wg_caps(void *d, struct ext_workspace_group_handle_v1 *g, uint32_t c) {}
+static void wg_oe(void *d, struct ext_workspace_group_handle_v1 *g, struct wl_output *o) {}
+static void wg_we(void *d, struct ext_workspace_group_handle_v1 *g, struct ext_workspace_handle_v1 *w) {}
+static void wg_rm(void *d, struct ext_workspace_group_handle_v1 *g) {}
+static const struct ext_workspace_group_handle_v1_listener wg_listener = { wg_caps, wg_oe, wg_oe, wg_we, wg_we, wg_rm };
+static void wm_group(void *d, struct ext_workspace_manager_v1 *m, struct ext_workspace_group_handle_v1 *g) { ext_workspace_group_handle_v1_add_listener(g, &wg_listener, NULL); }
+static void wm_ws(void *d, struct ext_workspace_manager_v1 *m, struct ext_workspace_handle_v1 *h) {
+    if (nwss >= 64) return;
+    wss[nwss].h = h; wss[nwss].state = 0; nwss++;
+    ext_workspace_handle_v1_add_listener(h, &wh_listener, NULL);
+}
+static void wm_done(void *d, struct ext_workspace_manager_v1 *m) { dirty = 1; }
+static void wm_fin(void *d, struct ext_workspace_manager_v1 *m) {}
+static const struct ext_workspace_manager_v1_listener wm_listener = { wm_group, wm_ws, wm_done, wm_fin };
+
 static void reg(void *d, struct wl_registry *r, uint32_t name, const char *iface, uint32_t ver) {
     if (!strcmp(iface, ext_foreign_toplevel_list_v1_interface.name)) {
         list = wl_registry_bind(r, name, &ext_foreign_toplevel_list_v1_interface, 1);
+    } else if (!strcmp(iface, ext_workspace_manager_v1_interface.name)) {
+        wsmgr = wl_registry_bind(r, name, &ext_workspace_manager_v1_interface, 1);
+        ext_workspace_manager_v1_add_listener(wsmgr, &wm_listener, NULL);
     } else if (!strcmp(iface, zcosmic_toplevel_info_v1_interface.name)) {
         uint32_t v = ver < 3 ? ver : 3;
         info = wl_registry_bind(r, name, &zcosmic_toplevel_info_v1_interface, v);

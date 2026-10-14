@@ -63,6 +63,22 @@ CustomMouseArea {
     acceptedButtons: fullscreen ? Qt.NoButton : Qt.AllButtons
     hoverEnabled: true
 
+    // The launcher's full on-screen area (final size, no animation) widened by a generous margin
+    function inLauncherZone(x: real, y: real): bool {
+        const margin = 56;
+        const left = bar.implicitWidth + panels.launcher.x - margin;
+        const right = bar.implicitWidth + panels.launcher.x + panels.launcher.width + margin;
+        const top = height - borderThickness - panels.launcher.height - margin;
+        return x >= left && x <= right && y >= top;
+    }
+
+    Timer {
+        id: launcherCloseTimer
+
+        interval: 400
+        onTriggered: root.screenState.launcher = false
+    }
+
     function insideItem(item: Item, x: real, y: real): bool {
         const p = item.mapToItem(root, 0, 0);
         const margin = 8;
@@ -219,11 +235,19 @@ CustomMouseArea {
 
         // Show launcher on hover, or show/hide on drag if hover is disabled
         if (Config.launcher.showOnHover) {
-            if (!screenState.launcher && inBottomPanel(panels.launcher, x, y))
+            if (!screenState.launcher && inBottomPanel(panels.launcher, x, y)) {
+                launcherCloseTimer.stop();
                 screenState.launcher = true;
-            // Like the dashboard: close again once the cursor has left the panel (the bar is excluded so its buttons still work)
-            else if (screenState.launcher && !pressed && x >= bar.implicitWidth && !insideItem(panels.launcher, x, y))
-                screenState.launcher = false;
+            }
+            // Like the dashboard: close again once the cursor has really left the launcher. The test uses the panel's final
+            // (not animated) size plus a margin, and waits a moment, so the slide-in animation or a small mouse movement
+            // can never close it (and the hover then re-open it) -- that made it flicker.
+            else if (screenState.launcher && !pressed && x >= bar.implicitWidth) {
+                if (inLauncherZone(x, y))
+                    launcherCloseTimer.stop();
+                else if (!launcherCloseTimer.running)
+                    launcherCloseTimer.start();
+            }
         } else if (pressed && inBottomPanel(panels.launcher, dragStart.x, dragStart.y) && withinPanelWidth(panels.launcher, x, y)) {
             if (dragY < -Config.launcher.dragThreshold)
                 screenState.launcher = true;

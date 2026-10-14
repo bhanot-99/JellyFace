@@ -84,7 +84,7 @@ jellyface revert-system --list
 | **Starts with the session** | A systemd *user* service (`jellyface service on|off|status`) tied to COSMIC's graphical session. It restarts on failure and stops after 5 failures in 5 minutes instead of looping. |
 | **Real window information** | `helpers/cosmic-windows` reads COSMIC's window list through its own protocol. The bar's label and icon show the focused app, and the bar hides for fullscreen windows. |
 | **COSMIC's apps follow the palette** | `jellyface theme system on|off`. The wallpaper palette is also written into COSMIC's own theme, so Files, Terminal and Settings match (windows that are already open pick it up the next time they start). Only keys your COSMIC already uses are written. |
-| **One lock, one idle policy** | `Super+L` runs COSMIC's own lock (`loginctl lock-session`), and JellyFace's own idle timers are off, so COSMIC Settings (Power) is the only place that decides. `jellyface lock` still opens JellyFace's own lock screen if you want it. |
+| **JellyFace's own lock screen** | `Super+L` (and 3 minutes without input) opens JellyFace's lock screen, which checks your real login password (see "Lock screen" below). COSMIC's own lock (`Super+Escape`) is untouched and still available. |
 | **A native COSMIC applet** | `jellyface applet install` then `jellyface applet panel-add` puts a ghost button in COSMIC's *own* panel (written in Rust with COSMIC's toolkit). Its menu opens the launcher, dashboard and notifications, locks the screen, shows the current theme and switches wallpaper-following and COSMIC theming on or off. `jellyface applet panel-remove` takes it out again. |
 
 Safety: every file changed outside `~/JellyFace` is recorded with a copy of the original in `backups/`, nothing under
@@ -103,7 +103,7 @@ stand-ins instead of installing system development packages.
 | Click the **bell** icon above the power icon | Open or close the notification sidebar (click it again to close) |
 | Click the **power** icon at the bottom | Open or close the session menu (power off, restart, log out) |
 | **Click anywhere outside** an open launcher, session menu or sidebar | Close it (that click only closes the panel; it is not passed to the app underneath) |
-| Press **Super + L** | Lock the screen (JellyFace's lock screen; enter your login password to unlock). Added by `jellyface cosmic-tweaks`. It replaces COSMIC's default Super+L ("focus window right"). |
+| Press **Super + L** | Lock the screen with JellyFace's lock screen (enter your login password to unlock). Added by `jellyface cosmic-tweaks`; it replaces COSMIC's default Super+L ("focus window right"). |
 | Press **Escape** while a panel is open | Close the launcher, session menu, sidebar or dashboard |
 
 Everything can also be driven from the command line:
@@ -171,7 +171,7 @@ first image of the folder is used.
 ## Lock screen
 
 `Super + L` (added by `jellyface cosmic-tweaks`) or 3 minutes without input locks the screen with JellyFace's own
-lock screen. It checks the password you type against your **real host login password** (the container's own account
+lock screen (COSMIC's own lock, `Super+Escape`, keeps working too). It checks the password you type against your **real host login password** (the container's own account
 has no password, so `scripts/pam-host-check.sh` asks the host's `unix_chkpwd`). It fails closed: any error rejects the
 password. `jellyface doctor` verifies that a wrong password is rejected. If you ever get stuck on it, switch to a
 text console (`Ctrl+Alt+F3`), log in, and run `jellyface ipc lock unlock`.
@@ -216,6 +216,7 @@ JellyFace gets less information from COSMIC than Caelestia gets from Hyprland. S
 
 - **Window thumbnails and window actions** (the live preview in the active-window pop-out, "detach") need a Hyprland-only
   capture feature and are not available.
+- **Fullscreen** hides JellyFace only for a fullscreen window on the workspace you are looking at; a fullscreen video on another workspace does not hide it.
 - **COSMIC's window outline** (the accent-coloured frame) is drawn by the compositor, which seems to read its colour at
   login: log out and in once after the first `jellyface theme system on`.
 - **Workspace pill** shows numbers only, with no per-workspace app icons.
