@@ -1,0 +1,8 @@
+{
+    "agenda": {
+        "enabled": true,
+        "source": "",
+        "days": 2,
+        "refreshMinutes": 15
+    }
+}

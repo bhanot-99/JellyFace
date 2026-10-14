@@ -8,6 +8,7 @@ import "modules"
 import "modules/drawers"
 import "modules/dock"
 import "modules/clipboard"
+import "modules/agenda"
 import "modules/areapicker"
 import "modules/lock"
 import QtQuick
@@ -32,6 +33,7 @@ ShellRoot {
     Drawers {}
     AreaPicker {}
     ClipboardPopup {}
+    Agenda {}
     Lock {
         id: lock
     }

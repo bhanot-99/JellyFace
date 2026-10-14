@@ -119,6 +119,20 @@ the one exception: it is never tinted or softened. To add palettes, drop another
 `Color_Palette/`. With a wallpaper folder (slideshow), COSMIC does not say which image is showing, so the first image of
 the folder is used.
 
+## Clipboard history, focus mode, agenda
+
+| Do this | To get this |
+|---|---|
+| **Super + V** (or `jellyface ipc clipboard toggle`) | Clipboard history: type to search, arrows + Enter or a click copies an entry (then press Ctrl+V), pin or delete entries. Text and images are kept (last 50 plus pinned) in `~/.local/state/jellyface/clipboard/`; content marked sensitive by password managers is never stored. |
+| **Super + Shift + F** (or `jellyface ipc focus toggle`) | Focus mode: Do Not Disturb on and the screen kept awake; turning it off restores both as they were. A target icon shows in the bar's status icons. |
+| **Quick actions** (dashboard, bottom row) | Screenshot (`cosmic-screenshot`), Kooha, clipboard history, focus mode, keep awake |
+| **Mini player** (bar) | Cover thumbnail with a progress ring while music plays: click = play/pause, right-click = open the Media tab, scroll = next/previous track |
+
+**Agenda card.** A desktop card (top right, under all windows) with today's and tomorrow's events. Point it at a calendar in
+`~/.config/jellyface/desktop.json`: `"agenda": { "source": "/path/to/calendar.ics" }` or an iCal URL (Google Calendar:
+Settings -> your calendar -> *Secret address in iCal format*; keep that URL private). `scripts/agenda.py` re-reads it
+every 15 minutes; set `"enabled": false` to hide the card.
+
 ## Lock screen
 
 `Super + L`, or 3 minutes without input, locks the screen with JellyFace's own lock screen (clock, weather, media,
