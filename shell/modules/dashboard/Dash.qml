@@ -103,7 +103,7 @@ GridLayout {
         Layout.column: 0
         Layout.columnSpan: 5
         Layout.fillWidth: true
-        Layout.preferredHeight: 72
+        Layout.preferredHeight: 96
 
         radius: Tokens.rounding.extraLarge
 

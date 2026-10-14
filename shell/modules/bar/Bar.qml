@@ -148,15 +148,6 @@ ColumnLayout {
                 }
             }
             DelegateChoice {
-                roleValue: "miniPlayer"
-                delegate: EntryWrapper {
-                    MiniPlayer {
-                        objectName: "taskbarMiniPlayer"
-                        screenState: root.screenState
-                    }
-                }
-            }
-            DelegateChoice {
                 roleValue: "tray"
                 delegate: EntryWrapper {
                     Tray {

@@ -54,7 +54,7 @@ RowLayout {
     }
     Action {
         icon: "coffee"
-        label: Tr.tr("Keep awake")
+        label: Tr.tr("Awake")
         active: IdleInhibitor.enabled
         onTriggered: IdleInhibitor.enabled = !IdleInhibitor.enabled
     }
@@ -70,6 +70,7 @@ RowLayout {
 
         Layout.fillWidth: true
         Layout.fillHeight: true
+        Layout.minimumHeight: content.implicitHeight + Tokens.padding.medium * 2
         radius: Tokens.rounding.large
         color: active ? Colours.palette.m3secondaryContainer : Colours.layer(Colours.palette.m3surfaceContainerHighest, 1)
 
@@ -79,18 +80,23 @@ RowLayout {
         }
 
         ColumnLayout {
+            id: content
+
             anchors.centerIn: parent
-            spacing: 2
+            spacing: Tokens.spacing.small
 
             MaterialIcon {
                 Layout.alignment: Qt.AlignHCenter
                 text: action.icon
                 color: action.active ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
                 fill: action.active ? 1 : 0
+                fontStyle: Tokens.font.icon.medium
             }
 
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
+                Layout.maximumWidth: action.width - Tokens.padding.small * 2
+                elide: Text.ElideRight
                 text: action.label
                 color: action.active ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurfaceVariant
                 font: Tokens.font.body.small

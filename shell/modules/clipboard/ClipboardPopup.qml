@@ -11,8 +11,9 @@ import qs.components.containers
 import qs.components.controls
 import qs.services
 
-// Clipboard history popup (jellyface ipc clipboard toggle). Type to search, arrows + Enter or a click copies an
-// entry (then press Ctrl+V where you want it), Esc closes.
+// Clipboard history popup (Super+V / jellyface ipc clipboard toggle), laid out like the dashboard: a bento of tiles
+// with differently shaped corners. Type to search, arrows or Tab to move, Enter or a click copies (then press Ctrl+V),
+// Esc closes. Pinned entries are tinted and come first.
 Scope {
     LazyLoader {
         active: Clipboard.open
@@ -36,7 +37,7 @@ Scope {
                 onClicked: Clipboard.open = false
             }
 
-            StyledRect {
+            Item {
                 id: panel
 
                 readonly property var shown: {
@@ -44,25 +45,25 @@ Scope {
                     const all = Clipboard.entries.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
                     return q ? all.filter(e => e.kind === "text" && e.text.toLowerCase().includes(q)) : all;
                 }
+                readonly property real gap: Tokens.spacing.medium
 
                 anchors.centerIn: parent
-                implicitWidth: 580
-                implicitHeight: Math.min(parent.height - 120, 560)
-                radius: Tokens.rounding.extraLarge
-                color: Colours.palette.m3surface
+                width: 640
+                height: Math.min(parent.height - 120, 600)
 
+                // Swallow clicks so they don't close the popup
                 MouseArea {
                     anchors.fill: parent
                 }
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: Tokens.padding.large
-                    spacing: Tokens.spacing.medium
+                    spacing: panel.gap
 
+                    // Header tiles: search pill, entry counter, clear button
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: Tokens.spacing.medium
+                        spacing: panel.gap
 
                         SearchBar {
                             id: search
@@ -71,111 +72,209 @@ Scope {
                             placeholderText: Tr.tr("Search clipboard history")
                             Component.onCompleted: forceActiveFocus()
                             Keys.onEscapePressed: Clipboard.open = false
-                            Keys.onDownPressed: list.incrementCurrentIndex()
-                            Keys.onUpPressed: list.decrementCurrentIndex()
+                            Keys.onDownPressed: grid.moveCurrentIndexDown()
+                            Keys.onUpPressed: grid.moveCurrentIndexUp()
+                            Keys.onTabPressed: grid.moveCurrentIndexRight()
+                            Keys.onBacktabPressed: grid.moveCurrentIndexLeft()
                             Keys.onReturnPressed: {
-                                const e = panel.shown[list.currentIndex];
+                                const e = panel.shown[grid.currentIndex];
                                 if (e) {
                                     Clipboard.copy(e);
                                     Clipboard.open = false;
                                 }
                             }
-                            onTextChanged: list.currentIndex = 0
+                            onTextChanged: grid.currentIndex = 0
                         }
 
-                        IconButton {
-                            icon: "delete_sweep"
-                            type: IconButton.Text
-                            onClicked: Clipboard.clear()
+                        StyledRect {
+                            implicitWidth: 56
+                            implicitHeight: 56
+                            color: Colours.palette.m3tertiaryContainer
+                            topLeftRadius: Tokens.rounding.large
+                            topRightRadius: 28
+                            bottomLeftRadius: 28
+                            bottomRightRadius: Tokens.rounding.large
+
+                            StyledText {
+                                anchors.centerIn: parent
+                                text: panel.shown.length
+                                color: Colours.palette.m3onTertiaryContainer
+                                font: Tokens.font.body.large
+                            }
+                        }
+
+                        StyledRect {
+                            implicitWidth: 56
+                            implicitHeight: 56
+                            color: Colours.palette.m3errorContainer
+                            radius: 28
+                            topRightRadius: Tokens.rounding.small
+
+                            StateLayer {
+                                color: Colours.palette.m3onErrorContainer
+                                onClicked: Clipboard.clear()
+                            }
+
+                            MaterialIcon {
+                                anchors.centerIn: parent
+                                text: "delete_sweep"
+                                color: Colours.palette.m3onErrorContainer
+                            }
                         }
                     }
 
-                    StyledText {
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.topMargin: Tokens.padding.extraLarge
+                    // Empty state
+                    StyledRect {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
                         visible: panel.shown.length === 0
-                        text: Clipboard.entries.length === 0 ? Tr.tr("Nothing copied yet") : Tr.tr("No matches")
-                        color: Colours.palette.m3outline
-                        font: Tokens.font.body.medium
+                        color: Colours.palette.m3surface
+                        radius: Tokens.rounding.extraLarge * 1.5
+
+                        ColumnLayout {
+                            anchors.centerIn: parent
+                            spacing: Tokens.spacing.small
+
+                            MaterialIcon {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: "content_paste_off"
+                                color: Colours.palette.m3outline
+                                fontStyle: Tokens.font.icon.extraLarge
+                            }
+
+                            StyledText {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: Clipboard.entries.length === 0 ? Tr.tr("Nothing copied yet") : Tr.tr("No matches")
+                                color: Colours.palette.m3outline
+                                font: Tokens.font.body.medium
+                            }
+                        }
                     }
 
-                    ListView {
-                        id: list
+                    // Entry tiles: two columns, corner shapes cycle through three variants
+                    GridView {
+                        id: grid
+
+                        readonly property real cellGap: panel.gap
 
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         visible: panel.shown.length > 0
                         clip: true
-                        spacing: Tokens.spacing.small
+                        cellWidth: Math.floor(width / 2)
+                        cellHeight: 112
                         model: panel.shown
                         currentIndex: 0
-                        highlightMoveDuration: 80
+                        keyNavigationEnabled: false
+                        highlightMoveDuration: 0
 
-                        delegate: StyledRect {
-                            id: item
+                        delegate: Item {
+                            id: cell
 
                             required property var modelData
                             required property int index
+                            readonly property bool current: GridView.isCurrentItem
+                            readonly property bool image: modelData.kind === "image"
+                            readonly property bool pinned: !!modelData.pinned
+                            readonly property real big: 40
+                            readonly property real small: Tokens.rounding.small
 
-                            width: ListView.view.width
-                            implicitHeight: Math.max(52, row.implicitHeight + Tokens.padding.medium * 2)
-                            radius: Tokens.rounding.large
-                            color: ListView.isCurrentItem ? Colours.palette.m3secondaryContainer : Colours.tPalette.m3surfaceContainer
+                            width: grid.cellWidth
+                            height: grid.cellHeight
 
-                            StateLayer {
-                                onClicked: {
-                                    Clipboard.copy(item.modelData);
-                                    Clipboard.open = false;
-                                }
-                            }
-
-                            RowLayout {
-                                id: row
+                            StyledClippingRect {
+                                id: tile
 
                                 anchors.fill: parent
-                                anchors.margins: Tokens.padding.medium
-                                spacing: Tokens.spacing.medium
+                                anchors.rightMargin: index % 2 === 0 ? grid.cellGap / 2 : 0
+                                anchors.leftMargin: index % 2 === 1 ? grid.cellGap / 2 : 0
+                                anchors.bottomMargin: grid.cellGap
 
-                                MaterialIcon {
-                                    text: item.modelData.kind === "image" ? "image" : "content_paste"
-                                    color: Colours.palette.m3onSurfaceVariant
-                                }
+                                color: cell.pinned ? Colours.palette.m3primaryContainer : cell.current ? Colours.palette.m3secondaryContainer : Colours.palette.m3surfaceContainerHigh
+                                // Leaf / pill / mirrored leaf
+                                topLeftRadius: [cell.big, 20, cell.small][cell.index % 3]
+                                topRightRadius: [cell.small, 20, cell.big][cell.index % 3]
+                                bottomLeftRadius: [cell.small, 20, cell.big][cell.index % 3]
+                                bottomRightRadius: [cell.big, 20, cell.small][cell.index % 3]
+                                border.width: cell.current ? 2 : 0
+                                border.color: Colours.palette.m3primary
 
                                 Image {
-                                    visible: item.modelData.kind === "image"
-                                    source: visible ? `file://${item.modelData.file}` : ""
-                                    sourceSize.height: 96
-                                    fillMode: Image.PreserveAspectFit
+                                    anchors.fill: parent
+                                    visible: cell.image
+                                    source: cell.image ? `file://${cell.modelData.file}` : ""
+                                    sourceSize.width: 400
+                                    fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
-                                    Layout.preferredHeight: 48
-                                    Layout.preferredWidth: 96
+                                }
+
+                                StateLayer {
+                                    color: cell.pinned ? Colours.palette.m3onPrimaryContainer : Colours.palette.m3onSurface
+                                    onClicked: {
+                                        Clipboard.copy(cell.modelData);
+                                        Clipboard.open = false;
+                                    }
+                                    onEntered: grid.currentIndex = cell.index
                                 }
 
                                 StyledText {
-                                    Layout.fillWidth: true
-                                    visible: item.modelData.kind === "text"
-                                    text: item.modelData.text.trim()
+                                    anchors.fill: parent
+                                    anchors.margins: Tokens.padding.large
+                                    anchors.rightMargin: Tokens.padding.large + 8
+                                    visible: !cell.image
+                                    text: cell.modelData.text.trim()
                                     elide: Text.ElideRight
-                                    maximumLineCount: 2
                                     wrapMode: Text.Wrap
+                                    maximumLineCount: 4
+                                    color: cell.pinned ? Colours.palette.m3onPrimaryContainer : cell.current ? Colours.palette.m3onSecondaryContainer : Colours.palette.m3onSurface
                                     font: Tokens.font.body.small
                                 }
 
-                                Item {
-                                    visible: item.modelData.kind === "image"
-                                    Layout.fillWidth: true
-                                }
+                                // Hover actions: pin and delete as little round buttons
+                                Row {
+                                    anchors.right: parent.right
+                                    anchors.bottom: parent.bottom
+                                    anchors.margins: Tokens.padding.small
+                                    spacing: Tokens.spacing.small
+                                    opacity: cell.current || cell.pinned ? 1 : 0
 
-                                IconButton {
-                                    icon: "push_pin"
-                                    type: item.modelData.pinned ? IconButton.Filled : IconButton.Text
-                                    onClicked: Clipboard.togglePin(item.modelData)
-                                }
+                                    Repeater {
+                                        model: [
+                                            {
+                                                icon: "push_pin",
+                                                act: "pin"
+                                            },
+                                            {
+                                                icon: "close",
+                                                act: "del"
+                                            }
+                                        ]
 
-                                IconButton {
-                                    icon: "close"
-                                    type: IconButton.Text
-                                    onClicked: Clipboard.remove(item.modelData)
+                                        StyledRect {
+                                            id: btn
+
+                                            required property var modelData
+
+                                            // A pinned entry only shows its pin; the delete button needs hover or focus
+                                            visible: modelData.act === "pin" || cell.current
+                                            width: 28
+                                            height: 28
+                                            radius: Tokens.rounding.full
+                                            color: modelData.act === "pin" && cell.pinned ? Colours.palette.m3primary : Qt.alpha(Colours.palette.m3surface, 0.75)
+
+                                            StateLayer {
+                                                onClicked: btn.modelData.act === "pin" ? Clipboard.togglePin(cell.modelData) : Clipboard.remove(cell.modelData)
+                                            }
+
+                                            MaterialIcon {
+                                                anchors.centerIn: parent
+                                                text: btn.modelData.icon
+                                                color: btn.modelData.act === "pin" && cell.pinned ? Colours.palette.m3onPrimary : Colours.palette.m3onSurface
+                                                fill: btn.modelData.act === "pin" && cell.pinned ? 1 : 0
+                                                fontStyle: Tokens.font.icon.small
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

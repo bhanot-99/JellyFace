@@ -29,10 +29,6 @@
                 "enabled": true
             },
             {
-                "id": "miniPlayer",
-                "enabled": true
-            },
-            {
                 "id": "tray",
                 "enabled": true
             },

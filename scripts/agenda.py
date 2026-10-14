@@ -3,6 +3,10 @@
 iCal URL, for example Google Calendar's "secret address in iCal format") and writes the next few days of events to
 ~/.local/state/jellyface/agenda.json for the desktop Agenda card. Standard library only.
 
+Commands:  agenda.py            refresh now
+           agenda.py set SRC    save the calendar source (.ics path or iCal URL) and refresh
+           agenda.py status
+
 Supported: timed and all-day events, UTC / TZID / floating times, and simple repeats (RRULE DAILY, WEEKLY with
 BYDAY, MONTHLY, YEARLY, INTERVAL, COUNT, UNTIL; EXDATE). Anything it cannot read is skipped, never fatal.
 """
@@ -148,7 +152,30 @@ def occurrences(ev, lo, hi):
         cur += timedelta(days=1)
 
 
+def set_source(src):
+    try:
+        with open(CONF) as f:
+            conf = json.load(f)
+    except Exception:
+        conf = {}
+    conf.setdefault("agenda", {})["source"] = src
+    os.makedirs(os.path.dirname(CONF), exist_ok=True)
+    with open(CONF, "w") as f:
+        json.dump(conf, f, indent=4)
+    print("agenda source saved" if src else "agenda source cleared")
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "set":
+        set_source(sys.argv[2] if len(sys.argv) > 2 else "")
+    elif len(sys.argv) > 1 and sys.argv[1] == "status":
+        try:
+            with open(OUT) as f:
+                d = json.load(f)
+            print(d.get("state"), len(d.get("events", [])), "events", d.get("error", ""))
+        except Exception:
+            print("no agenda data yet")
+        return
     try:
         with open(CONF) as f:
             conf = json.load(f).get("agenda", {})
