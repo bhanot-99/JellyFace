@@ -133,7 +133,9 @@ the folder is used.
 
 **Dock.** A row of apps at the bottom centre of the screen, above windows. It slides away while a window on the current
 workspace overlaps it (or something is fullscreen) and comes back once nothing does; push the cursor to the bottom edge
-under it to call it back over your windows. Click an app to open it (or focus and cycle its windows if it is running),
+under it to call it back over your windows. Apps show as monochrome symbols on pills whose shade tells their state: solid
+white = the app in front, faint frost = running, lighter frost = under the pointer (its name shows above). To choose an
+app's symbol, add `"symbol": "<Material Symbols name>"` to it in `dock.json`. Click an app to open it (or focus and cycle its windows if it is running),
 drag a tile sideways to reorder, right-click a tile for its menu, right-click the dock to add apps or web apps. Apps are
 kept in `~/.config/jellyface/dock.json`.
 

@@ -83,7 +83,14 @@ cmd_status() {
     if pgrep -f "$JF_QS_RE" >/dev/null; then log "shell: running"; else log "shell: stopped"; fi
     if pgrep -f "$JF_WSD_RE" >/dev/null; then log "workspace helper: running"; else log "workspace helper: stopped"; fi
 }
-cmd_ipc()     { in_container 'quickshell ipc -p "$1" call "${@:2}"' "$JF_SHELL" "$@"; }
+cmd_ipc() {
+    # JellyPanel is opened with the Super key, so it skips the container round trip: its own socket (services/JellyPanel.qml)
+    local sock="${XDG_RUNTIME_DIR:-/tmp}/jellyface-jellypanel.sock"
+    if [ "${1:-}" = jellypanel ] && [[ "${2:-}" =~ ^(toggle|open|close)$ ]] && [ -S "$sock" ] && command -v nc >/dev/null; then
+        printf '%s\n' "$2" | nc -NU "$sock" 2>/dev/null && return 0
+    fi
+    in_container 'quickshell ipc -p "$1" call "${@:2}"' "$JF_SHELL" "$@"
+}
 
 cmd_autostart() {
     case "${1:-}" in

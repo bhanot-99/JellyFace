@@ -15,7 +15,8 @@ import qs.utils
 // window on the current workspace overlaps it (or anything is fullscreen) and comes back when nothing does, when the
 // cursor is pushed to the bottom edge under it, or while JellyPanel is open. Apps come from ~/.config/jellyface/dock.json.
 //   drag a tile sideways to reorder it | right-click a tile for its menu | right-click the open dock to add apps
-// Hovering magnifies the icon under the cursor (and a little its neighbours). Menus and dialogs: DockPopups.qml.
+// Each app is a monochrome symbol on a pill whose shade shows its state: solid white = the app in front, faint frost =
+// running, lighter frost = under the pointer (whose name then shows above it). Menus and dialogs: DockPopups.qml.
 Scope {
     id: root
 
@@ -30,6 +31,53 @@ Scope {
     property int popupIndex: -1
     property point popupAnchor        // screen position the menu points at (tile centre, top edge)
     property bool dragging
+
+    // Monochrome Material Symbols for the dock, matched on an app's name, web address or desktop id (lower case).
+    // First match wins, so specific names come before generic words. Set "symbol" on an app in dock.json to choose.
+    readonly property var symbols: [
+        [["youtube"], "smart_display"],
+        [["pinterest"], "push_pin"],
+        [["chatgpt", "openai"], "smart_toy"],
+        [["claude"], "asterisk"],
+        [["gemini"], "auto_awesome"],
+        [["github.com", "gitlab.com"], "commit"], // not plain "github": many Flatpak ids are io.github.*
+        [["whatsapp", "telegram", "signal", "messag"], "chat"],
+        [["gmail", "mail", "thunderbird", "evolution"], "mail"],
+        [["discord", "slack", "teams"], "forum"],
+        [["spotify", "music", "rhythmbox"], "music_note"],
+        [["obsidian"], "diamond"],
+        [["visual studio", "vscode", "code", "zed", "jetbrains"], "code_blocks"],
+        [["sublime", "text editor", "gedit", "kate", "notes"], "edit_note"],
+        [["kooha", "obs", "record"], "screen_record"],
+        [["screenshot"], "screenshot_region"],
+        [["monitor", "htop", "resources"], "monitoring"],
+        [["baobab", "disk usage"], "pie_chart"],
+        [["disks", "gparted"], "hard_drive"],
+        [["terminal", "term", "console", "konsole", "kitty", "alacritty", "ghostty"], "terminal"],
+        [["files", "nautilus", "dolphin", "thunar", "nemo"], "folder"],
+        [["settings", "control center"], "settings"],
+        [["store", "software", "flathub"], "storefront"],
+        [["firefox", "brave", "chrom", "browser", "vivaldi", "zen"], "language"],
+        [["vlc", "mpv", "video", "player", "celluloid"], "play_circle"],
+        [["calendar"], "calendar_month"],
+        [["calculator"], "calculate"],
+        [["image", "photo", "viewer", "loupe"], "image"],
+        [["camera"], "photo_camera"],
+        [["writer", "document"], "description"],
+        [["calc", "sheet"], "table"],
+        [["impress", "slides", "presentation"], "slideshow"],
+        [["steam", "game", "lutris"], "sports_esports"],
+        [["maps"], "map"],
+        [["weather"], "partly_cloudy_day"]
+    ]
+
+    function symbolFor(text: string): string {
+        const t = text.toLowerCase();
+        for (const [words, symbol] of symbols)
+            if (words.some(w => t.includes(w)))
+                return symbol;
+        return "";
+    }
 
     function appAt(i: int): var {
         return i >= 0 && i < apps.count ? JSON.parse(apps.get(i).json) : null;
@@ -177,10 +225,15 @@ Scope {
 
         BackgroundEffect.blurRegion: Glass.enabled ? dockBlur : null
 
-        GlassRegion {
+        Region {
             id: dockBlur
 
-            pane: panel
+            GlassRegion {
+                pane: panel
+            }
+            GlassRegion {
+                pane: tip
+            }
         }
 
         // where the dock sits on screen when shown, in the same logical pixels COSMIC reports window geometry in
@@ -220,18 +273,80 @@ Scope {
             value: win.dockRect.x + win.dockRect.width
         }
 
+        // the hovered app's name in a small glass pill above it, after a short pause (no flashing while sweeping across)
+        StyledRect {
+            id: tip
+
+            readonly property bool wanted: panel.tipLabel !== "" && win.shown && !root.dragging && root.popup === ""
+            property bool showing
+
+            onWantedChanged: {
+                if (wanted) {
+                    tipTimer.restart();
+                } else {
+                    tipTimer.stop();
+                    showing = false;
+                }
+            }
+
+            x: Math.max(0, Math.min(win.width - width, panel.tipX - width / 2))
+            y: panel.y - height - 14
+            implicitWidth: tipText.implicitWidth + Tokens.padding.large * 2
+            implicitHeight: tipText.implicitHeight + Tokens.padding.small * 2
+            radius: Tokens.rounding.full
+            color: Glass.enabled ? Glass.sheet : Colours.palette.m3surfaceContainerHigh
+            opacity: showing ? 1 : 0
+            visible: opacity > 0
+
+            Behavior on opacity {
+                Anim {
+                    duration: 120
+                }
+            }
+            Behavior on x {
+                enabled: tip.showing
+                Anim {
+                    duration: 160
+                }
+            }
+
+            Timer {
+                id: tipTimer
+
+                interval: 350
+                onTriggered: tip.showing = true
+            }
+
+            StyledText {
+                id: tipText
+
+                anchors.centerIn: parent
+                text: panel.tipLabel
+                color: Colours.palette.m3onSurface
+                font: Tokens.font.body.small
+            }
+        }
+
         StyledRect {
             id: panel
 
-            readonly property real gap: Tokens.spacing.medium
-            readonly property real pad: Tokens.padding.large
-            readonly property real lift: 10                // headroom above the row for magnified icons
+            // a glass capsule of pill-shaped slots, each holding a monochrome symbol
+            readonly property real gap: 2
+            readonly property real pad: 6                   // the capsule's rim around the pills
+            // symbols 25% above the theme's large icon size; the pills grow by just as much, so the space around each
+            // symbol stays the same (font points -> pixels: x 4/3)
+            readonly property real iconPt: Tokens.font.icon.large.pointSize * 1.25
+            readonly property real growth: (iconPt - Tokens.font.icon.large.pointSize) * 4 / 3
+            readonly property real tileH: 44 + growth
+            readonly property real lift: 48                 // headroom above the dock for the name tooltip
+            // the app under the pointer, for the name tooltip
+            property string tipLabel
+            property real tipX
             readonly property int slots: Math.max(root.count, 1)
-            // 64px tiles, shrunk when there are so many apps that the row would not fit on the screen
-            readonly property real tile: Math.max(32, Math.min(64, Math.floor(((win.screen?.width ?? 1920) * 0.9 - pad * 2 - (slots - 1) * gap) / slots)))
-            readonly property real fullWidth: slots * tile + (slots - 1) * gap + pad * 2
-            readonly property real fullHeight: tile + pad * 2
-            property real hoverX: -1000                     // pointer x in the row, for magnification
+            // 60px-wide pills (plus the growth), narrower when there are so many apps that the row would not fit on the screen
+            readonly property real tileW: Math.max(40, Math.min(60 + growth, Math.floor(((win.screen?.width ?? 1920) * 0.9 - pad * 2 - (slots - 1) * gap) / slots)))
+            readonly property real fullWidth: slots * tileW + (slots - 1) * gap + pad * 2
+            readonly property real fullHeight: tileH + pad * 2
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.bottom: parent.bottom
@@ -249,7 +364,7 @@ Scope {
             }
 
             color: Colours.tPalette.m3surface
-            radius: Tokens.rounding.extraLarge
+            radius: fullHeight / 2
             implicitWidth: fullWidth
             implicitHeight: fullHeight
 
@@ -263,12 +378,9 @@ Scope {
                     type: Anim.DefaultSpatial
                 }
             }
-            // the pointer's position along the row, for magnification
+            // the pointer is over the dock (keeps it shown while auto-hide would hide it)
             HoverHandler {
                 id: hover
-
-                onHoveredChanged: if (!hovered) panel.hoverX = -1000
-                onPointChanged: panel.hoverX = row.mapFromItem(panel, point.position.x, 0).x
             }
 
             // right-click on the dock (not on a tile): add apps
@@ -284,7 +396,7 @@ Scope {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: panel.pad
                 width: panel.fullWidth - panel.pad * 2
-                height: panel.tile
+                height: panel.tileH
                 orientation: ListView.Horizontal
                 spacing: panel.gap
                 interactive: false
@@ -340,18 +452,11 @@ Scope {
         readonly property bool running: windows.length > 0
         readonly property bool focused: windows.some(w => w.id === CosmicWindows.activeId)
         readonly property string label: app?.name ?? entry?.name ?? app?.id ?? ""
-        readonly property string iconSource: app?.icon?.includes("/") ? `file://${Quickshell.shellPath("../" + app.icon)}` : (app?.icon || entry?.icon) ? Quickshell.iconPath(app.icon || entry.icon, "application-x-executable") : ""
+        // the app's monochrome symbol: "symbol" in dock.json, else a match on its name or id, else its category
+        readonly property string symbol: app?.symbol || root.symbolFor(`${app?.name ?? ""} ${app?.match ?? ""} ${app?.id ?? ""} ${entry?.name ?? ""}`) || Icons.getAppCategoryIcon(app?.id ?? "", "apps")
 
-        // magnification: 1 at a distance, up to 1.32 right under the pointer, a smooth (cosine) falloff over 1.6 tiles
-        readonly property real near: {
-            if (root.dragging || root.popup !== "")
-                return 0;
-            const d = Math.abs(panel.hoverX - (x + width / 2)) / (panel.tile * 1.6);
-            return d >= 1 ? 0 : (Math.cos(d * Math.PI) + 1) / 2;
-        }
-
-        width: panel.tile
-        height: panel.tile
+        width: panel.tileW
+        height: panel.tileH
 
         MouseArea {
             id: area
@@ -365,6 +470,14 @@ Scope {
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             cursorShape: held ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+            onContainsMouseChanged: {
+                if (containsMouse) {
+                    panel.tipLabel = slot.label;
+                    panel.tipX = slot.mapToItem(win.contentItem, slot.width / 2, 0).x;
+                } else if (panel.tipLabel === slot.label) {
+                    panel.tipLabel = "";
+                }
+            }
 
             onPressed: mouse => {
                 pressX = mapToItem(dragLayer, mouse.x, 0).x;
@@ -381,9 +494,9 @@ Scope {
                     root.dragging = true;
                 }
                 if (held) {
-                    content.x = Math.max(-panel.tile / 2, Math.min(dragLayer.width - panel.tile / 2, px - grabOffset));
+                    content.x = Math.max(-panel.tileW / 2, Math.min(dragLayer.width - panel.tileW / 2, px - grabOffset));
                     // reorder as soon as the dragged tile's centre passes a neighbour's slot
-                    const to = Math.max(0, Math.min(root.count - 1, Math.floor((content.x + panel.tile / 2) / (panel.tile + panel.gap))));
+                    const to = Math.max(0, Math.min(root.count - 1, Math.floor((content.x + panel.tileW / 2) / (panel.tileW + panel.gap))));
                     if (to !== slot.index)
                         root.apps.move(slot.index, to, 1);
                 }
@@ -412,8 +525,8 @@ Scope {
         Item {
             id: content
 
-            width: panel.tile
-            height: panel.tile
+            width: panel.tileW
+            height: panel.tileH
 
             states: State {
                 when: area.held
@@ -435,95 +548,47 @@ Scope {
                 }
             }
 
-            // hover / pressed / dragged background
+            // The pill behind the symbol, its shade telling the app's state: a solid white pill for the focused app,
+            // a faint frost for a running one, a lighter frost under the pointer (and while pressed or dragged)
             StyledRect {
                 anchors.fill: parent
-                radius: Tokens.rounding.large
-                color: Colours.tPalette.m3surfaceContainer
-                scale: area.held ? 1.08 : 1 + slot.near * 0.06
+                radius: height / 2
+                glassRim: false
+                color: slot.focused && !area.held ? Colours.palette.m3primary : Colours.palette.m3onSurface
+                opacity: slot.focused && !area.held ? 1 : area.held ? 0.24 : area.pressed ? 0.2 : area.containsMouse ? 0.14 : slot.running ? 0.07 : 0
+                scale: area.held ? 1.06 : 1
 
-                Behavior on scale {
-                    Anim {
-                        duration: 140
-                    }
-                }
-
-                StyledRect {
-                    anchors.fill: parent
-                    radius: parent.radius
-                    color: Colours.palette.m3onSurface
-                    opacity: area.held ? 0.12 : area.pressed ? 0.1 : area.containsMouse ? 0.06 : 0
-
-                    Behavior on opacity {
-                        Anim {
-                            duration: 120
-                        }
-                    }
-                }
-            }
-
-            Item {
-                id: iconBox
-
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.verticalCenter: parent.verticalCenter
-                width: panel.tile * 0.6
-                height: width
-                // lift and grow towards the pointer
-                anchors.verticalCenterOffset: -slot.near * panel.lift * 0.7 - (area.held ? 4 : 0)
-                scale: area.held ? 1.18 : area.pressed ? 0.92 : 1 + slot.near * 0.32
-
-                Behavior on scale {
-                    Anim {
-                        duration: 140
-                    }
-                }
-                Behavior on anchors.verticalCenterOffset {
-                    Anim {
-                        duration: 140
-                    }
-                }
-
-                IconImage {
-                    anchors.fill: parent
-                    visible: slot.iconSource !== ""
-                    source: slot.iconSource
-                    asynchronous: true
-                }
-
-                // a web app without an icon: its first letter on a tinted disc
-                StyledRect {
-                    anchors.fill: parent
-                    visible: slot.iconSource === ""
-                    radius: Tokens.rounding.full
-                    color: Colours.palette.m3primaryContainer
-
-                    StyledText {
-                        anchors.centerIn: parent
-                        text: slot.label.charAt(0).toUpperCase()
-                        color: Colours.palette.m3onPrimaryContainer
-                        font.pointSize: panel.tile * 0.24
-                        font.weight: Font.Bold
-                    }
-                }
-            }
-
-            // running indicator: a dot under the icon, a wider pill for the focused app
-            StyledRect {
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Tokens.padding.small / 2
-                implicitWidth: slot.focused ? 14 : 5
-                implicitHeight: 5
-                radius: Tokens.rounding.full
-                color: Colours.palette.m3primary
-                opacity: slot.running && !area.held ? 1 : 0
-
-                Behavior on implicitWidth {
-                    Anim {}
+                Behavior on color {
+                    CAnim {}
                 }
                 Behavior on opacity {
-                    Anim {}
+                    Anim {
+                        duration: 140
+                    }
+                }
+                Behavior on scale {
+                    Anim {
+                        duration: 140
+                    }
+                }
+            }
+
+            MaterialIcon {
+                anchors.centerIn: parent
+                text: slot.symbol
+                // filled for the app in front, outlined for the rest (as in the references); dark on the white pill
+                fill: slot.focused ? 1 : 0
+                fontStyle: Tokens.font.icon.size(panel.iconPt).build()
+                color: slot.focused && !area.held ? Colours.palette.m3onPrimary : slot.running || area.containsMouse ? Colours.palette.m3onSurface : Colours.palette.m3onSurfaceVariant
+                scale: area.pressed ? 0.9 : 1
+
+                Behavior on color {
+                    CAnim {}
+                }
+                Behavior on scale {
+                    Anim {
+                        duration: 120
+                    }
                 }
             }
         }

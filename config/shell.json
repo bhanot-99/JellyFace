@@ -48,7 +48,10 @@
                 "id": "power",
                 "enabled": true
             }
-        ]
+        ],
+        "popouts": {
+            "activeWindow": false
+        }
     },
     "services": {
         "weatherUnits": "Celsius"

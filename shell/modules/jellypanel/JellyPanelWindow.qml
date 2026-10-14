@@ -18,6 +18,7 @@ import qs.utils
 // pill on top and the dock left showing below. Super (or `jellyface ipc jellypanel toggle`) opens and closes it.
 // Type to search, arrows move, Enter or a click opens the app, scroll or swipe for the next page, Esc or a click on
 // the empty background closes.
+// The window is built once and only shown and hidden, so opening is instant: no grid to build, no icons to load.
 Scope {
     id: root
 
@@ -28,11 +29,14 @@ Scope {
     // avahi...) cannot be launched on the desktop, so only these are shown. Read at startup (so the first open never
     // shows the container's apps) and again each time JellyPanel opens (newly installed apps).
     property var hostIds: null
+    property string hostKey
 
     Connections {
         function onOpenChanged(): void {
-            if (JellyPanel.open)
-                hostApps.running = true;
+            if (!JellyPanel.open)
+                return;
+            hostApps.running = true;
+            panel.item?.reset();
         }
 
         target: JellyPanel
@@ -44,7 +48,14 @@ Scope {
         running: true
         command: ["sh", "-c", "ls -1 /run/host/usr/share/applications /run/host/usr/local/share/applications /run/host/var/lib/flatpak/exports/share/applications /run/host/var/lib/snapd/desktop/applications \"$HOME/.local/share/applications\" \"$HOME/.local/share/flatpak/exports/share/applications\" 2>/dev/null"]
         stdout: StdioCollector {
-            onStreamFinished: root.hostIds = new Set(text.split("\n").filter(l => l.endsWith(".desktop")).map(l => l.slice(0, -8)))
+            onStreamFinished: {
+                const ids = text.split("\n").filter(l => l.endsWith(".desktop")).map(l => l.slice(0, -8)).sort();
+                // only when apps were (un)installed: a new set rebuilds the whole grid
+                if (ids.join("\n") !== root.hostKey) {
+                    root.hostKey = ids.join("\n");
+                    root.hostIds = new Set(ids);
+                }
+            }
         }
     }
 
@@ -53,7 +64,9 @@ Scope {
     }
 
     LazyLoader {
-        active: JellyPanel.open
+        id: panel
+
+        active: true
 
         StyledWindow {
             id: win
@@ -63,6 +76,16 @@ Scope {
             readonly property var shown: search.text.trim() ? Apps.search(search.text.trim()).filter(a => !a.noDisplay && root.onHost(a)) : allApps
             readonly property int pageCount: Math.max(1, Math.ceil(shown.length / root.perPage))
             property int selected: -1 // keyboard selection (-1 = none); Enter opens it
+
+            // each time JellyPanel opens: a fresh search on the first page, and the quick fade-and-settle
+            function reset(): void {
+                search.text = "";
+                selected = -1;
+                pages.positionViewAtBeginning();
+                pages.currentIndex = 0;
+                search.forceActiveFocus();
+                openAnim.restart();
+            }
 
             function launch(entry: var): void {
                 if (!entry)
@@ -80,6 +103,7 @@ Scope {
 
             screen: ShellState.forActive()?.modelData ?? Quickshell.screens[0]
             name: "jellypanel"
+            visible: JellyPanel.open
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
             WlrLayershell.layer: WlrLayer.Top // above windows and the bar; the dock moves to Overlay meanwhile
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
@@ -105,13 +129,35 @@ Scope {
                 anchors.fill: parent
                 // JellyPanel usually opens over app windows, which can be far brighter than the wallpaper: dim at least a third
                 color: Glass.enabled ? Qt.rgba(0, 0, 0, 0.34 + 0.2 * Glass.backdrop) : Qt.alpha(Colours.palette.m3surface, 0.92)
-                opacity: 0
-                Component.onCompleted: opacity = 1
+            }
 
-                Behavior on opacity {
-                    Anim {
-                        type: Anim.DefaultEffects
-                    }
+            // open with a quick macOS-style zoom: the desktop dims and the grid settles in from slightly larger
+            ParallelAnimation {
+                id: openAnim
+
+                NumberAnimation {
+                    target: veil
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 140
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: content
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 160
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: content
+                    property: "scale"
+                    from: 1.03
+                    to: 1
+                    duration: 200
+                    easing.type: Easing.OutCubic
                 }
             }
 
@@ -131,24 +177,6 @@ Scope {
                 // leave the dock its own strip at the bottom
                 anchors.bottomMargin: 170
 
-                // open with the macOS-style zoom: the grid settles in from slightly larger
-                opacity: 0
-                scale: 1.06
-                Component.onCompleted: {
-                    opacity = 1;
-                    scale = 1;
-                }
-
-                Behavior on opacity {
-                    Anim {
-                        type: Anim.DefaultEffects
-                    }
-                }
-                Behavior on scale {
-                    Anim {
-                        type: Anim.DefaultSpatial
-                    }
-                }
 
                 SearchBar {
                     id: search
@@ -159,7 +187,6 @@ Scope {
                     topPadding: Tokens.padding.small
                     bottomPadding: Tokens.padding.small
                     placeholderText: Tr.tr("Search")
-                    Component.onCompleted: forceActiveFocus()
 
                     // a search selects its best match, so Enter opens it; clearing the search clears the selection
                     onTextChanged: {
