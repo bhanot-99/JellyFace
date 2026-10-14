@@ -4,13 +4,15 @@ iCal URL, for example Google Calendar's "secret address in iCal format") and wri
 ~/.local/state/jellyface/agenda.json for the desktop Agenda card. Standard library only.
 
 Commands:  agenda.py            refresh now
+           agenda.py add TITLE YYYY-MM-DD [HH:MM [HH:MM [LOCATION]]]   add a local event (no time = all day)
+           agenda.py remove ID  remove a local event
            agenda.py set SRC    save the calendar source (.ics path or iCal URL) and refresh
            agenda.py status
 
 Supported: timed and all-day events, UTC / TZID / floating times, and simple repeats (RRULE DAILY, WEEKLY with
 BYDAY, MONTHLY, YEARLY, INTERVAL, COUNT, UNTIL; EXDATE). Anything it cannot read is skipped, never fatal.
 """
-import json, os, re, sys, urllib.request
+import hashlib, json, os, re, sys, time, urllib.request
 from datetime import date, datetime, timedelta, timezone
 
 try:
@@ -19,6 +21,7 @@ except ImportError:  # pragma: no cover
     ZoneInfo = None
 
 CONF = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "jellyface", "desktop.json")
+LOCAL = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "jellyface", "events.json")
 OUT = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "jellyface", "agenda.json")
 DAYS = {"MO": 0, "TU": 1, "WE": 2, "TH": 3, "FR": 4, "SA": 5, "SU": 6}
 
@@ -165,8 +168,55 @@ def set_source(src):
     print("agenda source saved" if src else "agenda source cleared")
 
 
+def load_local():
+    try:
+        with open(LOCAL) as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+def save_local(items):
+    os.makedirs(os.path.dirname(LOCAL), exist_ok=True)
+    tmp = LOCAL + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(items, f)
+    os.replace(tmp, LOCAL)
+
+
+def add_local(args):
+    if len(args) < 2:
+        sys.exit("usage: agenda.py add TITLE YYYY-MM-DD [HH:MM [HH:MM [LOCATION]]]")
+    title, day = args[0].strip(), args[1]
+    start_t = args[2] if len(args) > 2 else ""
+    end_t = args[3] if len(args) > 3 else ""
+    loc = args[4] if len(args) > 4 else ""
+    if not title:
+        sys.exit("an event needs a title")
+    try:
+        d = datetime.strptime(day, "%Y-%m-%d")
+        if start_t:
+            s = datetime.strptime(f"{day} {start_t}", "%Y-%m-%d %H:%M")
+            e = datetime.strptime(f"{day} {end_t}", "%Y-%m-%d %H:%M") if end_t else s + timedelta(hours=1)
+            if e <= s:
+                e = s + timedelta(hours=1)
+        else:
+            s, e = d, d + timedelta(days=1)
+    except ValueError:
+        sys.exit("bad date or time (use YYYY-MM-DD and HH:MM)")
+    items = load_local()
+    items.append({"id": "L" + hashlib.sha1(f"{title}{s}{time.time()}".encode()).hexdigest()[:10], "title": title,
+                  "location": loc, "start": s.isoformat(), "end": e.isoformat(), "allDay": not start_t})
+    save_local(items)
+
+
 def main():
-    if len(sys.argv) > 1 and sys.argv[1] == "set":
+    if len(sys.argv) > 1 and sys.argv[1] == "add":
+        add_local(sys.argv[2:])
+    elif len(sys.argv) > 2 and sys.argv[1] == "remove":
+        save_local([e for e in load_local() if e["id"] != sys.argv[2]])
+    elif len(sys.argv) > 1 and sys.argv[1] == "set":
         set_source(sys.argv[2] if len(sys.argv) > 2 else "")
     elif len(sys.argv) > 1 and sys.argv[1] == "status":
         try:
@@ -183,18 +233,25 @@ def main():
         conf = {}
     src = conf.get("source", "") or ""
     days = int(conf.get("days", 2))
-    if not src:
-        write({"state": "no-source", "events": [], "updated": datetime.now().isoformat()})
-        return
-    try:
-        events = parse_events(read_source(src))
-    except Exception as e:
-        write({"state": "error", "error": str(e)[:200], "events": [], "updated": datetime.now().isoformat()})
-        return
     now = datetime.now()
     lo = now.replace(hour=0, minute=0, second=0, microsecond=0)
     hi = lo + timedelta(days=days)
+    state, error, events = "ok", "", []
+    if src:
+        try:
+            events = parse_events(read_source(src))
+        except Exception as e:
+            state, error = "error", str(e)[:200]
     out = []
+    for ev in load_local():
+        try:
+            s, e = datetime.fromisoformat(ev["start"]), datetime.fromisoformat(ev["end"])
+            if e > lo and s < hi:
+                out.append({**ev, "local": True})
+        except Exception:
+            continue
+    if not src and not out and not load_local():
+        state = "no-source"
     for ev in events:
         if ev.get("cancelled"):
             continue
@@ -207,7 +264,7 @@ def main():
         except Exception:
             continue
     out.sort(key=lambda x: (x["start"], x["title"]))
-    write({"state": "ok", "events": out[:60], "updated": now.isoformat()})
+    write({"state": state, "error": error, "events": out[:60], "updated": now.isoformat()})
 
 
 main()

@@ -154,6 +154,18 @@ CustomMouseArea {
                 padding: Tokens.padding.small
                 onClicked: root.screenState.dashboardDate = new Date(root.nonAnimCurrYear, root.nonAnimCurrMonth + 1, 1)
             }
+
+            IconButton {
+                isRound: true
+                icon: "add"
+                type: IconButton.Tonal
+                font: Tokens.font.icon.builders.small.weight(Font.Bold).build()
+                padding: Tokens.padding.small
+                onClicked: {
+                    root.screenState.dashboard = false;
+                    AgendaEvents.openForm(new Date());
+                }
+            }
         }
 
         DayOfWeekRow {
@@ -199,6 +211,16 @@ CustomMouseArea {
 
                     implicitWidth: implicitHeight
                     implicitHeight: text.implicitHeight + Tokens.padding.small
+
+                    // Click a day to add an event on it
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.screenState.dashboard = false;
+                            AgendaEvents.openForm(dayItem.model.date);
+                        }
+                    }
 
                     StyledText {
                         id: text

@@ -212,7 +212,7 @@ Scope {
                             spacing: 2
 
                             StyledText {
-                                text: root.state !== "ok" ? Tr.tr("Agenda") : root.nextEvent ? Tr.tr("Next up") : Tr.tr("All clear")
+                                text: root.state === "no-source" ? Tr.tr("Agenda") : root.nextEvent ? Tr.tr("Next up") : Tr.tr("All clear")
                                 color: parent.parent.fg
                                 opacity: 0.7
                                 font: Tokens.font.body.small
@@ -221,7 +221,7 @@ Scope {
                             StyledText {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                text: root.state !== "ok" ? (root.state === "error" ? Tr.tr("Calendar unreachable") : Tr.tr("No calendar yet")) : root.nextEvent ? root.nextEvent.title : Tr.tr("Nothing planned")
+                                text: root.state === "no-source" ? Tr.tr("No calendar yet") : root.nextEvent ? root.nextEvent.title : Tr.tr("Nothing planned")
                                 color: parent.parent.fg
                                 font: Tokens.font.body.large
                                 wrapMode: Text.Wrap
@@ -231,7 +231,7 @@ Scope {
 
                             StyledText {
                                 Layout.fillWidth: true
-                                visible: root.state === "ok" && !!root.nextEvent
+                                visible: root.state !== "no-source" && !!root.nextEvent
                                 text: root.untilText(root.nextEvent) + (root.nextEvent?.location ? "  ·  " + root.nextEvent.location : "")
                                 color: parent.parent.fg
                                 elide: Text.ElideRight
@@ -244,7 +244,7 @@ Scope {
                 // Setup / error hint
                 StyledRect {
                     Layout.fillWidth: true
-                    visible: root.state !== "ok"
+                    visible: root.state === "no-source" || root.state === "error"
                     implicitHeight: hint.implicitHeight + Tokens.padding.large * 2
                     radius: Tokens.rounding.extraLarge
                     color: Colours.tPalette.m3surfaceContainer
@@ -257,13 +257,13 @@ Scope {
                         wrapMode: Text.Wrap
                         color: Colours.palette.m3onSurfaceVariant
                         font: Tokens.font.body.small
-                        text: root.state === "error" ? Tr.tr("Could not read the calendar: %1").arg(root.error) : Tr.tr("Connect Google Calendar: run  jellyface agenda set <secret iCal address>")
+                        text: root.state === "error" ? Tr.tr("Could not read the calendar: %1").arg(root.error) : Tr.tr("Connect Google Calendar: run  jellyface agenda set <iCal address>, or press + to add events here")
                     }
                 }
 
                 // Day tiles
                 Repeater {
-                    model: root.state === "ok" ? [0, 1] : []
+                    model: root.state !== "no-source" ? [0, 1] : []
 
                     StyledRect {
                         id: dayTile
@@ -296,6 +296,30 @@ Scope {
                                     text: dayTile.modelData === 0 ? Tr.tr("Today") : Tr.tr("Tomorrow")
                                     color: dayTile.modelData === 0 ? Colours.palette.m3primary : Colours.palette.m3tertiary
                                     font: Tokens.font.body.medium
+                                }
+
+                                // Add-event button
+                                StyledRect {
+                                    implicitWidth: 28
+                                    implicitHeight: 28
+                                    radius: Tokens.rounding.full
+                                    color: Colours.palette.m3secondaryContainer
+
+                                    StateLayer {
+                                        color: Colours.palette.m3onSecondaryContainer
+                                        onClicked: {
+                                            const d = new Date();
+                                            d.setDate(d.getDate() + dayTile.modelData);
+                                            AgendaEvents.openForm(d);
+                                        }
+                                    }
+
+                                    MaterialIcon {
+                                        anchors.centerIn: parent
+                                        text: "add"
+                                        color: Colours.palette.m3onSecondaryContainer
+                                        fontStyle: Tokens.font.icon.small
+                                    }
                                 }
 
                                 // Event-count pill
@@ -356,6 +380,21 @@ Scope {
                                         elide: Text.ElideRight
                                         color: row.current ? Colours.palette.m3tertiary : Colours.palette.m3onSurface
                                         font: Tokens.font.body.small
+                                    }
+
+                                    // Events added here (not from Google) can be removed again
+                                    MaterialIcon {
+                                        visible: !!row.modelData.local
+                                        text: "close"
+                                        color: Colours.palette.m3outline
+                                        fontStyle: Tokens.font.icon.small
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            anchors.margins: -4
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: AgendaEvents.remove(row.modelData.id)
+                                        }
                                     }
                                 }
                             }

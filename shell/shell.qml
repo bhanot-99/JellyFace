@@ -34,6 +34,7 @@ ShellRoot {
     AreaPicker {}
     ClipboardPopup {}
     Agenda {}
+    EventForm {}
     Lock {
         id: lock
     }
