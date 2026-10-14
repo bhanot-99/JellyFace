@@ -21,9 +21,18 @@ index 4b14064..d481d19 100644
 +auth    requisite   pam_exec.so   expose_authtok   quiet   @JF_ROOT@/scripts/pam-host-check.sh
 +auth    required    pam_permit.so
 diff --git a/modules/Shortcuts.qml b/modules/Shortcuts.qml
-index 4231a26..87e5f68 100644
+index 4231a26..a9e90a3 100644
 --- a/modules/Shortcuts.qml
 +++ b/modules/Shortcuts.qml
+@@ -10,7 +10,7 @@ Scope {
+     id: root
+ 
+     property bool launcherInterrupted
+-    readonly property bool hasFullscreen: Hypr.focusedWorkspace?.toplevels.values.some(t => t.lastIpcObject.fullscreen > 1) ?? false
++    readonly property bool hasFullscreen: CosmicWindows.fullscreen
+ 
+     // qmllint disable unresolved-type
+     CustomShortcut {
 @@ -120,6 +120,13 @@ Scope {
              }
          }
@@ -67,6 +76,28 @@ index 1ceb9b6..b47d2de 100644
              DelegateChoice {
                  roleValue: "power"
                  delegate: EntryWrapper {
+diff --git a/modules/bar/components/ActiveWindow.qml b/modules/bar/components/ActiveWindow.qml
+index e23cb6f..a00a047 100644
+--- a/modules/bar/components/ActiveWindow.qml
++++ b/modules/bar/components/ActiveWindow.qml
+@@ -15,7 +15,7 @@ Item {
+     property color colour: Colours.palette.m3primary
+ 
+     readonly property string windowTitle: {
+-        const title = Hypr.activeToplevel?.title;
++        const title = CosmicWindows.active?.title;
+         if (!title)
+             return Tr.trCtx("Desktop", "shown when no window is focused");
+         if (Config.bar.activeWindow.compact) {
+@@ -71,7 +71,7 @@ Item {
+         anchors.horizontalCenter: parent.horizontalCenter
+ 
+         animate: true
+-        text: Icons.getAppCategoryIcon(Hypr.activeToplevel?.lastIpcObject.class, "desktop_windows")
++        text: Icons.getAppCategoryIcon(CosmicWindows.active?.app_id, "desktop_windows")
+         color: root.colour
+     }
+ 
 diff --git a/modules/bar/components/OsIcon.qml b/modules/bar/components/OsIcon.qml
 index a4546fd..78b22d7 100644
 --- a/modules/bar/components/OsIcon.qml
@@ -211,6 +242,94 @@ index 0000000..5030ea2
 +        }
 +    }
 +}
+diff --git a/modules/bar/popouts/ActiveWindow.qml b/modules/bar/popouts/ActiveWindow.qml
+index dc2ef8c..d0c55c8 100644
+--- a/modules/bar/popouts/ActiveWindow.qml
++++ b/modules/bar/popouts/ActiveWindow.qml
+@@ -1,6 +1,5 @@
+ import QtQuick
+ import QtQuick.Layouts
+-import Quickshell.Wayland
+ import Quickshell.Widgets
+ import Caelestia.Config
+ import qs.components
+@@ -12,7 +11,7 @@ Item {
+ 
+     required property PopoutState popouts
+ 
+-    implicitWidth: Hypr.activeToplevel ? child.implicitWidth : -Tokens.padding.extraLargeIncreased
++    implicitWidth: CosmicWindows.active ? child.implicitWidth : -Tokens.padding.extraLargeIncreased
+     implicitHeight: child.implicitHeight
+ 
+     Column {
+@@ -34,7 +33,7 @@ Item {
+                 asynchronous: true
+                 Layout.alignment: Qt.AlignVCenter
+                 implicitSize: details.implicitHeight
+-                source: Icons.getAppIcon(Hypr.activeToplevel?.lastIpcObject.class ?? "", "image-missing")
++                source: Icons.getAppIcon(CosmicWindows.active?.app_id ?? "", "image-missing")
+             }
+ 
+             ColumnLayout {
+@@ -45,56 +44,18 @@ Item {
+ 
+                 StyledText {
+                     Layout.fillWidth: true
+-                    text: Hypr.activeToplevel?.title ?? ""
++                    text: CosmicWindows.active?.title ?? ""
+                     font: Tokens.font.body.medium
+                     elide: Text.ElideRight
+                 }
+ 
+                 StyledText {
+                     Layout.fillWidth: true
+-                    text: Hypr.activeToplevel?.lastIpcObject.class ?? ""
++                    text: CosmicWindows.active?.app_id ?? ""
+                     color: Colours.palette.m3onSurfaceVariant
+                     elide: Text.ElideRight
+                 }
+             }
+-
+-            Item {
+-                implicitWidth: expandIcon.implicitHeight + Tokens.padding.small
+-                implicitHeight: expandIcon.implicitHeight + Tokens.padding.small
+-
+-                Layout.alignment: Qt.AlignVCenter
+-
+-                StateLayer {
+-                    radius: Tokens.rounding.large
+-                    onClicked: root.popouts.detachRequested("winfo")
+-                }
+-
+-                MaterialIcon {
+-                    id: expandIcon
+-
+-                    anchors.centerIn: parent
+-                    anchors.horizontalCenterOffset: font.pointSize * 0.05
+-
+-                    text: "chevron_right"
+-
+-                    fontStyle: Tokens.font.icon.large
+-                }
+-            }
+-        }
+-
+-        ClippingWrapperRectangle {
+-            color: "transparent"
+-            radius: Tokens.rounding.medium
+-
+-            ScreencopyView {
+-                id: preview
+-
+-                captureSource: Hypr.activeToplevel?.wayland ?? null // qmllint disable unresolved-type
+-                live: visible
+-
+-                constraintSize.width: Tokens.sizes.bar.windowPreviewSize
+-                constraintSize.height: Tokens.sizes.bar.windowPreviewSize
+-            }
+         }
+     }
+ }
 diff --git a/modules/dashboard/WeatherTab.qml b/modules/dashboard/WeatherTab.qml
 index f0982a8..bc1c74a 100644
 --- a/modules/dashboard/WeatherTab.qml
@@ -517,9 +636,18 @@ index f0982a8..bc1c74a 100644
                      }
                  }
 diff --git a/modules/drawers/ContentWindow.qml b/modules/drawers/ContentWindow.qml
-index 9f82df2..e8885b5 100644
+index 9f82df2..fcf7570 100644
 --- a/modules/drawers/ContentWindow.qml
 +++ b/modules/drawers/ContentWindow.qml
+@@ -23,7 +23,7 @@ StyledWindow {
+ 
+     readonly property HyprlandMonitor monitor: Hypr.monitorFor(screen)
+     readonly property bool hasSpecialWorkspace: (monitor?.lastIpcObject.specialWorkspace?.name.length ?? 0) > 0
+-    readonly property bool hasFullscreenOnNormalWs: monitor?.activeWorkspace?.toplevels.values.some(t => t.lastIpcObject.fullscreen > 1) ?? false
++    readonly property bool hasFullscreenOnNormalWs: CosmicWindows.fullscreen
+     readonly property bool hasFullscreen: {
+         if (hasSpecialWorkspace) {
+             const specialName = monitor?.lastIpcObject.specialWorkspace?.name;
 @@ -44,19 +44,8 @@ StyledWindow {
  
      property color surfaceColour: Colours.tPalette.m3surface
@@ -594,14 +722,30 @@ index 9f82df2..e8885b5 100644
          id: focusGrab
  
 diff --git a/modules/drawers/Interactions.qml b/modules/drawers/Interactions.qml
-index 3d94a52..d49e975 100644
+index 3d94a52..67ddddb 100644
 --- a/modules/drawers/Interactions.qml
 +++ b/modules/drawers/Interactions.qml
-@@ -63,7 +63,28 @@ CustomMouseArea {
+@@ -63,7 +63,44 @@ CustomMouseArea {
      acceptedButtons: fullscreen ? Qt.NoButton : Qt.AllButtons
      hoverEnabled: true
  
 -    onPressed: event => dragStart = Qt.point(event.x, event.y)
++    // The launcher's full on-screen area (final size, no animation) widened by a generous margin
++    function inLauncherZone(x: real, y: real): bool {
++        const margin = 56;
++        const left = bar.implicitWidth + panels.launcher.x - margin;
++        const right = bar.implicitWidth + panels.launcher.x + panels.launcher.width + margin;
++        const top = height - borderThickness - panels.launcher.height - margin;
++        return x >= left && x <= right && y >= top;
++    }
++
++    Timer {
++        id: launcherCloseTimer
++
++        interval: 400
++        onTriggered: root.screenState.launcher = false
++    }
++
 +    function insideItem(item: Item, x: real, y: real): bool {
 +        const p = item.mapToItem(root, 0, 0);
 +        const margin = 8;
@@ -627,13 +771,24 @@ index 3d94a52..d49e975 100644
      onContainsMouseChanged: {
          if (!containsMouse) {
              // Only hide if not activated by shortcut
-@@ -200,6 +221,9 @@ CustomMouseArea {
+@@ -198,8 +235,19 @@ CustomMouseArea {
+ 
+         // Show launcher on hover, or show/hide on drag if hover is disabled
          if (Config.launcher.showOnHover) {
-             if (!screenState.launcher && inBottomPanel(panels.launcher, x, y))
+-            if (!screenState.launcher && inBottomPanel(panels.launcher, x, y))
++            if (!screenState.launcher && inBottomPanel(panels.launcher, x, y)) {
++                launcherCloseTimer.stop();
                  screenState.launcher = true;
-+            // Like the dashboard: close again once the cursor has left the panel (the bar is excluded so its buttons still work)
-+            else if (screenState.launcher && !pressed && x >= bar.implicitWidth && !insideItem(panels.launcher, x, y))
-+                screenState.launcher = false;
++            }
++            // Like the dashboard: close again once the cursor has really left the launcher. The test uses the panel's final
++            // (not animated) size plus a margin, and waits a moment, so the slide-in animation or a small mouse movement
++            // can never close it (and the hover then re-open it) -- that made it flicker.
++            else if (screenState.launcher && !pressed && x >= bar.implicitWidth) {
++                if (inLauncherZone(x, y))
++                    launcherCloseTimer.stop();
++                else if (!launcherCloseTimer.running)
++                    launcherCloseTimer.start();
++            }
          } else if (pressed && inBottomPanel(panels.launcher, dragStart.x, dragStart.y) && withinPanelWidth(panels.launcher, x, y)) {
              if (dragY < -Config.launcher.dragThreshold)
                  screenState.launcher = true;
@@ -935,6 +1090,53 @@ index 0b64400..3296a18 100644
  
          if (!isPreview) {
              root.scheme = scheme.name;
+diff --git a/services/CosmicWindows.qml b/services/CosmicWindows.qml
+new file mode 100644
+index 0000000..893a2da
+--- /dev/null
++++ b/services/CosmicWindows.qml
+@@ -0,0 +1,41 @@
++pragma Singleton
++
++import QtQuick
++import Quickshell
++import Quickshell.Io
++
++// COSMIC windows (focused window, fullscreen state) via the cosmic-toplevel-info helper (helpers/cosmic-windows).
++// Quickshell's own toplevel support needs wlr-foreign-toplevel-management, which COSMIC does not offer.
++Singleton {
++    id: root
++
++    property var windows: []
++    property int activeId: 0
++    property bool fullscreen: false
++    readonly property var active: windows.find(w => w.id === activeId) ?? null
++
++    Process {
++        id: proc
++
++        running: true
++        command: [Quickshell.shellPath("../helpers/cosmic-windows/wind")]
++        stdout: SplitParser {
++            onRead: data => {
++                try {
++                    const d = JSON.parse(data);
++                    root.windows = d.windows;
++                    root.activeId = d.active;
++                    root.fullscreen = d.fullscreen;
++                } catch (e) {}
++            }
++        }
++        onExited: restartTimer.start()
++    }
++
++    Timer {
++        id: restartTimer
++
++        interval: 2000
++        onTriggered: proc.running = true
++    }
++}
 diff --git a/services/CosmicWs.qml b/services/CosmicWs.qml
 new file mode 100644
 index 0000000..a32ce3b
@@ -981,6 +1183,44 @@ index 0000000..a32ce3b
 +        onTriggered: proc.running = true
 +    }
 +}
+diff --git a/services/NotifData.qml b/services/NotifData.qml
+index 2bfcec3..f24e56f 100644
+--- a/services/NotifData.qml
++++ b/services/NotifData.qml
+@@ -53,15 +53,7 @@ QtObject {
+     property bool hasActionIcons
+     property list<var> actions
+ 
+-    readonly property bool hasFullscreen: {
+-        const monitor = Hypr.focusedMonitor;
+-        const specialName = monitor?.lastIpcObject.specialWorkspace?.name;
+-        if (specialName) {
+-            const specialWs = Hypr.workspaces.values.find(ws => ws.name === specialName);
+-            return specialWs?.toplevels.values.some(t => t.lastIpcObject.fullscreen > 1) ?? false;
+-        }
+-        return monitor?.activeWorkspace?.toplevels.values.some(t => t.lastIpcObject.fullscreen > 1) ?? false;
+-    }
++    readonly property bool hasFullscreen: CosmicWindows.fullscreen
+ 
+     readonly property Timer timer: Timer {
+         running: true
+diff --git a/services/Notifs.qml b/services/Notifs.qml
+index 318ea30..f0698b8 100644
+--- a/services/Notifs.qml
++++ b/services/Notifs.qml
+@@ -23,11 +23,7 @@ Singleton {
+     property bool loaded
+ 
+     function hasFullscreen(): bool {
+-        for (const monitor of Hypr.monitors.values) {
+-            if (monitor?.activeWorkspace?.toplevels.values.some(t => t.lastIpcObject.fullscreen > 1))
+-                return true;
+-        }
+-        return false;
++        return CosmicWindows.fullscreen;
+     }
+ 
+     function shouldShowPopup(): bool {
 diff --git a/services/Recorder.qml b/services/Recorder.qml
 index 9938f76..3906f6a 100644
 --- a/services/Recorder.qml

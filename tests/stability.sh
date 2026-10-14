@@ -11,19 +11,29 @@ bad()  { failn=$((failn+1)); printf '  \033[31mFAIL\033[0m %s\n' "$*"; }
 check() { if eval "$2"; then ok "$1"; else bad "$1  [$2]"; fi; }
 n_shell() { pgrep -f "$JF_QS_RE" | wc -l; }
 n_wsd()   { pgrep -f "$JF_WSD_RE" | wc -l; }
+n_wind()  { pgrep -f "$JF_WIND_RE" | wc -l; }
 n_sup()   { pgrep -f "$JF_SUP_RE" | wc -l; }
-wait_up() { for _ in $(seq 1 "${1:-40}"); do [ "$(n_shell)" -ge 1 ] && [ "$(n_wsd)" -ge 1 ] && return 0; sleep 1; done; return 1; }
+wait_up() { for _ in $(seq 1 "${1:-40}"); do [ "$(n_shell)" -ge 1 ] && [ "$(n_wsd)" -ge 1 ] && [ "$(n_wind)" -ge 1 ] && return 0; sleep 1; done; return 1; }
 wait_cfg() { sleep "${1:-8}"; }
 runlog_start() { LOGMARK=$(wc -l < "$JF_ROOT/logs/jellyface.log" 2>/dev/null || echo 0); }
 runlog() { tail -n +$((LOGMARK+1)) "$JF_ROOT/logs/jellyface.log" 2>/dev/null; }
-trap '"$JF" stop >/dev/null 2>&1' EXIT
+# The systemd service would fight these tests (it owns the supervisor): pause it, and bring it back at the end.
+SERVICE_WAS_ACTIVE=0
+if systemctl --user is-active --quiet jellyface.service 2>/dev/null; then
+    SERVICE_WAS_ACTIVE=1; systemctl --user stop jellyface.service
+fi
+restore() {
+    "$JF" stop >/dev/null 2>&1
+    [ "$SERVICE_WAS_ACTIVE" = 1 ] && systemctl --user start jellyface.service
+}
+trap restore EXIT
 
 "$JF" stop >/dev/null 2>&1; sleep 2
 mkdir -p "$JF_ROOT/logs"; runlog_start
 
 echo "1. clean start"
 "$JF" start >/dev/null; wait_up 60
-check "one supervisor, one shell, one helper" '[ "$(n_sup)" -eq 1 ] && [ "$(n_shell)" -eq 1 ] && [ "$(n_wsd)" -eq 1 ]'
+check "one supervisor, one shell, one of each helper" '[ "$(n_sup)" -eq 1 ] && [ "$(n_shell)" -eq 1 ] && [ "$(n_wsd)" -eq 1 ] && [ "$(n_wind)" -eq 1 ]'
 
 echo "2. double start is a no-op"
 "$JF" start >/dev/null; "$JF" start >/dev/null; sleep 3
