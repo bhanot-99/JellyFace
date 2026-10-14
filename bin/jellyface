@@ -127,6 +127,9 @@ cmd_doctor() {
     done
     chk "lock screen rejects a wrong password" '! printf "wrong-password\0" | PAM_USER="$USER" "$JF_ROOT/scripts/pam-host-check.sh"' "the lock screen would accept anything; do not rely on it"
     chk "lock screen PAM stack is the host-checking one" 'grep -q pam-host-check.sh "$JF_SHELL/assets/pam.d/passwd" && ! grep -q nullok "$JF_SHELL/assets/pam.d/passwd"' "run: jellyface restart (regenerates it)"
+    chk "Qt/Quickshell pinned in the container" 'in_container "pacman-conf IgnorePkg" | grep -qx quickshell-git' "re-run: jellyface install (a container upgrade could otherwise break the shell plugin)"
+    chk "COSMIC lock screen available as fallback" 'pgrep -x cosmic-greeter' "COSMIC's locker is not running; if JellyFace ever stopped while locked, nothing would take over"
+    chk "screen stays on while locked" '[ "$(cat "${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicIdle/v1/screen_off_time" 2>/dev/null)" = None ]' "run: jellyface cosmic-tweaks"
     if systemctl --user is-enabled --quiet jellyface.service 2>/dev/null && is_running; then
         chk "running under the systemd service" 'systemctl --user is-active --quiet jellyface.service' "it was started by hand; run: jellyface restart"
     fi

@@ -29,6 +29,12 @@ if ! command -v yay >/dev/null; then
     (cd "$tmp/yay-bin" && makepkg -si --noconfirm)
 fi
 yay -S --needed --noconfirm quickshell-git qt6-m3shapes-git libcava
+# Pin Qt and Quickshell: the shell plugin is compiled against these exact versions, so a later `pacman -Syu` or
+# `distrobox upgrade` inside the container must not replace them (that would need a rebuild first).
+if ! grep -q "^IgnorePkg.*quickshell-git" /etc/pacman.conf; then
+    sudo cp -n /etc/pacman.conf /etc/pacman.conf.jellyface-orig
+    sudo sed -i "s|^#IgnorePkg *=.*|# JellyFace: its shell plugin is built against these exact versions (unpin: comment out the next line, then jellyface build)\nIgnorePkg = qt6-* quickshell-git qt6-m3shapes-git|" /etc/pacman.conf
+fi
 '
 
 # 3. screen recorder (Kooha, a Flatpak on the host; it records through COSMIC's screen-cast portal)

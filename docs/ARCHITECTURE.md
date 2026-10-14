@@ -19,8 +19,8 @@ JellyFace/
 ├── config/                  default shell.json, shell-tokens.json, scheme.json (the Original Grey palette), PAM
 │                            template, icon aliases, COSMIC shortcut template
 ├── Color_Palette/           palette packs (*.txt) that wallpaper theming chooses from
-├── patches/                 our changes to the upstream shell as one patch (for rebasing onto newer Jellyface)
-├── tests/stability.sh       restart / crash / stress test suite
+├── greeter/                 optional login screen (greetd), installed only by `jellyface greeter install`
+├── tests/                   stability.sh (restart / crash / stress suite), greeter UI test
 ├── docs/                    this file
 ├── backups/                 backups of your COSMIC settings that `revert-system` restores from (never deleted automatically)
 ├── logs/                    runtime logs (git-ignored)
@@ -49,7 +49,7 @@ The container shares `$HOME`, the Wayland socket and the system D-Bus with the h
 COSMIC desktop, and things that need the real system (launching apps, the lock screen's password check, the screen
 recorder) are handed to the host with `distrobox-host-exec`.
 
-## What was changed from upstream (patches/0001-cosmic-port.patch)
+## What was changed from upstream
 
 | Change | Why |
 |---|---|
@@ -84,29 +84,48 @@ wallpaper feature off, Celsius, the launcher opening on hover.
 
 ## Moving to a newer Jellyface
 
-`shell/UPSTREAM` records the upstream commit. To update: check out a newer upstream into a fresh directory, apply
-`patches/0001-cosmic-port.patch` with `git apply --3way`, fix conflicts, replace `shell/`. The patch is regenerated from
-this repository's history with `git diff --relative=shell <import-commit> -- shell` (the import commit is the first
-one in `git log`).
+`shell/UPSTREAM` records the upstream commit. To update: generate the port as a patch with
+`git diff --relative=shell <import-commit> -- shell > port.patch` (the import commit is the first one in `git log`),
+check out a newer upstream into a fresh directory, apply it with `git apply --3way`, fix conflicts, replace `shell/`,
+then `jellyface build`.
 
 ## Notifications and start-up (added after v1.0.0)
 
 - COSMIC's `cosmic-notifications` owns `org.freedesktop.Notifications`, so the shell's server could not register and its
   panel was always empty. `scripts/run.sh` now lets the shell take the name (it stops COSMIC's daemon, which COSMIC
-  restarts idle) and gives it back when JellyFace stops. Test with `jellyface notify "Title" "Body"`.
+  restarts idle) and gives it back when JellyFace stops. COSMIC restarts its top panel together with that daemon, so
+  `jellyface restart` skips the hand-back (`$XDG_RUNTIME_DIR/jellyface.restarting`); the new shell takes the free name
+  without stopping anything. Test with `jellyface notify "Title" "Body"`.
 - `notify-send` is not installed on the host or in the container; `scripts/shims/notify-send` (gdbus) replaces it for the shell.
 - Start-up: the container is warmed in parallel, the compositor probe returns on the first line instead of waiting 3 s,
   and a shell that dies after running a while (for example when the lock screen is unlocked) restarts with no delay.
 
-## Dock (shell/modules/dock)
+## Lock screen safety (added in 1.1.0)
 
-A JellyFace-logo badge at the bottom centre of the desktop, on the Bottom layer (every window covers it), that opens a single row of apps
-on hover. Apps are listed in `~/.config/jellyface/dock.json` (default: `config/dock.json`): `id` is a desktop-file id;
-Brave web apps use `name`, `command`, `icon` (relative to the project) and `match` (a substring of the window class).
-A dot under a tile means the app has a window; a wide pill means it is focused. Clicking a running app focuses its
-window (again: the next one) through `wind`'s `activate <id>` command; otherwise it is launched on the host.
+```
+idle 3 min / Super+L ──► WlSessionLock (modules/lock) ──► touches $XDG_RUNTIME_DIR/jellyface-locked
+unlock ──────────────────────────────────────────────────► removes it (read 100 ms after the change)
+shell stops or dies while the flag exists ──► lock_handover (scripts/lib.sh): wait for/kill the shell, then
+                                              `loginctl lock-session` ──► COSMIC's lock screen takes the lock
+```
 
-The launcher (app drawer) slides out of the bar at the left-centre of the screen. Hover (or click) the JellyFace logo in the
-bar to open it; it closes when the cursor leaves it. Its search box is at the top and keeps its place while the list
-changes. Edits: `drawers/Panels.qml`, `drawers/Regions.qml`, `drawers/ContentWindow.qml`, `drawers/Interactions.qml`,
-`launcher/Wrapper.qml`, `launcher/Content.qml`, `bar/components/OsIcon.qml`.
+COSMIC refuses a second locker while the first is alive and accepts one once it is gone
+(cosmic-comp `session_lock.rs`). `lock_handover` runs from the supervisor's exit trap, after every crash in its restart
+loop and from `jellyface stop` (also the service's `ExecStopPost`). `jellyface stop/restart` from a terminal refuse
+while the shell reports itself locked. COSMIC's screen-off and idle-suspend timers are set to never
+(`cosmic-tweaks.sh`), so the lock screen stays visible.
+
+## Dock and JellyPanel (shell/modules/dock, shell/modules/jellypanel)
+
+The dock is a frosted-glass capsule of app pills at the bottom centre, on the Top layer. It slides away while a window
+on the current workspace overlaps it (positions from `wind`) or something is fullscreen, and comes back when the cursor
+reaches the bottom edge (`services/DockReveal.qml`, fed by `drawers/Interactions.qml`). Apps are listed in
+`~/.config/jellyface/dock.json`: `id` is a desktop-file id; web apps use `name`, `command`, `icon` and `match` (a
+substring of the window class). Clicking a running app focuses (then cycles) its windows through `wind`'s
+`activate <id>`; otherwise it is launched on the host with `distrobox-host-exec gtk-launch`.
+
+JellyPanel is a full-screen app grid built once and shown/hidden. **Super** reaches it through its own socket
+(`$XDG_RUNTIME_DIR/jellyface-jellypanel.sock`, a few ms) instead of a `quickshell ipc` round trip through the
+container (about 230 ms). It lists the host's desktop entries only.
+
+The launcher slides out of the bar at the left; hover or click the bar logo to open it.

@@ -25,7 +25,7 @@ rev="$(git -C "$JF_SHELL" rev-parse HEAD 2>/dev/null || echo unknown)"
 in_container '
 set -e
 cd "$1"
-cmake -S . -B "$2" -G Ninja -DCMAKE_BUILD_TYPE=Release -DVERSION=1.0.0 -DGIT_REVISION="$4" \
+cmake -S . -B "$2" -G Ninja -DCMAKE_BUILD_TYPE=Release -DVERSION=1.1.0 -DGIT_REVISION="$4" \
     -DCMAKE_INSTALL_PREFIX="$3" -DINSTALL_LIBDIR="$3/lib" -DINSTALL_QMLDIR="$3/qml" -DINSTALL_QSCONFDIR="$3/qs-config"
 cmake --build "$2"
 cmake --install "$2"
