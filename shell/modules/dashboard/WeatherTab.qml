@@ -11,22 +11,26 @@ Item {
 
     readonly property var today: Weather.forecast && Weather.forecast.length > 0 ? Weather.forecast[0] : null
 
-    implicitWidth: layout.implicitWidth > 600 ? layout.implicitWidth : 640
-    implicitHeight: layout.implicitHeight
+    // All dashboard tabs share one height (the Media tab's), so the drawer does not change size when switching tabs
+    implicitWidth: 1000
+    implicitHeight: Tokens.sizes.dashboard.mediaTabHeight
     Component.onCompleted: Weather.reload()
 
-    ColumnLayout {
+    RowLayout {
         id: layout
 
         anchors.fill: parent
-        spacing: Tokens.spacing.medium
+        spacing: Tokens.spacing.large
 
-        RowLayout {
-            Layout.leftMargin: Tokens.padding.large
-            Layout.rightMargin: Tokens.padding.large
-            Layout.fillWidth: true
+        // Left: where and what it is like right now
+        ColumnLayout {
+            Layout.preferredWidth: 340
+            Layout.maximumWidth: 340
+            Layout.fillHeight: true
+            spacing: Tokens.spacing.medium
 
             Column {
+                Layout.leftMargin: Tokens.padding.large
                 spacing: Tokens.spacing.extraSmall
 
                 StyledText {
@@ -42,11 +46,49 @@ Item {
                 }
             }
 
-            Item {
+            StyledRect {
                 Layout.fillWidth: true
+                implicitHeight: bigInfoRow.implicitHeight + Tokens.padding.small
+
+                radius: Tokens.rounding.extraLarge * 2
+                color: Colours.tPalette.m3surfaceContainer
+
+                RowLayout {
+                    id: bigInfoRow
+
+                    anchors.centerIn: parent
+                    spacing: Tokens.spacing.largeIncreased
+
+                    MaterialIcon {
+                        Layout.alignment: Qt.AlignVCenter
+                        text: Weather.icon
+                        fontStyle: Tokens.font.icon.builders.extraLarge.scale(2).build()
+                        color: Colours.palette.m3secondary
+                        animate: true
+                    }
+
+                    ColumnLayout {
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: -Tokens.spacing.small
+
+                        StyledText {
+                            text: Weather.temp
+                            font: Tokens.font.body.builders.large.size(28 * 1.6).weight(Font.Medium).build()
+                            color: Colours.palette.m3primary
+                        }
+
+                        StyledText {
+                            Layout.leftMargin: Tokens.padding.extraSmall
+                            text: Weather.description
+                            font: Tokens.font.body.medium
+                            color: Colours.palette.m3onSurfaceVariant
+                        }
+                    }
+                }
             }
 
             Row {
+                Layout.leftMargin: Tokens.padding.large
                 spacing: Tokens.spacing.largeIncreased
 
                 WeatherStat {
@@ -65,139 +107,104 @@ Item {
             }
         }
 
-        StyledRect {
+        // Right: details and the 7-day forecast
+        ColumnLayout {
             Layout.fillWidth: true
-            implicitHeight: bigInfoRow.implicitHeight + Tokens.padding.small
-
-            radius: Tokens.rounding.extraLarge * 2
-            color: Colours.tPalette.m3surfaceContainer
+            Layout.fillHeight: true
+            spacing: Tokens.spacing.medium
 
             RowLayout {
-                id: bigInfoRow
+                Layout.fillWidth: true
+                spacing: Tokens.spacing.medium
 
-                anchors.centerIn: parent
-                spacing: Tokens.spacing.largeIncreased
-
-                MaterialIcon {
-                    Layout.alignment: Qt.AlignVCenter
-                    text: Weather.icon
-                    fontStyle: Tokens.font.icon.builders.extraLarge.scale(3).build()
-                    color: Colours.palette.m3secondary
-                    animate: true
+                DetailCard {
+                    icon: "water_drop"
+                    label: Tr.tr("Humidity")
+                    value: Strings.percent(Weather.humidity)
+                    colour: Colours.palette.m3secondary
                 }
-
-                ColumnLayout {
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: -Tokens.spacing.small
-
-                    StyledText {
-                        text: Weather.temp
-                        font: Tokens.font.body.builders.large.size(28 * 2).weight(Font.Medium).build()
-                        color: Colours.palette.m3primary
-                    }
-
-                    StyledText {
-                        Layout.leftMargin: Tokens.padding.extraSmall
-                        text: Weather.description
-                        font: Tokens.font.body.medium
-                        color: Colours.palette.m3onSurfaceVariant
-                    }
+                DetailCard {
+                    icon: "thermostat"
+                    label: Tr.trCtx("Feels like", "apparent temperature")
+                    value: Weather.feelsLike
+                    colour: Colours.palette.m3primary
+                }
+                DetailCard {
+                    icon: "air"
+                    label: Tr.tr("Wind")
+                    value: Weather.windSpeed ? Tr.tr("%1 km/h").arg(Weather.windSpeed) : "--"
+                    colour: Colours.palette.m3tertiary
                 }
             }
-        }
 
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Tokens.spacing.medium
-
-            DetailCard {
-                icon: "water_drop"
-                label: Tr.tr("Humidity")
-                value: Strings.percent(Weather.humidity)
-                colour: Colours.palette.m3secondary
+            StyledText {
+                Layout.leftMargin: Tokens.padding.medium
+                visible: forecastRepeater.count > 0
+                text: Tr.tr("7-day forecast")
+                font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
+                color: Colours.palette.m3onSurface
             }
-            DetailCard {
-                icon: "thermostat"
-                label: Tr.trCtx("Feels like", "apparent temperature")
-                value: Weather.feelsLike
-                colour: Colours.palette.m3primary
-            }
-            DetailCard {
-                icon: "air"
-                label: Tr.tr("Wind")
-                value: Weather.windSpeed ? Tr.tr("%1 km/h").arg(Weather.windSpeed) : "--"
-                colour: Colours.palette.m3tertiary
-            }
-        }
 
-        StyledText {
-            Layout.topMargin: Tokens.spacing.medium
-            Layout.leftMargin: Tokens.padding.medium
-            visible: forecastRepeater.count > 0
-            text: Tr.tr("7-day forecast")
-            font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-            color: Colours.palette.m3onSurface
-        }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Tokens.spacing.medium
 
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: Tokens.spacing.medium
+                Repeater {
+                    id: forecastRepeater
 
-            Repeater {
-                id: forecastRepeater
+                    model: Weather.forecast
 
-                model: Weather.forecast
+                    StyledRect {
+                        id: forecastItem
 
-                StyledRect {
-                    id: forecastItem
+                        required property int index
+                        required property var modelData
 
-                    required property int index
-                    required property var modelData
+                        Layout.fillWidth: true
+                        implicitHeight: forecastItemColumn.implicitHeight + Tokens.padding.medium * 2
 
-                    Layout.fillWidth: true
-                    implicitHeight: forecastItemColumn.implicitHeight + Tokens.padding.medium * 2
+                        radius: Tokens.rounding.large
+                        color: Colours.tPalette.m3surfaceContainer
 
-                    radius: Tokens.rounding.large
-                    color: Colours.tPalette.m3surfaceContainer
+                        ColumnLayout {
+                            id: forecastItemColumn
 
-                    ColumnLayout {
-                        id: forecastItemColumn
+                            anchors.centerIn: parent
+                            spacing: Tokens.spacing.small
 
-                        anchors.centerIn: parent
-                        spacing: Tokens.spacing.small
-
-                        StyledText {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: forecastItem.index === 0 ? Tr.trCtx("Today", "forecast column") : new Date(forecastItem.modelData.date).toLocaleDateString(Qt.locale(), "ddd")
-                            font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                            color: Colours.palette.m3primary
-                        }
-
-                        StyledText {
-                            Layout.topMargin: -Tokens.spacing.extraSmall
-                            Layout.alignment: Qt.AlignHCenter
-                            text: new Date(forecastItem.modelData.date).toLocaleDateString(Qt.locale(), "MMM d")
-                            font: Tokens.font.body.small
-                            opacity: 0.7
-                            color: Colours.palette.m3onSurfaceVariant
-                        }
-
-                        MaterialIcon {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: forecastItem.modelData.icon
-                            fontStyle: Tokens.font.icon.extraLarge
-                            color: Colours.palette.m3secondary
-                        }
-
-                        StyledText {
-                            Layout.alignment: Qt.AlignHCenter
-                            text: {
-                                const min = Weather.formatTemp(forecastItem.modelData.minTempC, true);
-                                const max = Weather.formatTemp(forecastItem.modelData.maxTempC, true);
-                                return Tr.trCtx("%1 / %2", "min/max temperature").arg(min).arg(max);
+                            StyledText {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: forecastItem.index === 0 ? Tr.trCtx("Today", "forecast column") : new Date(forecastItem.modelData.date).toLocaleDateString(Qt.locale(), "ddd")
+                                font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
+                                color: Colours.palette.m3primary
                             }
-                            font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                            color: Colours.palette.m3tertiary
+
+                            StyledText {
+                                Layout.topMargin: -Tokens.spacing.extraSmall
+                                Layout.alignment: Qt.AlignHCenter
+                                text: new Date(forecastItem.modelData.date).toLocaleDateString(Qt.locale(), "MMM d")
+                                font: Tokens.font.body.small
+                                opacity: 0.7
+                                color: Colours.palette.m3onSurfaceVariant
+                            }
+
+                            MaterialIcon {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: forecastItem.modelData.icon
+                                fontStyle: Tokens.font.icon.extraLarge
+                                color: Colours.palette.m3secondary
+                            }
+
+                            StyledText {
+                                Layout.alignment: Qt.AlignHCenter
+                                text: {
+                                    const min = Weather.formatTemp(forecastItem.modelData.minTempC, true);
+                                    const max = Weather.formatTemp(forecastItem.modelData.maxTempC, true);
+                                    return Tr.trCtx("%1 / %2", "min/max temperature").arg(min).arg(max);
+                                }
+                                font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
+                                color: Colours.palette.m3tertiary
+                            }
                         }
                     }
                 }

@@ -1,11 +1,11 @@
 {
   "sizes": {
     "dashboard": {
-      "mediaTabWidth": 760,
-      "mediaTabHeight": 250,
-      "mediaCoverArtSize": 150,
-      "mediaWidth": 160,
-      "mediaSectionWidth": 240,
+      "mediaTabWidth": 1000,
+      "mediaTabHeight": 270,
+      "mediaCoverArtSize": 180,
+      "mediaWidth": 200,
+      "mediaSectionWidth": 300,
       "userWidth": 280,
       "weatherWidth": 220,
       "perfHeroCardWidth": 320,
@@ -13,7 +13,8 @@
       "perfNetworkCardHeight": 170,
       "perfUsageShapeSize": 80,
       "perfPlaceholderWidth": 560,
-      "perfBattHeight": 130
+      "perfBattHeight": 130,
+      "perfBattWidth": 150
     }
   }
 }

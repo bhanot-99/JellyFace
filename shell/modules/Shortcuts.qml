@@ -120,6 +120,13 @@ Scope {
             }
         }
 
+        // Open the dashboard on a given tab: 0 Dashboard, 1 Media, 2 Performance, 3 Weather
+        function dashboardTab(index: int): void {
+            const screenState = ShellState.forActive();
+            screenState.dashboardTab = index;
+            screenState.dashboard = true;
+        }
+
         function list(): string {
             const screenState = ShellState.forActive();
             return Object.keys(screenState).filter(k => typeof screenState[k] === "boolean").join("\n");
