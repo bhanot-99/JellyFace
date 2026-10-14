@@ -48,7 +48,7 @@
         {
             "name": "Gemini",
             "command": "brave-browser --app=https://gemini.google.com",
-            "icon": "assets/dock/gemini.svg",
+            "icon": "assets/dock/gemini.png",
             "match": "gemini.google.com"
         },
         {
