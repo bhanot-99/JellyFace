@@ -445,16 +445,9 @@ ModularCard {
                 StyledText {
                     id: clockText
                     anchors.centerIn: parent
-                    text: Qt.formatTime(new Date(), "hh:mm:ss")
+                    text: Qt.formatTime(Time.date, "hh:mm:ss")
                     font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
                     color: Glass.ice
-
-                    Timer {
-                        interval: 1000
-                        repeat: true
-                        running: true
-                        onTriggered: clockText.text = Qt.formatTime(new Date(), "hh:mm:ss")
-                    }
                 }
             }
         }

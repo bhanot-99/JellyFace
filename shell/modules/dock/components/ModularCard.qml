@@ -28,8 +28,10 @@ Item {
     readonly property alias surface: surface
     default property alias content: contentContainer.data
 
-    property bool isDragging: false
     property bool isResizing: false
+    readonly property real maxDragX: parent ? Math.max(0, parent.width - root.width) : 3840
+    readonly property real maxDragY: parent ? Math.max(0, parent.height - root.height) : 2160
+    readonly property bool isDragging: cardDragArea.drag.active || tagMouse.drag.active
 
     visible: DashboardState.isCardVisible(root.cardId, root.defaultVisible)
 
@@ -142,8 +144,8 @@ Item {
             drag.axis: Drag.XAndYAxis
             drag.minimumX: 0
             drag.minimumY: 0
-            drag.maximumX: root.parent ? Math.max(0, root.parent.width - root.width) : 3840
-            drag.maximumY: root.parent ? Math.max(0, root.parent.height - root.height) : 2160
+            drag.maximumX: root.maxDragX
+            drag.maximumY: root.maxDragY
             drag.threshold: 8
 
             onPressed: mouse => {
@@ -151,21 +153,15 @@ Item {
             }
 
             onReleased: {
-                if (root.isDragging) {
-                    root.isDragging = false;
-                    root.x = Math.round(root.x / 16) * 16;
-                    root.y = Math.round(root.y / 16) * 16;
-                    DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
-                }
+                root.x = Math.round(root.x / 16) * 16;
+                root.y = Math.round(root.y / 16) * 16;
+                DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
             }
 
             onCanceled: {
-                if (root.isDragging) {
-                    root.isDragging = false;
-                    root.x = Math.round(root.x / 16) * 16;
-                    root.y = Math.round(root.y / 16) * 16;
-                    DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
-                }
+                root.x = Math.round(root.x / 16) * 16;
+                root.y = Math.round(root.y / 16) * 16;
+                DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
             }
         }
 
@@ -240,28 +236,20 @@ Item {
                 drag.axis: Drag.XAndYAxis
                 drag.minimumX: 0
                 drag.minimumY: 0
-                drag.maximumX: root.parent ? Math.max(0, root.parent.width - root.width) : 3840
-                drag.maximumY: root.parent ? Math.max(0, root.parent.height - root.height) : 2160
+                drag.maximumX: root.maxDragX
+                drag.maximumY: root.maxDragY
                 drag.threshold: 0
 
-                onPressed: {
-                    root.isDragging = true;
-                }
-
                 onReleased: {
-                    root.isDragging = false;
                     root.x = Math.round(root.x / 16) * 16;
                     root.y = Math.round(root.y / 16) * 16;
                     DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
                 }
 
                 onCanceled: {
-                    if (root.isDragging) {
-                        root.isDragging = false;
-                        root.x = Math.round(root.x / 16) * 16;
-                        root.y = Math.round(root.y / 16) * 16;
-                        DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
-                    }
+                    root.x = Math.round(root.x / 16) * 16;
+                    root.y = Math.round(root.y / 16) * 16;
+                    DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
                 }
             }
         }

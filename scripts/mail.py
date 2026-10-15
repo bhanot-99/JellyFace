@@ -25,6 +25,7 @@ import json
 import os
 import re
 import socket
+import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -430,19 +431,39 @@ def mark_read(mail_id):
 
 
 def open_client(client_type="gmail"):
+    """Launch mail client securely and detached without shell injection or zombie processes."""
     cfg = load_config()
     account = cfg.get("email", DEFAULT_EMAIL)
     gmail_url = f"https://mail.google.com/mail/u/{account}/"
 
     if client_type == "gmail":
-        os.system(f"distrobox-host-exec brave-browser --app='{gmail_url}' &")
+        subprocess.Popen(
+            ["distrobox-host-exec", "brave-browser", f"--app={gmail_url}"],
+            start_new_session=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
     else:
-        # Check if thunderbird exists on host or open webmail
-        res = os.system("distrobox-host-exec which thunderbird >/dev/null 2>&1")
-        if res == 0:
-            os.system("distrobox-host-exec gtk-launch thunderbird &")
+        # Check if thunderbird binary exists on host
+        has_tb = subprocess.run(
+            ["distrobox-host-exec", "which", "thunderbird"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        ).returncode == 0
+        if has_tb:
+            subprocess.Popen(
+                ["distrobox-host-exec", "gtk-launch", "thunderbird"],
+                start_new_session=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
         else:
-            os.system(f"distrobox-host-exec brave-browser --app='{gmail_url}' &")
+            subprocess.Popen(
+                ["distrobox-host-exec", "brave-browser", f"--app={gmail_url}"],
+                start_new_session=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
 
 
 def set_password(password):

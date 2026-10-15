@@ -190,27 +190,24 @@ ModularCard {
                             border.width: 1
                             border.color: Glass.rim
 
-                            Loader {
+                            Image {
                                 anchors.centerIn: parent
                                 width: 18
                                 height: 18
-                                active: (notifItem.n?.appIcon ?? "") !== ""
-                                sourceComponent: Image {
-                                    source: Quickshell.iconPath(notifItem.n?.appIcon, true) || notifItem.n?.appIcon || ""
-                                    sourceSize.width: 18
-                                    sourceSize.height: 18
-                                    fillMode: Image.PreserveAspectFit
-                                }
+                                source: (notifItem.n?.appIcon && Quickshell.iconPath(notifItem.n.appIcon, true)) || notifItem.n?.appIcon || ""
+                                sourceSize.width: 18
+                                sourceSize.height: 18
+                                fillMode: Image.PreserveAspectFit
+                                asynchronous: true
+                                visible: status === Image.Ready
                             }
 
-                            Loader {
+                            MaterialIcon {
                                 anchors.centerIn: parent
-                                active: !notifItem.n?.appIcon
-                                sourceComponent: MaterialIcon {
-                                    text: "notifications"
-                                    color: Glass.ice
-                                    fontStyle: Tokens.font.icon.small
-                                }
+                                text: "notifications"
+                                color: Glass.ice
+                                fontStyle: Tokens.font.icon.small
+                                visible: !notifItem.n?.appIcon
                             }
                         }
 

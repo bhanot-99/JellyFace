@@ -634,10 +634,10 @@ Scope {
         Region {
             id: cardMasks
 
-            Region { item: dashboard.commandBarCard?.surface }
-            Region { item: dashboard.systemMonitorCard?.surface }
-            Region { item: dashboard.notifCard?.surface }
-            Region { item: dashboard.mailCard?.surface }
+            Region { item: dashboard.commandBarCard?.visible ? dashboard.commandBarCard.surface : null }
+            Region { item: dashboard.systemMonitorCard?.visible ? dashboard.systemMonitorCard.surface : null }
+            Region { item: dashboard.notifCard?.visible ? dashboard.notifCard.surface : null }
+            Region { item: dashboard.mailCard?.visible ? dashboard.mailCard.surface : null }
         }
 
         // Tap outside when search is active to unfocus

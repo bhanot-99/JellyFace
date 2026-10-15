@@ -24,20 +24,22 @@ ModularCard {
     canResize: true
     contentPadding: 16
 
+    readonly property bool isTelemetryActive: root.visible && (typeof dashboardWin !== "undefined" ? dashboardWin.shown : true)
+
     ServiceRef {
-        service: Cpu
+        service: root.isTelemetryActive ? Cpu : null
     }
 
     ServiceRef {
-        service: Memory
+        service: root.isTelemetryActive ? Memory : null
     }
 
     ServiceRef {
-        service: Storage
+        service: root.isTelemetryActive ? Storage : null
     }
 
     ServiceRef {
-        service: NetworkUsage
+        service: root.isTelemetryActive ? NetworkUsage : null
     }
 
     // Reusable Tactile Skeuomorphic Circular Arc Gauge Pod (G2 Frost / Well)
@@ -315,7 +317,6 @@ ModularCard {
             color: Glass.well
             border.width: 1
             border.color: Glass.rim
-            clip: true
 
             Rectangle {
                 anchors.top: parent.top
