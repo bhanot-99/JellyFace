@@ -11,9 +11,9 @@ import qs.components.containers
 import qs.services
 import qs.utils
 
-// JellyFace Desktop Dashboard Widget: Fixed center desktop underlap widget.
-// Sits on WlrLayer.Bottom directly above wallpaper; automatically visible when workspace is empty,
-// and gracefully hides whenever any application window is active on the workspace.
+// JellyFace Modular Desktop Widget Ecosystem:
+// Independent floating windows/cards on WlrLayer.Bottom with freeform drag/drop,
+// corner resizing, snap-to-grid, canvas persistence, and global edit/lock mode.
 Scope {
     id: root
 
@@ -198,31 +198,35 @@ Scope {
         screen: Quickshell.screens[0]
         name: "dock-dashboard"
 
-        // Underlapped layer on the desktop: beneath all normal windows
+        // Underlapped desktop surface
         WlrLayershell.layer: WlrLayer.Bottom
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-        // No edge anchors: Layer-shell protocol centers the window horizontally and vertically
-        anchors.top: false
-        anchors.bottom: false
-        anchors.left: false
-        anchors.right: false
+        anchors.top: true
+        anchors.bottom: true
+        anchors.left: true
+        anchors.right: true
 
-        readonly property real dockW: Math.min(1040, Math.floor((screen?.width ?? 1920) * 0.94))
-        readonly property real dockH: Math.min(620, Math.floor((screen?.height ?? 1080) * 0.88))
-
-        implicitWidth: dockW
-        implicitHeight: dockH
+        implicitWidth: screen?.width ?? 1920
+        implicitHeight: screen?.height ?? 1080
 
         // Visible only when workspace is clean (no unminimized windows on active workspace and no fullscreen)
         readonly property bool hasWindowsOnWorkspace: CosmicWindows.windows.some(w => w.workspace_active && !w.minimized)
         readonly property bool shown: !hasWindowsOnWorkspace && !CosmicWindows.fullscreen
 
-        mask: win.shown ? activeMask : null
+        // Non-card canvas space is completely click-through to wallpaper/desktop
+        mask: win.shown ? cardMasks : null
 
         Region {
-            id: activeMask
-            item: dashboard
+            id: cardMasks
+
+            Region { item: dashboard.commandBarCard }
+            Region { item: dashboard.appTrayCard }
+            Region { item: dashboard.profileCard }
+            Region { item: dashboard.systemMonitorCard }
+            Region { item: dashboard.activeTasksCard }
+            Region { item: dashboard.notifCard }
+            Region { item: dashboard.mailCard }
         }
 
         BackgroundEffect.blurRegion: (Glass.enabled && win.shown) ? dockBlur : null
@@ -230,32 +234,25 @@ Scope {
         Region {
             id: dockBlur
 
-            GlassRegion {
-                pane: dashboard
-            }
+            GlassRegion { pane: dashboard.commandBarCard }
+            GlassRegion { pane: dashboard.appTrayCard }
+            GlassRegion { pane: dashboard.profileCard }
+            GlassRegion { pane: dashboard.systemMonitorCard }
+            GlassRegion { pane: dashboard.activeTasksCard }
+            GlassRegion { pane: dashboard.notifCard }
+            GlassRegion { pane: dashboard.mailCard }
         }
 
         DockDashboard {
             id: dashboard
 
             dock: root
-            width: win.dockW
-            height: win.dockH
-            anchors.centerIn: parent
-
             opacity: win.shown ? 1.0 : 0.0
-            scale: win.shown ? 1.0 : 0.97
             visible: opacity > 0
 
             Behavior on opacity {
                 Anim {
-                    duration: 240
-                }
-            }
-
-            Behavior on scale {
-                Anim {
-                    type: Anim.DefaultSpatial
+                    duration: 250
                 }
             }
         }

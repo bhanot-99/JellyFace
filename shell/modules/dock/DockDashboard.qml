@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import Jellyface.Config
 import Jellyface.I18n
@@ -10,152 +9,106 @@ import qs.services
 import qs.utils
 import "components"
 
-Rectangle {
+// Decoupled Desktop Widget Ecosystem Canvas:
+// Master outer container eliminated. Acts as an unconstrained transparent desktop canvas
+// hosting 7 autonomous floating modular cards with freeform drag/drop, interactive resizing,
+// coordinate persistence, and global edit/lock mode.
+Item {
     id: root
 
     required property var dock
 
-    // Layered Glass Surface: Deep smoked acrylic container
-    color: Qt.rgba(20 / 255, 22 / 255, 28 / 255, 0.72)
-    radius: 24
-    border.width: 1
-    border.color: Qt.rgba(255, 255, 255, 0.08)
+    readonly property real screenW: parent ? parent.width : 1920
+    readonly property real screenH: parent ? parent.height : 1080
+    readonly property real cx: Math.round(screenW / 2)
+    readonly property real cy: Math.round(screenH / 2)
+    readonly property real baseTop: Math.max(40, cy - 340)
 
-    // Top hairline specular light highlight
-    Rectangle {
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.leftMargin: parent.radius
-        anchors.rightMargin: parent.radius
-        height: 1
-        color: Qt.rgba(255, 255, 255, 0.16)
-        z: 2
+    readonly property alias commandBarCard: commandBar
+    readonly property alias appTrayCard: appTray
+    readonly property alias profileCard: profile
+    readonly property alias systemMonitorCard: systemMonitor
+    readonly property alias activeTasksCard: activeTasks
+    readonly property alias notifCard: notifCard
+    readonly property alias mailCard: mail
+
+    anchors.fill: parent
+
+    // 1. TopCommandBar Module
+    TopCommandBar {
+        id: commandBar
+
+        defaultX: root.cx - 520
+        defaultY: root.baseTop
+        defaultW: 1040
+        defaultH: 52
+        z: 10
     }
 
-    implicitWidth: 1040
-    implicitHeight: 620
+    // 2. AppLauncherTray Module (Work & Dev / AI & Web / Media & Tools)
+    AppLauncherTray {
+        id: appTray
 
-    // Categorize dock apps into the 3 groups cleanly
-    readonly property var categorizedApps: {
-        const work = [];
-        const ai = [];
-        const media = [];
-        for (let i = 0; i < root.dock.apps.count; i++) {
-            const app = root.dock.appAt(i);
-            if (!app)
-                continue;
-            const id = (app.id || "").toLowerCase();
-            const name = (app.name || "").toLowerCase();
-            const match = (app.match || "").toLowerCase();
-            const full = `${id} ${name} ${match}`;
-
-            if (full.includes("claude") || full.includes("chatgpt") || full.includes("gemini") || full.includes("openai") || full.includes("brave")) {
-                ai.push(app);
-            } else if (full.includes("code") || full.includes("sublime") || full.includes("term") || full.includes("files") || full.includes("obsidian") || full.includes("github") || full.includes("git")) {
-                work.push(app);
-            } else {
-                media.push(app);
-            }
-        }
-        return {
-            work: work,
-            ai: ai,
-            media: media
-        };
+        dock: root.dock
+        defaultX: root.cx - 520
+        defaultY: root.baseTop + 64
+        defaultW: 640
+        defaultH: 108
+        z: 5
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 16
-        spacing: 12
+    // 3. SystemMonitorCard Module (CPU, Memory, Disk, Sparkline)
+    SystemMonitorCard {
+        id: systemMonitor
 
-        // Top Header Row
-        DashboardHeader {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 44
-        }
+        defaultX: root.cx - 520
+        defaultY: root.baseTop + 184
+        defaultW: 640
+        defaultH: 340
+        z: 5
+    }
 
-        // Main 2-Column Asymmetric Grid (64% / 36%) with 12px Gutter & Matching Bottom Bounds
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            spacing: 12
+    // 4. ActiveTasksCard Module (Open Windows Taskbar)
+    ActiveTasksCard {
+        id: activeTasks
 
-            // Left Column: App Trays + System Stats & Network
-            ColumnLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.preferredWidth: 650
-                spacing: 12
+        defaultX: root.cx - 520
+        defaultY: root.baseTop + 536
+        defaultW: 640
+        defaultH: 54
+        z: 5
+    }
 
-                // Top 3 App Trays
-                RowLayout {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 96
-                    spacing: 10
+    // 5. ProfileStatusCard Module (Avatar, Host, Distro, Uptime)
+    ProfileStatusCard {
+        id: profile
 
-                    AppCategoryCard {
-                        Layout.fillWidth: true
-                        Layout.preferredWidth: 1
-                        dock: root.dock
-                        title: Tr.tr("Work & Dev")
-                        categoryIcon: "code"
-                        accentColor: "#38bdf8"
-                        appsList: root.categorizedApps.work
-                    }
+        defaultX: root.cx + 132
+        defaultY: root.baseTop + 64
+        defaultW: 388
+        defaultH: 88
+        z: 5
+    }
 
-                    AppCategoryCard {
-                        Layout.fillWidth: true
-                        Layout.preferredWidth: 1
-                        dock: root.dock
-                        title: Tr.tr("AI & Web")
-                        categoryIcon: "psychology"
-                        accentColor: "#a855f7"
-                        appsList: root.categorizedApps.ai
-                    }
+    // 6. NotificationCenter Module (Live Notifications Feed)
+    NotificationCenter {
+        id: notifCard
 
-                    AppCategoryCard {
-                        Layout.fillWidth: true
-                        Layout.preferredWidth: 1
-                        dock: root.dock
-                        title: Tr.tr("Media & Tools")
-                        categoryIcon: "apps"
-                        accentColor: "#34d399"
-                        appsList: root.categorizedApps.media
-                    }
-                }
+        defaultX: root.cx + 132
+        defaultY: root.baseTop + 164
+        defaultW: 388
+        defaultH: 136
+        z: 5
+    }
 
-                // System Stats & Network Activity Card (Fills remaining height)
-                SystemStatsCard {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                }
-            }
+    // 7. MailFeed Module (Primary Mails Feed & Client Launchers)
+    MailFeed {
+        id: mail
 
-            // Right Column: Profile + Live Notifications + Primary Mails
-            ColumnLayout {
-                Layout.preferredWidth: 350
-                Layout.fillHeight: true
-                spacing: 12
-
-                // Profile Card ("Me")
-                ProfileCard {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 88
-                }
-
-                // Live Notifications (Adaptive collapsed micro-banner when empty)
-                NotificationsCard {
-                    Layout.fillWidth: true
-                }
-
-                // Primary Mails Feed (Fills remaining height with zero clipping)
-                EmailsCard {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                }
-            }
-        }
+        defaultX: root.cx + 132
+        defaultY: root.baseTop + 312
+        defaultW: 388
+        defaultH: 278
+        z: 5
     }
 }
