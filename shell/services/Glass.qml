@@ -43,19 +43,45 @@ Singleton {
     // but smokier and a little denser, so they read over bright windows and white tiles on them do not turn milky
     readonly property color sheet: Qt.rgba(smoke.r * 0.25, smoke.g * 0.25, smoke.b * 0.25, Math.max(0.58, Math.min(0.8, smoke.a + 0.15)))
 
-    // G1-G4: white over the base glass. More white reads as denser frost.
-    readonly property color well: Qt.rgba(0, 0, 0, 0.1) // recessed (below G0)
-    readonly property color veil: Qt.rgba(1, 1, 1, 0.06)
-    readonly property color mist: Qt.rgba(1, 1, 1, 0.11) // G1: cards
-    readonly property color mistHigh: Qt.rgba(1, 1, 1, 0.15)
-    readonly property color frost: Qt.rgba(1, 1, 1, 0.2) // G2: raised tiles, hover, tracks
-    readonly property color frostHigh: Qt.rgba(1, 1, 1, 0.27) // selected containers
-    readonly property color haze: Qt.rgba(1, 1, 1, 0.74) // G3: secondary text, icons
-    readonly property color hazeHigh: Qt.rgba(1, 1, 1, 0.86)
-    readonly property color ice: Qt.rgba(1, 1, 1, 0.96) // G4: primary text, active pills
-    readonly property color ink: "#17181b" // text and icons on an ice pill
-    readonly property color rim: Qt.rgba(1, 1, 1, 0.22) // 1px edge of glass panes
-    readonly property color sheen: Qt.rgba(1, 1, 1, 0.1) // top-lit gradient start inside a pane
+    // ─── Luminous Frosted Glass Design Tokens (macOS Sequoia / VisionOS Stack) ───
+    // 1. Surface Translucency Tiers
+    readonly property color glassCardBase:     Qt.rgba(1.0, 1.0, 1.0, 0.16) // Main floating card surface
+    readonly property color glassElevatedTile: Qt.rgba(1.0, 1.0, 1.0, 0.22) // Nested cards / interactive tiles
+    readonly property color glassPillHover:    Qt.rgba(1.0, 1.0, 1.0, 0.32) // Hover / active button states
+    readonly property color glassRecessedWell: Qt.rgba(0.0, 0.0, 0.0, 0.22) // Inset tracks, search bar, sparkline well
+    readonly property color glassActivePill:   Qt.rgba(1.0, 1.0, 1.0, 0.95) // Solid white key accent
+
+    // 2. Continuous Clean Glass Borders (Crisp on all sides, uniform contour)
+    readonly property color glassBorder:       Qt.rgba(1.0, 1.0, 1.0, 0.24) // Crisp uniform continuous border
+    readonly property color glassBorderHover:  Qt.rgba(1.0, 1.0, 1.0, 0.48) // Luminous hover border
+    readonly property color glassBorderMuted:  Qt.rgba(1.0, 1.0, 1.0, 0.16) // Subtle inset border
+    readonly property color glassRimTop:       glassBorderHover             // Luminous edge
+    readonly property color glassRimBottom:    glassBorder                  // Crisp ambient edge
+    readonly property color glassInnerGlow:    glassBorderMuted             // Inset well rim
+
+    // 3. Typography & Glyph Contrast (Preserves legibility over wallpaper)
+    readonly property color textPrimary:       "#FFFFFF"                     // 100% white with subtle text-shadow
+    readonly property color textSecondary:     Qt.rgba(1.0, 1.0, 1.0, 0.80) // 80% white for subtitles
+    readonly property color textMuted:         Qt.rgba(1.0, 1.0, 1.0, 0.55) // 55% white for inactive labels
+    readonly property color textDark:          "#1A1D24"                     // Deep charcoal for active white pills
+
+    // 4. Ambient Shadows
+    readonly property color shadowAmbient:     Qt.rgba(0.0, 0.0, 0.0, 0.28) // Soft diffused shadow
+    readonly property color shadowDeep:        Qt.rgba(0.0, 0.0, 0.0, 0.42) // Depth grounding
+
+    // G1-G4: Aliased to Luminous Glass Tokens for unified design system
+    readonly property color well: glassRecessedWell
+    readonly property color veil: Qt.rgba(1, 1, 1, 0.08)
+    readonly property color mist: glassCardBase
+    readonly property color mistHigh: Qt.rgba(1, 1, 1, 0.20)
+    readonly property color frost: glassElevatedTile
+    readonly property color frostHigh: glassPillHover
+    readonly property color haze: textSecondary
+    readonly property color hazeHigh: Qt.rgba(1.0, 1.0, 1.0, 0.88)
+    readonly property color ice: glassActivePill
+    readonly property color ink: textDark
+    readonly property color rim: glassRimTop
+    readonly property color sheen: glassInnerGlow
 
     FileView {
         path: `${Paths.state}/glass.json`

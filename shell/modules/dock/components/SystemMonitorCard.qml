@@ -42,7 +42,7 @@ ModularCard {
         service: root.isTelemetryActive ? NetworkUsage : null
     }
 
-    // Reusable Tactile Skeuomorphic Circular Arc Gauge Pod (G2 Frost / Well)
+    // Reusable Tactile Skeuomorphic Circular Arc Gauge Pod (Frosted Glass Recessed Well)
     component RadialGaugePod: Rectangle {
         id: pod
 
@@ -56,20 +56,9 @@ ModularCard {
         Layout.preferredWidth: 1
         implicitHeight: 148
         radius: Tokens.rounding.large
-        color: Glass.well
+        color: Glass.glassRecessedWell
         border.width: 1
-        border.color: Glass.rim
-
-        // Top specular hairline
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: parent.radius
-            anchors.rightMargin: parent.radius
-            height: 1
-            color: Glass.rim
-        }
+        border.color: Glass.glassBorder
 
         ColumnLayout {
             anchors.fill: parent
@@ -83,14 +72,14 @@ ModularCard {
                 StyledText {
                     text: pod.title
                     font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                    color: Glass.ice
+                    color: Glass.textPrimary
                     Layout.fillWidth: true
                 }
 
                 StyledText {
                     text: `${Math.round(Math.max(0, Math.min(1, pod.value)) * 100)}%`
                     font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                    color: Glass.ice
+                    color: Glass.textPrimary
                 }
             }
 
@@ -105,10 +94,10 @@ ModularCard {
                     preferredRendererType: Shape.CurveRenderer
                     asynchronous: true
 
-                    // Recessed Dark Track Ring
+                    // Recessed Translucent Track Ring
                     ShapePath {
                         fillColor: "transparent"
-                        strokeColor: Glass.frost
+                        strokeColor: Qt.rgba(1.0, 1.0, 1.0, 0.12)
                         strokeWidth: 8
                         capStyle: ShapePath.RoundCap
 
@@ -122,10 +111,10 @@ ModularCard {
                         }
                     }
 
-                    // Active Arc (Chunky 8px Glass.ice with smooth stroke)
+                    // Active Arc (Chunky 8px Glass.glassActivePill with smooth stroke)
                     ShapePath {
                         fillColor: "transparent"
-                        strokeColor: Glass.ice
+                        strokeColor: Glass.glassActivePill
                         strokeWidth: 8
                         capStyle: ShapePath.RoundCap
 
@@ -143,7 +132,7 @@ ModularCard {
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: pod.icon
-                    color: Glass.ice
+                    color: Glass.textPrimary
                     fontStyle: Tokens.font.icon.medium
                 }
             }
@@ -156,7 +145,7 @@ ModularCard {
                 StyledText {
                     text: pod.detailText
                     font: Tokens.font.label.small
-                    color: Glass.haze
+                    color: Glass.textSecondary
                     Layout.fillWidth: true
                     elide: Text.ElideRight
                     horizontalAlignment: Text.AlignHCenter
@@ -169,21 +158,9 @@ ModularCard {
                     implicitWidth: analyzeRow.implicitWidth + 14
                     implicitHeight: 22
                     radius: Tokens.rounding.full
-                    color: analyzeHover.hovered ? Glass.frostHigh : Glass.frost
+                    color: analyzeHover.hovered ? Glass.glassPillHover : Glass.glassElevatedTile
                     border.width: 1
-                    border.color: Glass.rim
-
-                    // Top-lit bevel
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: 6
-                        anchors.rightMargin: 6
-                        height: 1
-                        color: Glass.ice
-                        opacity: 0.3
-                    }
+                    border.color: analyzeHover.hovered ? Glass.glassActivePill : Glass.glassBorder
 
                     Row {
                         id: analyzeRow
@@ -193,7 +170,7 @@ ModularCard {
                         MaterialIcon {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "pie_chart"
-                            color: Glass.ice
+                            color: Glass.textPrimary
                             fontStyle: Tokens.font.icon.small
                         }
 
@@ -201,7 +178,7 @@ ModularCard {
                             anchors.verticalCenter: parent.verticalCenter
                             text: Tr.tr("Analyze")
                             font: Tokens.font.label.small
-                            color: Glass.ice
+                            color: Glass.textPrimary
                         }
                     }
 
@@ -232,25 +209,14 @@ ModularCard {
                 implicitWidth: 28
                 implicitHeight: 28
                 radius: Tokens.rounding.small
-                color: Glass.frost
+                color: Glass.glassElevatedTile
                 border.width: 1
-                border.color: Glass.rim
-
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: parent.radius
-                    anchors.rightMargin: parent.radius
-                    height: 1
-                    color: Glass.ice
-                    opacity: 0.35
-                }
+                border.color: Glass.glassBorder
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "monitoring"
-                    color: Glass.ice
+                    color: Glass.textPrimary
                     fontStyle: Tokens.font.icon.small
                 }
             }
@@ -262,13 +228,13 @@ ModularCard {
                 StyledText {
                     text: Tr.tr("System Resources")
                     font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                    color: Glass.ice
+                    color: Glass.textPrimary
                 }
 
                 StyledText {
                     text: Tr.tr("Live Hardware Diagnostics")
                     font: Tokens.font.label.small
-                    color: Glass.haze
+                    color: Glass.textSecondary
                 }
             }
 
@@ -314,19 +280,9 @@ ModularCard {
             Layout.fillHeight: true
             Layout.minimumHeight: 124
             radius: Tokens.rounding.large
-            color: Glass.well
+            color: Glass.glassRecessedWell
             border.width: 1
-            border.color: Glass.rim
-
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: parent.radius
-                anchors.rightMargin: parent.radius
-                height: 1
-                color: Glass.rim
-            }
+            border.color: Glass.glassBorder
 
             ColumnLayout {
                 anchors.fill: parent
@@ -338,14 +294,14 @@ ModularCard {
 
                     MaterialIcon {
                         text: "swap_vert"
-                        color: Glass.ice
+                        color: Glass.textPrimary
                         fontStyle: Tokens.font.icon.small
                     }
 
                     StyledText {
                         text: Tr.tr("Network Throughput")
                         font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                        color: Glass.ice
+                        color: Glass.textPrimary
                         Layout.fillWidth: true
                     }
 
@@ -358,14 +314,14 @@ ModularCard {
                             MaterialIcon {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "download"
-                                color: Glass.ice
+                                color: Glass.textPrimary
                                 fontStyle: Tokens.font.icon.small
                             }
                             StyledText {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: Units.formatBytes(NetworkUsage.downloadSpeed ?? 0, true)
                                 font: Tokens.font.body.builders.small.weight(Font.Medium).build()
-                                color: Glass.ice
+                                color: Glass.textPrimary
                             }
                         }
 
@@ -374,14 +330,14 @@ ModularCard {
                             MaterialIcon {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "upload"
-                                color: Glass.haze
+                                color: Glass.textSecondary
                                 fontStyle: Tokens.font.icon.small
                             }
                             StyledText {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: Units.formatBytes(NetworkUsage.uploadSpeed ?? 0, true)
                                 font: Tokens.font.body.builders.small.weight(Font.Medium).build()
-                                color: Glass.haze
+                                color: Glass.textSecondary
                             }
                         }
                     }
@@ -401,11 +357,11 @@ ModularCard {
 
                         anchors.fill: parent
                         line1: NetworkUsage.uploadBuffer
-                        line1Color: Glass.haze
-                        line1FillAlpha: 0.08
+                        line1Color: Glass.textSecondary
+                        line1FillAlpha: 0.10
                         line2: NetworkUsage.downloadBuffer
-                        line2Color: Glass.ice
-                        line2FillAlpha: 0.16
+                        line2Color: Glass.glassActivePill
+                        line2FillAlpha: 0.20
                         maxValue: smoothMax
                         historyLength: NetworkUsage.historyLength
 
@@ -437,7 +393,7 @@ ModularCard {
                         anchors.centerIn: parent
                         text: Tr.tr("Collecting throughput metrics...")
                         font: Tokens.font.label.small
-                        color: Glass.haze
+                        color: Glass.textMuted
                         visible: NetworkUsage.downloadBuffer.count < 2
                     }
                 }

@@ -36,25 +36,14 @@ ModularCard {
                 implicitWidth: 26
                 implicitHeight: 26
                 radius: Tokens.rounding.small
-                color: Glass.frost
+                color: Glass.glassElevatedTile
                 border.width: 1
-                border.color: Glass.rim
-
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: parent.radius
-                    anchors.rightMargin: parent.radius
-                    height: 1
-                    color: Glass.ice
-                    opacity: 0.35
-                }
+                border.color: Glass.glassBorder
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: root.hasNotifs ? "notifications" : "done_all"
-                    color: Glass.ice
+                    color: Glass.textPrimary
                     fontStyle: Tokens.font.icon.small
                 }
             }
@@ -62,7 +51,7 @@ ModularCard {
             StyledText {
                 text: root.hasNotifs ? Tr.tr("Notifications") : Tr.tr("All Caught Up")
                 font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                color: Glass.ice
+                color: Glass.textPrimary
                 Layout.fillWidth: true
             }
 
@@ -72,16 +61,16 @@ ModularCard {
                 implicitHeight: 20
                 radius: Tokens.rounding.full
                 visible: root.hasNotifs
-                color: Glass.frost
+                color: Glass.glassActivePill
                 border.width: 1
-                border.color: Glass.rim
+                border.color: Glass.glassActivePill
 
                 StyledText {
                     id: badgeText
                     anchors.centerIn: parent
                     text: `${Notifs.notClosed.length}`
                     font: Tokens.font.label.small
-                    color: Glass.ice
+                    color: Glass.textDark
                 }
             }
 
@@ -89,7 +78,7 @@ ModularCard {
             StyledText {
                 text: Tr.tr("No alerts")
                 font: Tokens.font.label.small
-                color: Glass.haze
+                color: Glass.textMuted
                 visible: !root.hasNotifs
             }
 
@@ -99,9 +88,9 @@ ModularCard {
                 implicitHeight: 26
                 radius: Tokens.rounding.small
                 visible: root.hasNotifs
-                color: clearMouse.pressed ? Glass.frostHigh : (clearMouse.containsMouse ? Glass.frostHigh : Glass.frost)
+                color: clearMouse.pressed ? Glass.glassActivePill : (clearMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
                 border.width: 1
-                border.color: clearMouse.containsMouse ? Glass.ice : Glass.rim
+                border.color: clearMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
                 scale: clearMouse.pressed ? 0.92 : (clearMouse.containsMouse ? 1.05 : 1.0)
 
                 Behavior on scale {
@@ -109,11 +98,21 @@ ModularCard {
                         type: Anim.FastSpatial
                     }
                 }
+                Behavior on color {
+                    CAnim {
+                        duration: 150
+                    }
+                }
+                Behavior on border.color {
+                    CAnim {
+                        duration: 150
+                    }
+                }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "clear_all"
-                    color: clearMouse.containsMouse ? Glass.ice : Glass.haze
+                    color: clearMouse.pressed ? Glass.textDark : (clearMouse.containsMouse ? Glass.textPrimary : Glass.textSecondary)
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -156,20 +155,19 @@ ModularCard {
                     width: ListView.view.width
                     implicitHeight: 48
                     radius: Tokens.rounding.medium
-                    color: itemHover.hovered ? Glass.frostHigh : Glass.frost
+                    color: itemHover.hovered ? Glass.glassPillHover : Glass.glassElevatedTile
                     border.width: 1
-                    border.color: itemHover.hovered ? Glass.ice : Glass.rim
+                    border.color: itemHover.hovered ? Glass.glassBorderHover : Glass.glassBorder
 
-                    // Top-lit specular hairline
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: parent.radius
-                        anchors.rightMargin: parent.radius
-                        height: 1
-                        color: Glass.ice
-                        opacity: 0.35
+                    Behavior on color {
+                        CAnim {
+                            duration: 150
+                        }
+                    }
+                    Behavior on border.color {
+                        CAnim {
+                            duration: 150
+                        }
                     }
 
                     HoverHandler {
@@ -186,9 +184,9 @@ ModularCard {
                             implicitWidth: 32
                             implicitHeight: 32
                             radius: Tokens.rounding.small
-                            color: Glass.well
+                            color: Glass.glassRecessedWell
                             border.width: 1
-                            border.color: Glass.rim
+                            border.color: Glass.glassRimBottom
 
                             Image {
                                 anchors.centerIn: parent
@@ -205,7 +203,7 @@ ModularCard {
                             MaterialIcon {
                                 anchors.centerIn: parent
                                 text: "notifications"
-                                color: Glass.ice
+                                color: Glass.textPrimary
                                 fontStyle: Tokens.font.icon.small
                                 visible: !notifItem.n?.appIcon
                             }
@@ -221,7 +219,7 @@ ModularCard {
                                 StyledText {
                                     text: notifItem.n?.appName || "Alert"
                                     font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                                    color: Glass.ice
+                                    color: Glass.textPrimary
                                 }
 
                                 Item {
@@ -231,7 +229,7 @@ ModularCard {
                                 StyledText {
                                     text: notifItem.n?.time ? Qt.formatTime(new Date(notifItem.n.time), "hh:mm") : ""
                                     font: Tokens.font.label.small
-                                    color: Glass.haze
+                                    color: Glass.textMuted
                                 }
                             }
 
@@ -239,7 +237,7 @@ ModularCard {
                                 Layout.fillWidth: true
                                 text: notifItem.n?.summary || ""
                                 font: Tokens.font.label.small
-                                color: Glass.ice
+                                color: Glass.textSecondary
                                 elide: Text.ElideRight
                             }
                         }
@@ -249,12 +247,14 @@ ModularCard {
                             implicitWidth: 22
                             implicitHeight: 22
                             radius: Tokens.rounding.small
-                            color: closeHover.hovered ? Glass.frostHigh : "transparent"
+                            color: closeHover.hovered ? Glass.glassPillHover : "transparent"
+                            border.width: closeHover.hovered ? 1 : 0
+                            border.color: Glass.glassRimTop
 
                             MaterialIcon {
                                 anchors.centerIn: parent
                                 text: "close"
-                                color: closeHover.hovered ? Glass.ice : Glass.haze
+                                color: closeHover.hovered ? Glass.textPrimary : Glass.textMuted
                                 fontStyle: Tokens.font.icon.small
                             }
 
@@ -284,9 +284,9 @@ ModularCard {
             Layout.fillHeight: true
             visible: !root.hasNotifs
             radius: Tokens.rounding.medium
-            color: Glass.well
+            color: Glass.glassRecessedWell
             border.width: 1
-            border.color: Glass.rim
+            border.color: Glass.glassBorder
 
             Row {
                 anchors.centerIn: parent
@@ -295,7 +295,7 @@ ModularCard {
                 MaterialIcon {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "check_circle"
-                    color: Glass.haze
+                    color: Glass.textMuted
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -303,7 +303,7 @@ ModularCard {
                     anchors.verticalCenter: parent.verticalCenter
                     text: Tr.tr("No pending notifications")
                     font: Tokens.font.label.small
-                    color: Glass.haze
+                    color: Glass.textMuted
                 }
             }
         }

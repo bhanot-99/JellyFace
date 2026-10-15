@@ -30,7 +30,7 @@ ModularCard {
         anchors.fill: parent
         spacing: 12
 
-        // 1. Left: Branding & Distro in Elevated Tactile Squircle (Glass.frost + Glass.rim)
+        // 1. Left: Branding & Distro in Elevated Tactile Squircle (Glass.glassElevatedTile + Glass.glassRimTop)
         RowLayout {
             spacing: 8
             Layout.alignment: Qt.AlignVCenter
@@ -39,26 +39,14 @@ ModularCard {
                 implicitWidth: 34
                 implicitHeight: 34
                 radius: Tokens.rounding.medium
-                color: Glass.frost
+                color: Glass.glassElevatedTile
                 border.width: 1
-                border.color: Glass.rim
-
-                // Top-lit bevel specular hairline
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: parent.radius
-                    anchors.rightMargin: parent.radius
-                    height: 1
-                    color: Glass.ice
-                    opacity: 0.35
-                }
+                border.color: Glass.glassBorder
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "dashboard"
-                    color: Glass.ice
+                    color: Glass.textPrimary
                     fontStyle: Tokens.font.icon.small
                 }
             }
@@ -70,13 +58,13 @@ ModularCard {
                 StyledText {
                     text: Tr.tr("Workspace")
                     font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                    color: Glass.ice
+                    color: Glass.textPrimary
                 }
 
                 StyledText {
                     text: SysInfo.osPrettyName || "Pop!_OS 24.04"
                     font: Tokens.font.label.small
-                    color: Glass.haze
+                    color: Glass.textSecondary
                 }
             }
         }
@@ -86,16 +74,16 @@ ModularCard {
             Layout.maximumWidth: 16
         }
 
-        // 2. Center: Brave Direct Search Box as Recessed Inset Pill Well (Glass.well + Glass.rim)
+        // 2. Center: Brave Direct Search Box as Recessed Inset Pill Well (Glass.glassRecessedWell + Glass.glassBorder)
         Rectangle {
             id: searchBox
 
             Layout.fillWidth: true
             Layout.preferredHeight: 38
             radius: Tokens.rounding.full
-            color: searchField.activeFocus ? Qt.rgba(0.08, 0.10, 0.14, 0.85) : Glass.well
+            color: searchField.activeFocus ? Qt.rgba(0.05, 0.07, 0.10, 0.88) : Glass.glassRecessedWell
             border.width: 1
-            border.color: searchField.activeFocus ? Glass.ice : (searchBoxMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.35) : Glass.rim)
+            border.color: searchField.activeFocus ? Glass.glassActivePill : (searchBoxMouse.containsMouse ? Glass.glassBorderHover : Glass.glassBorder)
 
             Behavior on border.color {
                 CAnim {
@@ -131,13 +119,13 @@ ModularCard {
                     implicitWidth: 26
                     implicitHeight: 26
                     radius: Tokens.rounding.full
-                    color: searchIconMouse.containsMouse ? Glass.frost : "transparent"
+                    color: searchIconMouse.containsMouse ? Glass.glassPillHover : "transparent"
                     Layout.alignment: Qt.AlignVCenter
 
                     MaterialIcon {
                         anchors.centerIn: parent
                         text: "search"
-                        color: searchField.activeFocus ? Glass.ice : Glass.haze
+                        color: searchField.activeFocus ? Glass.glassActivePill : Glass.textSecondary
                         fontStyle: Tokens.font.icon.small
                     }
 
@@ -168,9 +156,9 @@ ModularCard {
                         verticalAlignment: TextInput.AlignVCenter
                         font.family: Tokens.font.body.medium.family
                         font.pixelSize: 13
-                        color: Glass.ice
-                        selectedTextColor: Glass.ink
-                        selectionColor: Glass.ice
+                        color: Glass.textPrimary
+                        selectedTextColor: Glass.textDark
+                        selectionColor: Glass.glassActivePill
                         selectByMouse: true
                         activeFocusOnPress: true
                         cursorVisible: activeFocus
@@ -179,8 +167,8 @@ ModularCard {
                         Text {
                             anchors.fill: parent
                             text: Tr.tr("Search with Brave or enter URL...")
-                            color: Glass.haze
-                            opacity: 0.60
+                            color: Glass.textMuted
+                            opacity: 0.90
                             font: searchField.font
                             visible: !searchField.text && !searchField.activeFocus
                             verticalAlignment: Text.AlignVCenter
@@ -248,26 +236,15 @@ ModularCard {
                     implicitWidth: braveLabel.implicitWidth + 16
                     implicitHeight: 26
                     radius: Tokens.rounding.full
-                    color: braveMouse.pressed ? Glass.frostHigh : (braveMouse.containsMouse ? Glass.frostHigh : Glass.frost)
+                    color: braveMouse.pressed ? Glass.glassActivePill : (braveMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
                     border.width: 1
-                    border.color: braveMouse.containsMouse ? Glass.ice : Glass.rim
+                    border.color: braveMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
                     scale: braveMouse.pressed ? 0.94 : (braveMouse.containsMouse ? 1.03 : 1.0)
 
                     Behavior on scale {
                         Anim {
                             type: Anim.FastSpatial
                         }
-                    }
-
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: 8
-                        anchors.rightMargin: 8
-                        height: 1
-                        color: Glass.ice
-                        opacity: 0.35
                     }
 
                     Row {
@@ -278,7 +255,7 @@ ModularCard {
                         MaterialIcon {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "travel_explore"
-                            color: Glass.ice
+                            color: braveMouse.pressed ? Glass.textDark : Glass.textPrimary
                             fontStyle: Tokens.font.icon.small
                         }
 
@@ -286,7 +263,7 @@ ModularCard {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Brave"
                             font: Tokens.font.label.small
-                            color: Glass.ice
+                            color: braveMouse.pressed ? Glass.textDark : Glass.textPrimary
                         }
                     }
 
@@ -317,7 +294,7 @@ ModularCard {
             spacing: 8
             Layout.alignment: Qt.AlignVCenter
 
-            // Notification Center Toggle Bell (Glass.frost Squircle)
+            // Notification Center Toggle Bell (Glass.glassElevatedTile Squircle)
             Rectangle {
                 id: notifBell
 
@@ -326,9 +303,9 @@ ModularCard {
                 implicitWidth: 34
                 implicitHeight: 34
                 radius: Tokens.rounding.medium
-                color: notifBellMouse.pressed ? Glass.frostHigh : (notifBellMouse.containsMouse ? Glass.frostHigh : Glass.frost)
+                color: notifBellMouse.pressed ? Glass.glassActivePill : (notifBellMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
                 border.width: 1
-                border.color: notifVis || notifBellMouse.containsMouse ? Glass.ice : Glass.rim
+                border.color: notifVis || notifBellMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
                 scale: notifBellMouse.pressed ? 0.94 : (notifBellMouse.containsMouse ? 1.05 : 1.0)
 
                 Behavior on scale {
@@ -337,21 +314,10 @@ ModularCard {
                     }
                 }
 
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: parent.radius
-                    anchors.rightMargin: parent.radius
-                    height: 1
-                    color: Glass.ice
-                    opacity: 0.35
-                }
-
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: Notifs.dnd ? "notifications_off" : "notifications"
-                    color: Glass.ice
+                    color: notifBellMouse.pressed ? Glass.textDark : Glass.textPrimary
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -371,26 +337,15 @@ ModularCard {
                 implicitWidth: lockContent.implicitWidth + 20
                 implicitHeight: 34
                 radius: Tokens.rounding.full
-                color: !DashboardState.isLocked ? Glass.ice : (lockMouse.pressed ? Glass.frostHigh : (lockMouse.containsMouse ? Glass.frostHigh : Glass.frost))
+                color: !DashboardState.isLocked ? Glass.glassActivePill : (lockMouse.pressed ? Glass.glassPillHover : (lockMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile))
                 border.width: 1
-                border.color: !DashboardState.isLocked || lockMouse.containsMouse ? Glass.ice : Glass.rim
+                border.color: !DashboardState.isLocked || lockMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
                 scale: lockMouse.pressed ? 0.94 : (lockMouse.containsMouse ? 1.04 : 1.0)
 
                 Behavior on scale {
                     Anim {
                         type: Anim.FastSpatial
                     }
-                }
-
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    height: 1
-                    color: !DashboardState.isLocked ? "transparent" : Glass.ice
-                    opacity: 0.35
                 }
 
                 Row {
@@ -401,7 +356,7 @@ ModularCard {
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: DashboardState.isLocked ? "lock" : "lock_open"
-                        color: !DashboardState.isLocked ? Glass.ink : Glass.ice
+                        color: !DashboardState.isLocked ? Glass.textDark : Glass.textPrimary
                         fontStyle: Tokens.font.icon.small
                     }
 
@@ -409,7 +364,7 @@ ModularCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: DashboardState.isLocked ? Tr.tr("Lock") : Tr.tr("Edit Mode")
                         font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                        color: !DashboardState.isLocked ? Glass.ink : Glass.ice
+                        color: !DashboardState.isLocked ? Glass.textDark : Glass.textPrimary
                     }
                 }
 
@@ -427,27 +382,16 @@ ModularCard {
                 implicitWidth: clockText.implicitWidth + 20
                 implicitHeight: 34
                 radius: Tokens.rounding.full
-                color: Glass.frost
+                color: Glass.glassElevatedTile
                 border.width: 1
-                border.color: Glass.rim
-
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    height: 1
-                    color: Glass.ice
-                    opacity: 0.35
-                }
+                border.color: Glass.glassBorder
 
                 StyledText {
                     id: clockText
                     anchors.centerIn: parent
                     text: Qt.formatTime(Time.date, "hh:mm:ss")
                     font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                    color: Glass.ice
+                    color: Glass.textPrimary
                 }
             }
         }

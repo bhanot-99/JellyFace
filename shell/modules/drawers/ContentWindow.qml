@@ -58,11 +58,11 @@ StyledWindow {
     name: "drawers"
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: (fsTransitionProg > 0 && contentItem.Config.general.showOverFullscreen) || (hasSpecialWorkspace && hasFullscreenOnNormalWs) ? WlrLayer.Overlay : WlrLayer.Top
-    WlrLayershell.keyboardFocus: interactions.overPanel ? WlrKeyboardFocus.Exclusive : (screenState.launcher || screenState.session || screenState.sidebar ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None)
+    WlrLayershell.keyboardFocus: interactions.overPanel ? WlrKeyboardFocus.Exclusive : (screenState.launcher || screenState.session || screenState.sidebar || screenState.dashboard ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None)
 
     // While a closable panel is open the window covers the whole screen, so a click anywhere outside the panel
     // reaches Interactions and closes it (Hyprland does this with a focus grab, which COSMIC doesn't have)
-    readonly property bool anyClosableOpen: screenState.launcher || screenState.session || screenState.sidebar
+    readonly property bool anyClosableOpen: screenState.launcher || screenState.session || screenState.sidebar || screenState.dashboard
 
     mask: hasFullscreen ? emptyRegion : (anyClosableOpen ? fullRegion : regions)
 

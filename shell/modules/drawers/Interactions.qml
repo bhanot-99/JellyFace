@@ -84,22 +84,47 @@ CustomMouseArea {
         onTriggered: root.screenState.launcher = false
     }
 
+    // The dashboard's full on-screen area (final size, no animation) widened by a generous margin
+    function inDashboardZone(x: real, y: real): bool {
+        const margin = 48;
+        const panel = panels.dashboard;
+        const panelW = (panel.width > 0 ? panel.width : panel.implicitWidth) || 854;
+        const panelH = (panel.height > 0 ? panel.height : panel.implicitHeight) || 500;
+        const panelX = bar.implicitWidth + panel.x;
+        const left = panelX - margin;
+        const right = panelX + panelW + margin;
+        const top = 0;
+        const bottom = borderThickness + panelH + margin;
+        return x >= left && x <= right && y >= top && y <= bottom;
+    }
+
+    Timer {
+        id: dashboardCloseTimer
+
+        interval: 350
+        onTriggered: {
+            if (!root.dashboardShortcutActive)
+                root.screenState.dashboard = false;
+        }
+    }
+
     function insideItem(item: Item, x: real, y: real): bool {
         const p = item.mapToItem(root, 0, 0);
         const margin = 8;
         return x >= p.x - margin && x <= p.x + item.width + margin && y >= p.y - margin && y <= p.y + item.height + margin;
     }
 
-    // Click outside an open launcher/session/sidebar closes it (the bar toggles its own panels, so leave it alone)
+    // Click outside an open launcher/session/sidebar/dashboard closes it (the bar toggles its own panels, so leave it alone)
     function closeIfClickedOutside(x: real, y: real): void {
-        if (!(screenState.launcher || screenState.session || screenState.sidebar) || x < bar.implicitWidth)
+        if (!(screenState.launcher || screenState.session || screenState.sidebar || screenState.dashboard) || x < bar.implicitWidth)
             return;
-        for (const panel of [panels.launcher, panels.session, panels.sidebar])
+        for (const panel of [panels.launcher, panels.session, panels.sidebar, panels.dashboard])
             if (panel.visible && insideItem(panel, x, y))
                 return;
         screenState.launcher = false;
         screenState.session = false;
         screenState.sidebar = false;
+        screenState.dashboard = false;
     }
 
     onPressed: event => {
@@ -122,8 +147,12 @@ CustomMouseArea {
                 root.panels.osd.hovered = false;
             }
 
-            if (!dashboardShortcutActive)
-                screenState.dashboard = false;
+            if (!dashboardShortcutActive) {
+                if (Config.dashboard.showOnHover && screenState.dashboard)
+                    dashboardCloseTimer.start();
+                else
+                    screenState.dashboard = false;
+            }
 
             if (!utilitiesShortcutActive)
                 screenState.utilities = false;
@@ -259,15 +288,23 @@ CustomMouseArea {
                 launcherCloseTimer.start();
         }
 
-        // Show dashboard on hover
-        const showDashboard = Config.dashboard.showOnHover && inTopPanel(panels.dashboard, x, y);
-
-        // Always update visibility based on hover if not in shortcut mode
-        if (!dashboardShortcutActive) {
-            screenState.dashboard = showDashboard;
-        } else if (showDashboard) {
-            // If hovering over dashboard area while in shortcut mode, transition to hover control
-            dashboardShortcutActive = false;
+        // Show dashboard on hover: trigger open at top edge, and close only after cursor has genuinely
+        // left the dashboard zone and the debounce timer expires (preventing animation flicker / minor movement glitches)
+        if (Config.dashboard.showOnHover) {
+            if (!screenState.dashboard) {
+                if (inTopPanel(panels.dashboard, x, y)) {
+                    screenState.dashboard = true;
+                    dashboardCloseTimer.stop();
+                }
+            } else if (!pressed) {
+                if (inDashboardZone(x, y)) {
+                    dashboardCloseTimer.stop();
+                    if (dashboardShortcutActive)
+                        dashboardShortcutActive = false;
+                } else if (!dashboardCloseTimer.running && !dashboardShortcutActive) {
+                    dashboardCloseTimer.start();
+                }
+            }
         }
 
         // Show/hide dashboard on drag (for touchscreen devices)
@@ -308,7 +345,7 @@ CustomMouseArea {
                 root.utilitiesShortcutActive = false;
 
                 // Also hide dashboard and OSD if they're not being hovered
-                const inDashboardArea = root.inTopPanel(root.panels.dashboard, root.mouseX, root.mouseY);
+                const inDashboardArea = root.inDashboardZone(root.mouseX, root.mouseY);
                 const inOsdArea = root.inRightPanel(root.panels.osdWrapper, root.mouseX, root.mouseY);
 
                 if (!inDashboardArea) {
@@ -324,13 +361,16 @@ CustomMouseArea {
         function onDashboardChanged() {
             if (root.screenState.dashboard) {
                 // Dashboard became visible, immediately check if this should be shortcut mode
-                const inDashboardArea = root.inTopPanel(root.panels.dashboard, root.mouseX, root.mouseY);
+                const inDashboardArea = root.inDashboardZone(root.mouseX, root.mouseY);
                 if (!inDashboardArea) {
                     root.dashboardShortcutActive = true;
+                } else {
+                    dashboardCloseTimer.stop();
                 }
             } else {
                 // Dashboard hidden, clear shortcut flag
                 root.dashboardShortcutActive = false;
+                dashboardCloseTimer.stop();
             }
         }
 

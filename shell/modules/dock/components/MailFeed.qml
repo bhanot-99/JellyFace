@@ -41,25 +41,14 @@ ModularCard {
                 implicitWidth: 26
                 implicitHeight: 26
                 radius: Tokens.rounding.small
-                color: Glass.frost
+                color: Glass.glassElevatedTile
                 border.width: 1
-                border.color: Glass.rim
-
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: parent.radius
-                    anchors.rightMargin: parent.radius
-                    height: 1
-                    color: Glass.ice
-                    opacity: 0.35
-                }
+                border.color: Glass.glassBorder
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "mail"
-                    color: Glass.ice
+                    color: Glass.textPrimary
                     fontStyle: Tokens.font.icon.small
                 }
             }
@@ -67,25 +56,25 @@ ModularCard {
             StyledText {
                 text: Tr.tr("Primary Mails")
                 font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                color: Glass.ice
+                color: Glass.textPrimary
                 Layout.fillWidth: true
             }
 
-            // Tactile Unread Pill Badge (Glass.frost + Glass.ice Glow)
+            // Tactile Unread Pill Badge
             Rectangle {
                 implicitWidth: unreadText.implicitWidth + 12
                 implicitHeight: 20
                 radius: Tokens.rounding.full
-                color: MailService.unreadCount > 0 ? Glass.frostHigh : Glass.well
+                color: MailService.unreadCount > 0 ? Glass.glassActivePill : Glass.glassRecessedWell
                 border.width: 1
-                border.color: MailService.unreadCount > 0 ? Glass.ice : Glass.rim
+                border.color: MailService.unreadCount > 0 ? Glass.glassActivePill : Glass.glassBorder
 
                 StyledText {
                     id: unreadText
                     anchors.centerIn: parent
                     text: `${MailService.unreadCount} unread`
                     font: Tokens.font.label.small
-                    color: MailService.unreadCount > 0 ? Glass.ice : Glass.haze
+                    color: MailService.unreadCount > 0 ? Glass.textDark : Glass.textMuted
                 }
             }
 
@@ -98,9 +87,9 @@ ModularCard {
                 Layout.preferredHeight: 26
                 z: 20
                 radius: Tokens.rounding.small
-                color: refreshMouse.pressed ? Glass.frostHigh : (refreshMouse.containsMouse ? Glass.frostHigh : Glass.frost)
+                color: refreshMouse.pressed ? Glass.glassActivePill : (refreshMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
                 border.width: 1
-                border.color: refreshMouse.containsMouse || MailService.isSyncing ? Glass.ice : Glass.rim
+                border.color: refreshMouse.containsMouse || MailService.isSyncing ? Glass.glassActivePill : Glass.glassBorder
                 scale: refreshMouse.pressed ? 0.92 : (refreshMouse.containsMouse ? 1.05 : 1.0)
 
                 Behavior on scale {
@@ -125,7 +114,7 @@ ModularCard {
                     id: refreshIcon
                     anchors.centerIn: parent
                     text: "refresh"
-                    color: MailService.isSyncing ? Glass.ice : (refreshMouse.containsMouse ? Glass.ice : Glass.haze)
+                    color: refreshMouse.pressed ? Glass.textDark : (MailService.isSyncing || refreshMouse.containsMouse ? Glass.textPrimary : Glass.textSecondary)
                     fontStyle: Tokens.font.icon.small
 
                     RotationAnimation on rotation {
@@ -168,7 +157,7 @@ ModularCard {
                 contentItem: Rectangle {
                     implicitWidth: 4
                     radius: 2
-                    color: Glass.ice
+                    color: Glass.textPrimary
                     opacity: vbar.pressed ? 0.65 : (vbar.hovered ? 0.45 : 0.25)
                     Behavior on opacity {
                         NumberAnimation {
@@ -192,7 +181,7 @@ ModularCard {
                     MaterialIcon {
                         Layout.alignment: Qt.AlignHCenter
                         text: "mark_email_read"
-                        color: Glass.haze
+                        color: Glass.textMuted
                         fontStyle: Tokens.font.icon.medium
                     }
 
@@ -200,7 +189,7 @@ ModularCard {
                         Layout.alignment: Qt.AlignHCenter
                         text: Tr.tr("No Recent Emails")
                         font: Tokens.font.label.medium
-                        color: Glass.haze
+                        color: Glass.textMuted
                     }
                 }
             }
@@ -214,9 +203,9 @@ ModularCard {
                 width: ListView.view.width
                 implicitHeight: Math.max(52, mailContentRow.implicitHeight + 16)
                 radius: Tokens.rounding.medium
-                color: mailMouse.containsMouse ? Glass.frostHigh : (mailItem.m?.unread ? Glass.frost : Glass.mistHigh)
+                color: mailMouse.containsMouse ? Glass.glassPillHover : (mailItem.m?.unread ? Glass.glassElevatedTile : Qt.rgba(1.0, 1.0, 1.0, 0.10))
                 border.width: 1
-                border.color: mailMouse.containsMouse ? Glass.ice : (mailItem.m?.unread ? Qt.rgba(1, 1, 1, 0.30) : Glass.rim)
+                border.color: mailMouse.containsMouse ? Glass.glassBorderHover : (mailItem.m?.unread ? Glass.glassBorderHover : Glass.glassBorder)
 
                 Behavior on color {
                     CAnim {
@@ -227,18 +216,6 @@ ModularCard {
                     CAnim {
                         duration: 150
                     }
-                }
-
-                // Top-lit bevel specular hairline
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: parent.radius
-                    anchors.rightMargin: parent.radius
-                    height: 1
-                    color: Glass.ice
-                    opacity: 0.35
                 }
 
                 MouseArea {
@@ -265,15 +242,15 @@ ModularCard {
                         implicitHeight: 32
                         Layout.alignment: Qt.AlignVCenter
                         radius: Tokens.rounding.small
-                        color: mailItem.m?.unread ? Glass.frost : Glass.well
+                        color: mailItem.m?.unread ? Glass.glassElevatedTile : Glass.glassRecessedWell
                         border.width: 1
-                        border.color: Glass.rim
+                        border.color: mailItem.m?.unread ? Glass.glassRimTop : Glass.glassRimBottom
 
                         StyledText {
                             anchors.centerIn: parent
                             text: (mailItem.m?.sender ?? "M").charAt(0).toUpperCase()
                             font: Tokens.font.label.small
-                            color: Glass.ice
+                            color: mailItem.m?.unread ? Glass.textPrimary : Glass.textSecondary
                         }
                     }
 
@@ -292,7 +269,7 @@ ModularCard {
                             StyledText {
                                 text: root.cleanLine(mailItem.m?.sender || "Sender")
                                 font: mailItem.m?.unread ? Tokens.font.body.builders.small.weight(Font.DemiBold).build() : Tokens.font.label.small
-                                color: Glass.ice
+                                color: Glass.textPrimary
                                 elide: Text.ElideRight
                                 maximumLineCount: 1
                                 Layout.fillWidth: true
@@ -301,7 +278,7 @@ ModularCard {
                             StyledText {
                                 text: mailItem.m?.time || ""
                                 font: Tokens.font.label.small
-                                color: Glass.haze
+                                color: Glass.textMuted
                                 Layout.alignment: Qt.AlignRight
                             }
                         }
@@ -311,7 +288,7 @@ ModularCard {
                             Layout.fillWidth: true
                             text: root.cleanLine(mailItem.m?.subject || "(No Subject)")
                             font: Tokens.font.label.small
-                            color: mailItem.m?.unread ? Glass.ice : Glass.haze
+                            color: mailItem.m?.unread ? Glass.textPrimary : Glass.textSecondary
                             elide: Text.ElideRight
                             maximumLineCount: 1
                         }
@@ -323,8 +300,8 @@ ModularCard {
                             text: root.cleanLine(mailItem.m?.preview || "")
                             visible: text.length > 0 && text !== root.cleanLine(mailItem.m?.subject || "")
                             font.pixelSize: 11
-                            color: Glass.haze
-                            opacity: 0.75
+                            color: Glass.textMuted
+                            opacity: 0.85
                             elide: Text.ElideRight
                             maximumLineCount: 1
                         }
@@ -335,7 +312,7 @@ ModularCard {
                         implicitWidth: 6
                         implicitHeight: 6
                         radius: 3
-                        color: Glass.ice
+                        color: Glass.glassActivePill
                         visible: mailItem.m?.unread ?? false
                         Layout.alignment: Qt.AlignVCenter
                         Layout.rightMargin: 2
@@ -356,9 +333,9 @@ ModularCard {
                 Layout.fillWidth: true
                 implicitHeight: 36
                 radius: Tokens.rounding.full
-                color: gmailMouse.pressed ? Glass.frostHigh : (gmailMouse.containsMouse ? Glass.frostHigh : Glass.frost)
+                color: gmailMouse.pressed ? Glass.glassActivePill : (gmailMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
                 border.width: 1
-                border.color: gmailMouse.containsMouse ? Glass.ice : Glass.rim
+                border.color: gmailMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
                 scale: gmailMouse.pressed ? 0.96 : (gmailMouse.containsMouse ? 1.02 : 1.0)
 
                 Behavior on scale {
@@ -377,18 +354,6 @@ ModularCard {
                     }
                 }
 
-                // Top-lit bevel specular hairline
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    height: 1
-                    color: Glass.ice
-                    opacity: 0.35
-                }
-
                 Row {
                     anchors.centerIn: parent
                     spacing: 6
@@ -396,7 +361,7 @@ ModularCard {
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "open_in_browser"
-                        color: Glass.ice
+                        color: gmailMouse.pressed ? Glass.textDark : (gmailMouse.containsMouse ? Glass.textPrimary : Glass.textSecondary)
                         fontStyle: Tokens.font.icon.small
                     }
 
@@ -404,7 +369,7 @@ ModularCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Gmail"
                         font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                        color: Glass.ice
+                        color: gmailMouse.pressed ? Glass.textDark : (gmailMouse.containsMouse ? Glass.textPrimary : Glass.textSecondary)
                     }
                 }
 
@@ -423,9 +388,9 @@ ModularCard {
                 Layout.fillWidth: true
                 implicitHeight: 36
                 radius: Tokens.rounding.full
-                color: tbMouse.pressed ? Glass.frostHigh : (tbMouse.containsMouse ? Glass.frostHigh : Glass.frost)
+                color: tbMouse.pressed ? Glass.glassActivePill : (tbMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
                 border.width: 1
-                border.color: tbMouse.containsMouse ? Glass.ice : Glass.rim
+                border.color: tbMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
                 scale: tbMouse.pressed ? 0.96 : (tbMouse.containsMouse ? 1.02 : 1.0)
 
                 Behavior on scale {
@@ -444,18 +409,6 @@ ModularCard {
                     }
                 }
 
-                // Top-lit bevel specular hairline
-                Rectangle {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    height: 1
-                    color: Glass.ice
-                    opacity: 0.35
-                }
-
                 Row {
                     anchors.centerIn: parent
                     spacing: 6
@@ -463,7 +416,7 @@ ModularCard {
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "mail"
-                        color: Glass.ice
+                        color: tbMouse.pressed ? Glass.textDark : (tbMouse.containsMouse ? Glass.textPrimary : Glass.textSecondary)
                         fontStyle: Tokens.font.icon.small
                     }
 
@@ -471,7 +424,7 @@ ModularCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Thunderbird"
                         font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                        color: Glass.ice
+                        color: tbMouse.pressed ? Glass.textDark : (tbMouse.containsMouse ? Glass.textPrimary : Glass.textSecondary)
                     }
                 }
 

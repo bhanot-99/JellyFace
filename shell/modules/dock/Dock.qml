@@ -640,6 +640,17 @@ Scope {
             Region { item: dashboard.mailCard?.visible ? dashboard.mailCard.surface : null }
         }
 
+        BackgroundEffect.blurRegion: (Glass.enabled && dashboardWin.shown) ? cardBlur : null
+
+        Region {
+            id: cardBlur
+
+            GlassRegion { pane: dashboard.commandBarCard?.visible ? dashboard.commandBarCard.surface : null }
+            GlassRegion { pane: dashboard.systemMonitorCard?.visible ? dashboard.systemMonitorCard.surface : null }
+            GlassRegion { pane: dashboard.notifCard?.visible ? dashboard.notifCard.surface : null }
+            GlassRegion { pane: dashboard.mailCard?.visible ? dashboard.mailCard.surface : null }
+        }
+
         // Tap outside when search is active to unfocus
         MouseArea {
             id: searchOutsideDismiss

@@ -59,20 +59,20 @@ Item {
         target: DashboardState
     }
 
-    // Main Card Surface: Bound to dynamic Glass.qml engine (G1 mist over backdrop) with 15px MultiEffect lift
+    // Main Card Surface: Bound to dynamic Glass.qml engine (Luminous GlassCardBase over backdrop)
     Rectangle {
         id: surface
 
         anchors.fill: parent
         radius: root.radius
 
-        // G1 mist over wallpaper luminance buffer via Glass.standalone
-        color: Glass.enabled ? Glass.standalone(Glass.mist) : Colours.tPalette.m3surfaceContainer
+        // Translucent liquid glass card base over compositor blur
+        color: Glass.enabled ? Glass.standalone(Glass.glassCardBase) : Colours.tPalette.m3surfaceContainer
 
         border.width: 1
         border.color: !DashboardState.isLocked
-            ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? Qt.rgba(1, 1, 1, 0.40) : Qt.rgba(1, 1, 1, 0.22))
-            : Glass.rim
+            ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? Glass.glassBorderHover : Qt.rgba(1.0, 1.0, 1.0, 0.32))
+            : Glass.glassBorder
 
         Behavior on border.color {
             CAnim {
@@ -91,40 +91,6 @@ Item {
         Behavior on scale {
             Anim {
                 type: Anim.FastSpatial
-            }
-        }
-
-
-
-        // Top-Lit 1px Specular Edge Highlight (Hairline)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: parent.radius
-            anchors.rightMargin: parent.radius
-            height: 1
-            color: Glass.rim
-        }
-
-        // Top-Lit Soft Sheen (Fading glass gradient start inside pane)
-        Rectangle {
-            anchors.top: parent.top
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: parent.radius / 2
-            anchors.rightMargin: parent.radius / 2
-            height: Math.min(28, parent.height / 3)
-            radius: parent.radius
-            gradient: Gradient {
-                GradientStop {
-                    position: 0.0
-                    color: Glass.sheen
-                }
-                GradientStop {
-                    position: 1.0
-                    color: "transparent"
-                }
             }
         }
 
@@ -185,23 +151,11 @@ Item {
             implicitWidth: tagLabelRow.implicitWidth + 18
             implicitHeight: 26
             radius: Tokens.rounding.small
-            color: tagMouse.pressed ? Glass.frostHigh : (tagMouse.containsMouse ? Glass.frost : Glass.mistHigh)
+            color: tagMouse.pressed ? Glass.glassPillHover : (tagMouse.containsMouse ? Glass.glassElevatedTile : Glass.glassCardBase)
             border.width: 1
-            border.color: Glass.rim
+            border.color: Glass.glassActivePill
             visible: !DashboardState.isLocked
             z: 50
-
-            // Top-lit micro-highlight
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: parent.radius
-                anchors.rightMargin: parent.radius
-                height: 1
-                color: Glass.ice
-                opacity: 0.35
-            }
 
             Row {
                 id: tagLabelRow
@@ -211,7 +165,7 @@ Item {
                 MaterialIcon {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "drag_indicator"
-                    color: Glass.ice
+                    color: Glass.textPrimary
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -219,7 +173,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.title || root.cardId
                     font: Tokens.font.label.small
-                    color: Glass.ice
+                    color: Glass.textPrimary
                 }
             }
 
@@ -265,27 +219,16 @@ Item {
             implicitWidth: 28
             implicitHeight: 28
             radius: Tokens.rounding.small
-            color: resizeMouse.containsMouse || root.isResizing ? Glass.frostHigh : Glass.frost
+            color: resizeMouse.containsMouse || root.isResizing ? Glass.glassPillHover : Glass.glassElevatedTile
             border.width: 1
-            border.color: Glass.rim
+            border.color: resizeMouse.containsMouse || root.isResizing ? Glass.glassActivePill : Glass.glassBorder
             visible: root.canResize && !DashboardState.isLocked
             z: 60
-
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: parent.radius
-                anchors.rightMargin: parent.radius
-                height: 1
-                color: Glass.ice
-                opacity: 0.35
-            }
 
             MaterialIcon {
                 anchors.centerIn: parent
                 text: "south_east"
-                color: Glass.ice
+                color: Glass.textPrimary
                 fontStyle: Tokens.font.icon.small
             }
 

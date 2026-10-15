@@ -155,6 +155,7 @@ JellyFace -- a desktop shell for COSMIC (Pop!_OS)
   jellyface focus on|off|status   focus follows the cursor (type in whichever window the pointer is over)
   jellyface tiling on|off|status  automatic tiling of windows (COSMIC's tiling window manager)
   jellyface cosmic-dock hide|show|status   hide COSMIC's own dock (JellyFace has its own)
+  jellyface cosmic-panel hide|show|status  hide COSMIC's own top panel (JellyFace has its own)
   jellyface integrate [--yes]     make JellyFace part of the COSMIC session (service, panel, lock, applet, theme)
   jellyface applet install|panel-add|panel-remove|remove   the JellyFace menu as a native COSMIC panel applet
   jellyface service on|off|status start JellyFace with the COSMIC session (systemd user service)
@@ -183,6 +184,7 @@ case "${1:-help}" in
     autostart)     shift; cmd_autostart "$@" ;;
     lock)          exec "$0" ipc lock lock ;;
     cosmic-dock)   shift; exec "$JF_ROOT/scripts/cosmic-dock.sh" "$@" ;;
+    cosmic-panel)  shift; exec "$JF_ROOT/scripts/cosmic-panel.sh" "$@" ;;
     tiling)        shift; exec "$JF_ROOT/scripts/tiling.sh" "$@" ;;
     focus)         shift; exec "$JF_ROOT/scripts/focus.sh" "$@" ;;
     notify)        shift; exec "$JF_ROOT/scripts/shims/notify-send" "$@" ;;
