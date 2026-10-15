@@ -9,7 +9,7 @@ import qs.utils
 Singleton {
     id: root
 
-    property bool isLocked: true
+    property bool isLocked: false
     property var layouts: ({})
     property string lastSavedText: ""
     readonly property string filePath: `${Paths.config}/dashboard-layout.json`

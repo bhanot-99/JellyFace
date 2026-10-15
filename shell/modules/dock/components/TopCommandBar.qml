@@ -230,22 +230,46 @@ ModularCard {
                 }
             }
 
-            // Global Edit / Lock Mode Toggle Button
+            // Global Edit / Lock Mode Toggle Pill Button
             Rectangle {
                 id: lockToggleBtn
 
-                implicitWidth: 32
+                implicitWidth: lockContent.implicitWidth + 18
                 implicitHeight: 32
                 radius: 8
-                color: !DashboardState.isLocked ? Qt.rgba(245 / 255, 158 / 255, 11 / 255, 0.22) : (lockHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04))
+                color: !DashboardState.isLocked ? Qt.rgba(245 / 255, 158 / 255, 11 / 255, 0.25) : (lockHover.hovered ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.04))
                 border.width: 1
-                border.color: !DashboardState.isLocked ? "#f59e0b" : Qt.rgba(255, 255, 255, 0.06)
+                border.color: !DashboardState.isLocked ? "#f59e0b" : Qt.rgba(255, 255, 255, 0.08)
 
-                MaterialIcon {
+                Behavior on color {
+                    CAnim {
+                        duration: 150
+                    }
+                }
+                Behavior on border.color {
+                    CAnim {
+                        duration: 150
+                    }
+                }
+
+                Row {
+                    id: lockContent
                     anchors.centerIn: parent
-                    text: DashboardState.isLocked ? "lock" : "lock_open"
-                    color: !DashboardState.isLocked ? "#f59e0b" : Qt.rgba(1, 1, 1, 0.80)
-                    fontStyle: Tokens.font.icon.small
+                    spacing: 6
+
+                    MaterialIcon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: DashboardState.isLocked ? "lock" : "lock_open"
+                        color: !DashboardState.isLocked ? "#f59e0b" : Qt.rgba(1, 1, 1, 0.80)
+                        fontStyle: Tokens.font.icon.small
+                    }
+
+                    StyledText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: DashboardState.isLocked ? Tr.tr("Lock") : Tr.tr("Edit Mode")
+                        font: Tokens.font.label.small
+                        color: !DashboardState.isLocked ? "#f59e0b" : Qt.rgba(1, 1, 1, 0.85)
+                    }
                 }
 
                 HoverHandler {

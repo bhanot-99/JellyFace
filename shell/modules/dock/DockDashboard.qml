@@ -11,7 +11,7 @@ import "components"
 
 // Decoupled Desktop Widget Ecosystem Canvas:
 // Master outer container eliminated. Acts as an unconstrained transparent desktop canvas
-// hosting 7 autonomous floating modular cards with freeform drag/drop, interactive resizing,
+// hosting 9 autonomous floating modular cards with freeform drag/drop, interactive resizing,
 // coordinate persistence, and global edit/lock mode.
 Item {
     id: root
@@ -25,7 +25,9 @@ Item {
     readonly property real baseTop: Math.max(40, cy - 340)
 
     readonly property alias commandBarCard: commandBar
-    readonly property alias appTrayCard: appTray
+    readonly property alias workDevCard: workDev
+    readonly property alias aiWebCard: aiWeb
+    readonly property alias mediaToolsCard: mediaTools
     readonly property alias profileCard: profile
     readonly property alias systemMonitorCard: systemMonitor
     readonly property alias activeTasksCard: activeTasks
@@ -45,19 +47,43 @@ Item {
         z: 10
     }
 
-    // 2. AppLauncherTray Module (Work & Dev / AI & Web / Media & Tools)
-    AppLauncherTray {
-        id: appTray
+    // 2. WorkDevCard Module (Independent Floating Card)
+    WorkDevCard {
+        id: workDev
 
         dock: root.dock
         defaultX: root.cx - 520
         defaultY: root.baseTop + 64
-        defaultW: 640
+        defaultW: 206
         defaultH: 108
         z: 5
     }
 
-    // 3. SystemMonitorCard Module (CPU, Memory, Disk, Sparkline)
+    // 3. AiWebCard Module (Independent Floating Card)
+    AiWebCard {
+        id: aiWeb
+
+        dock: root.dock
+        defaultX: root.cx - 520 + 217
+        defaultY: root.baseTop + 64
+        defaultW: 206
+        defaultH: 108
+        z: 5
+    }
+
+    // 4. MediaToolsCard Module (Independent Floating Card)
+    MediaToolsCard {
+        id: mediaTools
+
+        dock: root.dock
+        defaultX: root.cx - 520 + 434
+        defaultY: root.baseTop + 64
+        defaultW: 206
+        defaultH: 108
+        z: 5
+    }
+
+    // 5. SystemMonitorCard Module (CPU, Memory, Disk, Sparkline)
     SystemMonitorCard {
         id: systemMonitor
 
@@ -68,7 +94,7 @@ Item {
         z: 5
     }
 
-    // 4. ActiveTasksCard Module (Open Windows Taskbar)
+    // 6. ActiveTasksCard Module (Open Windows Taskbar)
     ActiveTasksCard {
         id: activeTasks
 
@@ -79,7 +105,7 @@ Item {
         z: 5
     }
 
-    // 5. ProfileStatusCard Module (Avatar, Host, Distro, Uptime)
+    // 7. ProfileStatusCard Module (Avatar, Host, Distro, Uptime)
     ProfileStatusCard {
         id: profile
 
@@ -90,7 +116,7 @@ Item {
         z: 5
     }
 
-    // 6. NotificationCenter Module (Live Notifications Feed)
+    // 8. NotificationCenter Module (Live Notifications Feed)
     NotificationCenter {
         id: notifCard
 
@@ -101,7 +127,7 @@ Item {
         z: 5
     }
 
-    // 7. MailFeed Module (Primary Mails Feed & Client Launchers)
+    // 9. MailFeed Module (Primary Mails Feed & Client Launchers)
     MailFeed {
         id: mail
 

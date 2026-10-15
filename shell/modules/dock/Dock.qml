@@ -214,14 +214,30 @@ Scope {
         readonly property bool hasWindowsOnWorkspace: CosmicWindows.windows.some(w => w.workspace_active && !w.minimized)
         readonly property bool shown: !hasWindowsOnWorkspace && !CosmicWindows.fullscreen
 
-        // Non-card canvas space is completely click-through to wallpaper/desktop
-        mask: win.shown ? cardMasks : null
+        Region {
+            id: emptyRegion
+        }
+
+        Region {
+            id: fullRegion
+            x: 0
+            y: 0
+            width: win.width
+            height: win.height
+        }
+
+        // Non-card canvas space is completely click-through to wallpaper/desktop when locked.
+        // In Edit Mode, fullRegion allows smooth dragging and resizing across the display.
+        // When hidden (apps active on workspace), emptyRegion ensures 100% click-through.
+        mask: !win.shown ? emptyRegion : (!DashboardState.isLocked ? fullRegion : cardMasks)
 
         Region {
             id: cardMasks
 
             Region { item: dashboard.commandBarCard }
-            Region { item: dashboard.appTrayCard }
+            Region { item: dashboard.workDevCard }
+            Region { item: dashboard.aiWebCard }
+            Region { item: dashboard.mediaToolsCard }
             Region { item: dashboard.profileCard }
             Region { item: dashboard.systemMonitorCard }
             Region { item: dashboard.activeTasksCard }
@@ -235,7 +251,9 @@ Scope {
             id: dockBlur
 
             GlassRegion { pane: dashboard.commandBarCard }
-            GlassRegion { pane: dashboard.appTrayCard }
+            GlassRegion { pane: dashboard.workDevCard }
+            GlassRegion { pane: dashboard.aiWebCard }
+            GlassRegion { pane: dashboard.mediaToolsCard }
             GlassRegion { pane: dashboard.profileCard }
             GlassRegion { pane: dashboard.systemMonitorCard }
             GlassRegion { pane: dashboard.activeTasksCard }

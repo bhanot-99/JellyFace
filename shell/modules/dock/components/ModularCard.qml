@@ -18,11 +18,11 @@ Item {
     property real defaultH: 200
     property real minW: 160
     property real minH: 44
-    property real maxW: 1600
-    property real maxH: 1200
+    property real maxW: 1920
+    property real maxH: 1400
     property bool canResize: false
     property bool defaultVisible: true
-    property real contentPadding: 18
+    property real contentPadding: 16
 
     default property alias content: contentContainer.data
 
@@ -31,7 +31,7 @@ Item {
 
     visible: DashboardState.isCardVisible(root.cardId, root.defaultVisible)
 
-    // Load initial layout geometry
+    // Load initial layout geometry from persisted state or defaults
     Component.onCompleted: {
         const c = DashboardState.getCard(root.cardId, root.defaultX, root.defaultY, root.defaultW, root.defaultH);
         root.x = c.x;
@@ -40,7 +40,7 @@ Item {
         root.height = Math.max(root.minH, Math.min(root.maxH, c.height));
     }
 
-    // Sync external state changes when not actively interacting
+    // Sync state changes when not actively dragging or resizing
     Connections {
         function onLayoutChanged(): void {
             if (!root.isDragging && !root.isResizing) {
@@ -55,7 +55,7 @@ Item {
         target: DashboardState
     }
 
-    // Main Card Surface: Layered Frosted Glass
+    // Main Card Surface: Layered Frosted Glass Backdrop
     Rectangle {
         id: surface
 
@@ -63,7 +63,7 @@ Item {
         radius: 16
         color: Qt.rgba(22 / 255, 25 / 255, 35 / 255, 0.72)
         border.width: 1
-        border.color: !DashboardState.isLocked ? (cardDragArea.containsMouse || root.isDragging ? "#f59e0b" : Qt.rgba(245 / 255, 158 / 255, 11 / 255, 0.45)) : Qt.rgba(255, 255, 255, 0.08)
+        border.color: !DashboardState.isLocked ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? "#f59e0b" : Qt.rgba(245 / 255, 158 / 255, 11 / 255, 0.50)) : Qt.rgba(255, 255, 255, 0.08)
 
         Behavior on border.color {
             CAnim {
@@ -71,7 +71,7 @@ Item {
             }
         }
 
-        // Top specular hairline highlight
+        // Top hairline specular highlight
         Rectangle {
             anchors.top: parent.top
             anchors.left: parent.left
@@ -82,28 +82,75 @@ Item {
             color: Qt.rgba(255, 255, 255, 0.16)
         }
 
-        // Content Container with generous 18px-22px padding
+        // Edit Mode Freeform Drag Handler: Underneath contentContainer, catches drags on card surface/empty areas
+        MouseArea {
+            id: cardDragArea
+
+            anchors.fill: parent
+            enabled: !DashboardState.isLocked
+            hoverEnabled: true
+            acceptedButtons: Qt.LeftButton
+            cursorShape: root.isDragging ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+            preventStealing: true
+            z: 2
+
+            drag.target: root
+            drag.axis: Drag.XAndYAxis
+            drag.minimumX: 0
+            drag.minimumY: 0
+            drag.maximumX: root.parent ? Math.max(0, root.parent.width - root.width) : 3840
+            drag.maximumY: root.parent ? Math.max(0, root.parent.height - root.height) : 2160
+            drag.threshold: 0
+
+            onPressed: {
+                root.isDragging = true;
+            }
+
+            onReleased: {
+                root.isDragging = false;
+                root.x = Math.round(root.x / 16) * 16;
+                root.y = Math.round(root.y / 16) * 16;
+                DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
+            }
+
+            onCanceled: {
+                if (root.isDragging) {
+                    root.isDragging = false;
+                    root.x = Math.round(root.x / 16) * 16;
+                    root.y = Math.round(root.y / 16) * 16;
+                    DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
+                }
+            }
+        }
+
+        // Content Container with generous padding (higher z so buttons and inputs work)
         Item {
             id: contentContainer
 
             anchors.fill: parent
             anchors.margins: root.contentPadding
+            z: 10
         }
 
-        // Edit Mode: Top-Left Card Tag Label
+        // Edit Mode: Top-Left Card Tag Handle Pill with Direct Drag Target
         Rectangle {
+            id: tagLabelBox
+
             anchors.left: parent.left
             anchors.top: parent.top
-            anchors.margins: -10
-            implicitWidth: tagLabel.implicitWidth + 14
-            implicitHeight: 20
-            radius: 6
-            color: "#f59e0b"
+            anchors.leftMargin: 12
+            anchors.topMargin: -14
+            implicitWidth: tagLabelRow.implicitWidth + 16
+            implicitHeight: 26
+            radius: 7
+            color: tagMouse.pressed ? "#d97706" : (tagMouse.containsMouse ? "#fbbf24" : "#f59e0b")
+            border.width: 1
+            border.color: "#ffffff"
             visible: !DashboardState.isLocked
-            z: 20
+            z: 50
 
             Row {
-                id: tagLabel
+                id: tagLabelRow
                 anchors.centerIn: parent
                 spacing: 4
 
@@ -121,25 +168,65 @@ Item {
                     color: "#000000"
                 }
             }
+
+            MouseArea {
+                id: tagMouse
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                acceptedButtons: Qt.LeftButton
+                preventStealing: true
+
+                drag.target: root
+                drag.axis: Drag.XAndYAxis
+                drag.minimumX: 0
+                drag.minimumY: 0
+                drag.maximumX: root.parent ? Math.max(0, root.parent.width - root.width) : 3840
+                drag.maximumY: root.parent ? Math.max(0, root.parent.height - root.height) : 2160
+                drag.threshold: 0
+
+                onPressed: {
+                    root.isDragging = true;
+                }
+
+                onReleased: {
+                    root.isDragging = false;
+                    root.x = Math.round(root.x / 16) * 16;
+                    root.y = Math.round(root.y / 16) * 16;
+                    DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
+                }
+
+                onCanceled: {
+                    if (root.isDragging) {
+                        root.isDragging = false;
+                        root.x = Math.round(root.x / 16) * 16;
+                        root.y = Math.round(root.y / 16) * 16;
+                        DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
+                    }
+                }
+            }
         }
 
-        // Edit Mode: Corner Resize Handle
+        // Edit Mode: High-Hit Target Corner Resize Handle (32x32px)
         Rectangle {
             id: resizeGrip
 
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            implicitWidth: 20
-            implicitHeight: 20
-            radius: 4
-            color: resizeMouse.containsMouse || root.isResizing ? "#f59e0b" : Qt.rgba(245 / 255, 158 / 255, 11 / 255, 0.35)
+            implicitWidth: 32
+            implicitHeight: 32
+            radius: 8
+            color: resizeMouse.containsMouse || root.isResizing ? "#f59e0b" : Qt.rgba(245 / 255, 158 / 255, 11 / 255, 0.40)
+            border.width: 1
+            border.color: resizeMouse.containsMouse || root.isResizing ? "#ffffff" : Qt.rgba(255, 255, 255, 0.20)
             visible: root.canResize && !DashboardState.isLocked
-            z: 25
+            z: 60
 
             MaterialIcon {
                 anchors.centerIn: parent
                 text: "south_east"
-                color: resizeMouse.containsMouse || root.isResizing ? "#000000" : "#f59e0b"
+                color: resizeMouse.containsMouse || root.isResizing ? "#000000" : "#ffffff"
                 fontStyle: Tokens.font.icon.small
             }
 
@@ -150,27 +237,29 @@ Item {
                 hoverEnabled: true
                 cursorShape: Qt.SizeFDiagCursor
                 acceptedButtons: Qt.LeftButton
+                preventStealing: true
 
-                property real startW
-                property real startH
-                property real startX
-                property real startY
+                property real startParentX: 0
+                property real startParentY: 0
+                property real startW: 0
+                property real startH: 0
 
                 onPressed: mouse => {
                     root.isResizing = true;
                     startW = root.width;
                     startH = root.height;
-                    startX = mouse.x;
-                    startY = mouse.y;
+                    const p = resizeMouse.mapToItem(root.parent, mouse.x, mouse.y);
+                    startParentX = p.x;
+                    startParentY = p.y;
                 }
 
                 onPositionChanged: mouse => {
                     if (root.isResizing) {
-                        const rawW = startW + (mouse.x - startX);
-                        const rawH = startH + (mouse.y - startY);
-                        // 16px magnetic snap-to-grid
-                        const snappedW = Math.round(rawW / 16) * 16;
-                        const snappedH = Math.round(rawH / 16) * 16;
+                        const p = resizeMouse.mapToItem(root.parent, mouse.x, mouse.y);
+                        const deltaX = p.x - startParentX;
+                        const deltaY = p.y - startParentY;
+                        const snappedW = Math.round((startW + deltaX) / 16) * 16;
+                        const snappedH = Math.round((startH + deltaY) / 16) * 16;
                         root.width = Math.max(root.minW, Math.min(root.maxW, snappedW));
                         root.height = Math.max(root.minH, Math.min(root.maxH, snappedH));
                     }
@@ -182,47 +271,12 @@ Item {
                         DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
                     }
                 }
-            }
-        }
 
-        // Edit Mode Drag Handler (over surface when unlocked)
-        MouseArea {
-            id: cardDragArea
-
-            anchors.fill: parent
-            enabled: !DashboardState.isLocked
-            hoverEnabled: true
-            acceptedButtons: Qt.LeftButton
-            cursorShape: root.isDragging ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-            z: 10
-
-            property real grabOffsetX
-            property real grabOffsetY
-
-            onPressed: mouse => {
-                root.isDragging = true;
-                grabOffsetX = mouse.x;
-                grabOffsetY = mouse.y;
-            }
-
-            onPositionChanged: mouse => {
-                if (root.isDragging) {
-                    const rawX = root.x + (mouse.x - grabOffsetX);
-                    const rawY = root.y + (mouse.y - grabOffsetY);
-                    // 16px magnetic snap-to-grid
-                    const snappedX = Math.round(rawX / 16) * 16;
-                    const snappedY = Math.round(rawY / 16) * 16;
-                    const maxX = root.parent ? Math.max(0, root.parent.width - root.width) : 3840;
-                    const maxY = root.parent ? Math.max(0, root.parent.height - root.height) : 2160;
-                    root.x = Math.max(0, Math.min(maxX, snappedX));
-                    root.y = Math.max(0, Math.min(maxY, snappedY));
-                }
-            }
-
-            onReleased: {
-                if (root.isDragging) {
-                    root.isDragging = false;
-                    DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
+                onCanceled: {
+                    if (root.isResizing) {
+                        root.isResizing = false;
+                        DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
+                    }
                 }
             }
         }

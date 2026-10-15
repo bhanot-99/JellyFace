@@ -19,18 +19,28 @@ Rectangle {
     required property color accentColor
     property var appsList: []
 
-    color: Qt.rgba(1, 1, 1, 0.04)
-    radius: 16
-    border.width: 1
-    border.color: Qt.rgba(255, 255, 255, 0.06)
+    function dockIndexOf(app): int {
+        if (!app)
+            return -1;
+        for (let i = 0; i < root.dock.apps.count; i++) {
+            const a = root.dock.appAt(i);
+            if (a && ((app.id && a.id === app.id) || (app.name && a.name === app.name)))
+                return i;
+        }
+        return -1;
+    }
 
-    implicitHeight: 96
-    Layout.minimumHeight: 96
+    color: "transparent"
+    radius: 12
+    border.width: 0
+
+    implicitHeight: 88
+    Layout.minimumHeight: 88
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 8
+        anchors.margins: 2
+        spacing: 6
 
         // Card Header: Title + Baseline-aligned Count Badge
         RowLayout {
@@ -186,7 +196,9 @@ Rectangle {
 
                                     onClicked: mouse => {
                                         if (mouse.button === Qt.RightButton) {
-                                            root.dock.openPopup("app", tile.index, pill);
+                                            const dockIdx = root.dockIndexOf(tile.app);
+                                            if (dockIdx >= 0)
+                                                root.dock.openPopup("app", dockIdx, pill);
                                         } else {
                                             root.dock.open(tile.app);
                                         }
