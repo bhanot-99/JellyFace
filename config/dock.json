@@ -42,37 +42,37 @@
         {
             "name": "Claude",
             "command": "brave-browser --app=https://claude.ai",
-            "icon": "assets/dock/claude.png",
+            "icon": "assets/dock/round-claude.svg",
             "match": "claude.ai"
         },
         {
             "name": "Gemini",
             "command": "brave-browser --app=https://gemini.google.com",
-            "icon": "assets/dock/gemini.png",
+            "icon": "assets/dock/round-gemini.svg",
             "match": "gemini.google.com"
         },
         {
             "name": "YouTube",
             "command": "brave-browser --app=https://www.youtube.com",
-            "icon": "assets/dock/youtube.svg",
+            "icon": "assets/dock/round-youtube.svg",
             "match": "youtube.com"
         },
         {
             "name": "Pinterest",
             "command": "brave-browser --app=https://www.pinterest.com",
-            "icon": "assets/dock/pinterest.png",
+            "icon": "assets/dock/round-pinterest.png",
             "match": "pinterest.com"
         },
         {
             "name": "ChatGPT",
             "command": "brave-browser --app=https://chatgpt.com",
-            "icon": "assets/dock/chatgpt.svg",
+            "icon": "assets/dock/round-chatgpt.svg",
             "match": "chatgpt.com"
         },
         {
             "name": "GitHub",
             "command": "brave-browser --app=https://github.com",
-            "icon": "assets/dock/github.svg",
+            "icon": "assets/dock/round-github.svg",
             "match": "github.com"
         }
     ]

@@ -559,16 +559,19 @@ Scope {
 
             // the app's real icon: no pill behind it. Under the pointer it springs up and grows; pressed it squashes;
             // dragged it is lifted a little more. Running apps get a dot underneath, the focused one a longer dot.
-            IconImage {
+            // web apps (those with a "bg" colour in dock.json) sit on a round badge, like the themed icons of installed apps
+            ClippingRectangle {
                 id: icon
 
                 readonly property real base: panel.tileH - 6
+                readonly property bool badge: !!slot.app?.bg
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: (parent.height - height) / 2 - lift
                 property real lift: area.held ? 10 : area.pressed ? 0 : area.containsMouse ? 8 : 0
-                implicitSize: base
-                source: slot.iconSource
-                asynchronous: true
+                width: base
+                height: base
+                radius: badge ? base / 2 : 0
+                color: badge ? slot.app.bg : "transparent"
                 transformOrigin: Item.Bottom
                 scale: area.held ? 1.25 : area.pressed ? 0.92 : area.containsMouse ? 1.3 : 1
 
@@ -584,6 +587,13 @@ Scope {
                         duration: 220
                         easing.type: Easing.OutCubic
                     }
+                }
+
+                IconImage {
+                    anchors.centerIn: parent
+                    implicitSize: icon.base * (1 - 2 * (slot.app?.inset ?? 0))
+                    source: slot.iconSource
+                    asynchronous: true
                 }
             }
 
