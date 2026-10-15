@@ -229,9 +229,6 @@ Scope {
             id: dockBlur
 
             GlassRegion {
-                pane: panel
-            }
-            GlassRegion {
                 pane: tip
             }
         }
@@ -337,14 +334,14 @@ Scope {
             // symbol stays the same (font points -> pixels: x 4/3)
             readonly property real iconPt: Tokens.font.icon.large.pointSize * 1.25
             readonly property real growth: (iconPt - Tokens.font.icon.large.pointSize) * 4 / 3
-            readonly property real tileH: 44 + growth
-            readonly property real lift: 48                 // headroom above the dock for the name tooltip
+            readonly property real tileH: 56 + growth
+            readonly property real lift: 56                 // headroom above the dock for the name tooltip
             // the app under the pointer, for the name tooltip
             property string tipLabel
             property real tipX
             readonly property int slots: Math.max(root.count, 1)
             // 60px-wide pills (plus the growth), narrower when there are so many apps that the row would not fit on the screen
-            readonly property real tileW: Math.max(40, Math.min(60 + growth, Math.floor(((win.screen?.width ?? 1920) * 0.9 - pad * 2 - (slots - 1) * gap) / slots)))
+            readonly property real tileW: Math.max(40, Math.min(68 + growth, Math.floor(((win.screen?.width ?? 1920) * 0.9 - pad * 2 - (slots - 1) * gap) / slots)))
             readonly property real fullWidth: slots * tileW + (slots - 1) * gap + pad * 2
             readonly property real fullHeight: tileH + pad * 2
 
@@ -363,7 +360,7 @@ Scope {
                 Anim {}
             }
 
-            color: Colours.tPalette.m3surface
+            color: "transparent"
             radius: fullHeight / 2
             implicitWidth: fullWidth
             implicitHeight: fullHeight
@@ -454,6 +451,18 @@ Scope {
         readonly property string label: app?.name ?? entry?.name ?? app?.id ?? ""
         // the app's monochrome symbol: "symbol" in dock.json, else a match on its name or id, else its category
         readonly property string symbol: app?.symbol || root.symbolFor(`${app?.name ?? ""} ${app?.match ?? ""} ${app?.id ?? ""} ${entry?.name ?? ""}`) || Icons.getAppCategoryIcon(app?.id ?? "", "apps")
+
+        // "icon" in dock.json: an absolute path, a path relative to the JellyFace folder, or a theme icon name;
+        // otherwise the desktop entry's icon
+        readonly property string iconSource: {
+            const i = app?.icon || entry?.icon || app?.id || "";
+            if (i.startsWith("/"))
+                return `file://${i}`;
+            if (i.includes("/"))
+                return `file://${Quickshell.shellPath(`../${i}`)}`;
+            // theme icon, else the user's Flatpak exports (not on the container's icon path), else a generic one
+            return Quickshell.iconPath(i, true) || `file://${Paths.home}/.local/share/flatpak/exports/share/icons/hicolor/256x256/apps/${i}.png` || Quickshell.iconPath("application-x-executable");
+        }
 
         width: panel.tileW
         height: panel.tileH
@@ -548,46 +557,54 @@ Scope {
                 }
             }
 
-            // The pill behind the symbol, its shade telling the app's state: a solid white pill for the focused app,
-            // a faint frost for a running one, a lighter frost under the pointer (and while pressed or dragged)
-            StyledRect {
-                anchors.fill: parent
-                radius: height / 2
-                glassRim: false
-                color: slot.focused && !area.held ? Colours.palette.m3primary : Colours.palette.m3onSurface
-                opacity: slot.focused && !area.held ? 1 : area.held ? 0.24 : area.pressed ? 0.2 : area.containsMouse ? 0.14 : slot.running ? 0.07 : 0
-                scale: area.held ? 1.06 : 1
+            // the app's real icon: no pill behind it. Under the pointer it springs up and grows; pressed it squashes;
+            // dragged it is lifted a little more. Running apps get a dot underneath, the focused one a longer dot.
+            IconImage {
+                id: icon
 
-                Behavior on color {
-                    CAnim {}
-                }
-                Behavior on opacity {
-                    Anim {
-                        duration: 140
+                readonly property real base: panel.tileH - 6
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: (parent.height - height) / 2 - lift
+                property real lift: area.held ? 10 : area.pressed ? 0 : area.containsMouse ? 8 : 0
+                implicitSize: base
+                source: slot.iconSource
+                asynchronous: true
+                transformOrigin: Item.Bottom
+                scale: area.held ? 1.25 : area.pressed ? 0.92 : area.containsMouse ? 1.3 : 1
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 260
+                        easing.type: Easing.OutBack
+                        easing.overshoot: 2
                     }
                 }
-                Behavior on scale {
-                    Anim {
-                        duration: 140
+                Behavior on lift {
+                    NumberAnimation {
+                        duration: 220
+                        easing.type: Easing.OutCubic
                     }
                 }
             }
 
-            MaterialIcon {
-                anchors.centerIn: parent
-                text: slot.symbol
-                // filled for the app in front, outlined for the rest (as in the references); dark on the white pill
-                fill: slot.focused ? 1 : 0
-                fontStyle: Tokens.font.icon.size(panel.iconPt).build()
-                color: slot.focused && !area.held ? Colours.palette.m3onPrimary : slot.running || area.containsMouse ? Colours.palette.m3onSurface : Colours.palette.m3onSurfaceVariant
-                scale: area.pressed ? 0.9 : 1
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 1
+                height: 4
+                width: slot.focused ? 14 : 4
+                radius: 2
+                color: Colours.palette.m3onSurface
+                opacity: slot.running ? (slot.focused ? 0.95 : 0.6) : 0
 
-                Behavior on color {
-                    CAnim {}
-                }
-                Behavior on scale {
+                Behavior on width {
                     Anim {
-                        duration: 120
+                        duration: 160
+                    }
+                }
+                Behavior on opacity {
+                    Anim {
+                        duration: 160
                     }
                 }
             }
