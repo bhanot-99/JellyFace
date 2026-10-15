@@ -12,81 +12,93 @@ import qs.utils
 Item {
     id: root
 
-    signal requestHide()
-
     implicitWidth: parent ? parent.width : 1000
-    implicitHeight: 52
+    implicitHeight: 44
 
     RowLayout {
         anchors.fill: parent
-        spacing: Tokens.spacing.medium
+        spacing: 12
 
-        // Left: Branding / Greeting
+        // Left: Branding Badge
         RowLayout {
-            spacing: Tokens.spacing.small
+            spacing: 8
             Layout.alignment: Qt.AlignVCenter
 
-            StyledRect {
-                implicitWidth: 36
-                implicitHeight: 36
-                radius: Tokens.rounding.medium
-                color: Glass.enabled ? Glass.frost : Colours.palette.m3primaryContainer
+            Rectangle {
+                implicitWidth: 32
+                implicitHeight: 32
+                radius: 8
+                color: Qt.rgba(1, 1, 1, 0.06)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.08)
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "dashboard"
-                    color: Glass.enabled ? Glass.ice : Colours.palette.m3primary
-                    fontStyle: Tokens.font.icon.medium
+                    color: Qt.rgba(1, 1, 1, 0.95)
+                    fontStyle: Tokens.font.icon.small
                 }
             }
 
             ColumnLayout {
                 spacing: 0
+                Layout.alignment: Qt.AlignVCenter
 
                 StyledText {
                     text: Tr.tr("Workspace")
-                    font: Tokens.font.title.small
-                    color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
+                    font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
+                    color: Qt.rgba(1, 1, 1, 0.95)
                 }
 
                 StyledText {
                     text: SysInfo.osPrettyName || "Pop!_OS 24.04"
                     font: Tokens.font.label.small
-                    color: Glass.enabled ? Glass.haze : Colours.palette.m3onSurfaceVariant
+                    color: Qt.rgba(1, 1, 1, 0.50)
                 }
             }
         }
 
         Item {
             Layout.fillWidth: true
-            Layout.maximumWidth: 30
+            Layout.maximumWidth: 20
         }
 
         // Center: Brave Search Box
-        StyledRect {
+        Rectangle {
             id: searchBox
 
             Layout.fillWidth: true
-            Layout.preferredHeight: 40
-            radius: Tokens.rounding.full
-            color: Glass.enabled ? (searchField.activeFocus ? Glass.frostHigh : Glass.mist) : (searchField.activeFocus ? Colours.palette.m3surfaceContainerHighest : Colours.palette.m3surfaceContainerHigh)
-            border.width: searchField.activeFocus ? 1 : 0
-            border.color: Glass.enabled ? Glass.rim : Colours.palette.m3primary
+            Layout.preferredHeight: 36
+            radius: 10
+            color: searchField.activeFocus ? Qt.rgba(1, 1, 1, 0.08) : (searchHover.hovered ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.04))
+            border.width: 1
+            border.color: searchField.activeFocus ? Qt.rgba(255, 255, 255, 0.22) : Qt.rgba(255, 255, 255, 0.08)
 
             Behavior on color {
-                CAnim {}
+                CAnim {
+                    duration: 150
+                }
+            }
+            Behavior on border.color {
+                CAnim {
+                    duration: 150
+                }
+            }
+
+            HoverHandler {
+                id: searchHover
             }
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: Tokens.padding.medium
-                anchors.rightMargin: Tokens.padding.small
-                spacing: Tokens.spacing.small
+                anchors.leftMargin: 10
+                anchors.rightMargin: 6
+                spacing: 8
 
                 MaterialIcon {
                     text: "search"
-                    color: searchField.activeFocus ? (Glass.enabled ? Glass.ice : Colours.palette.m3primary) : (Glass.enabled ? Glass.haze : Colours.palette.m3outline)
-                    fontStyle: Tokens.font.icon.medium
+                    color: searchField.activeFocus ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.45)
+                    fontStyle: Tokens.font.icon.small
                 }
 
                 TextInput {
@@ -95,16 +107,16 @@ Item {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignVCenter
                     font.family: Tokens.font.body.medium.family
-                    font.pixelSize: 14
-                    color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
-                    selectedTextColor: Colours.palette.m3onPrimary
+                    font.pixelSize: 13
+                    color: Qt.rgba(1, 1, 1, 0.95)
+                    selectedTextColor: "#ffffff"
                     selectionColor: Colours.palette.m3primary
                     clip: true
 
                     Text {
                         anchors.fill: parent
-                        text: Tr.tr("Search web with Brave or type URL...")
-                        color: Glass.enabled ? Glass.haze : Colours.palette.m3outline
+                        text: Tr.tr("Search with Brave or enter URL...")
+                        color: Qt.rgba(1, 1, 1, 0.40)
                         font: searchField.font
                         visible: !searchField.text && !searchField.activeFocus
                         verticalAlignment: Text.AlignVCenter
@@ -127,11 +139,13 @@ Item {
                 }
 
                 // Brave logo pill
-                StyledRect {
-                    implicitWidth: braveLabel.implicitWidth + 14
-                    implicitHeight: 26
-                    radius: Tokens.rounding.full
-                    color: Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainerHighest
+                Rectangle {
+                    implicitWidth: braveLabel.implicitWidth + 12
+                    implicitHeight: 24
+                    radius: 8
+                    color: Qt.rgba(1, 1, 1, 0.05)
+                    border.width: 1
+                    border.color: Qt.rgba(1, 1, 1, 0.06)
 
                     Row {
                         id: braveLabel
@@ -141,7 +155,7 @@ Item {
                         MaterialIcon {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "travel_explore"
-                            color: Colours.palette.m3primary
+                            color: "#fb923c" // Brave orange accent
                             fontStyle: Tokens.font.icon.small
                         }
 
@@ -149,7 +163,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Brave"
                             font: Tokens.font.label.small
-                            color: Glass.enabled ? Glass.hazeHigh : Colours.palette.m3primary
+                            color: Qt.rgba(1, 1, 1, 0.85)
                         }
                     }
                 }
@@ -158,27 +172,29 @@ Item {
 
         Item {
             Layout.fillWidth: true
-            Layout.maximumWidth: 30
+            Layout.maximumWidth: 20
         }
 
-        // Right: Quick Action Controls & Clock
+        // Right: Action Controls & Tabular Clock
         RowLayout {
-            spacing: Tokens.spacing.small
+            spacing: 8
             Layout.alignment: Qt.AlignVCenter
 
             // DND button
-            StyledRect {
+            Rectangle {
                 id: dndBtn
 
-                implicitWidth: 36
-                implicitHeight: 36
-                radius: Tokens.rounding.full
-                color: Notifs.dnd ? Colours.palette.m3errorContainer : (dndHover.hovered ? (Glass.enabled ? Glass.frostHigh : Colours.palette.m3surfaceContainerHighest) : (Glass.enabled ? Glass.mist : Colours.palette.m3surfaceContainer))
+                implicitWidth: 32
+                implicitHeight: 32
+                radius: 8
+                color: Notifs.dnd ? Qt.rgba(239 / 255, 68 / 255, 68 / 255, 0.20) : (dndHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04))
+                border.width: 1
+                border.color: Notifs.dnd ? Qt.rgba(239 / 255, 68 / 255, 68 / 255, 0.40) : Qt.rgba(1, 1, 1, 0.06)
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: Notifs.dnd ? "notifications_off" : "notifications"
-                    color: Notifs.dnd ? Colours.palette.m3onErrorContainer : (Glass.enabled ? Glass.ice : Colours.palette.m3onSurface)
+                    color: Notifs.dnd ? "#f87171" : Qt.rgba(1, 1, 1, 0.80)
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -194,18 +210,20 @@ Item {
             }
 
             // Lock screen button
-            StyledRect {
+            Rectangle {
                 id: lockBtn
 
-                implicitWidth: 36
-                implicitHeight: 36
-                radius: Tokens.rounding.full
-                color: lockHover.hovered ? (Glass.enabled ? Glass.frostHigh : Colours.palette.m3surfaceContainerHighest) : (Glass.enabled ? Glass.mist : Colours.palette.m3surfaceContainer)
+                implicitWidth: 32
+                implicitHeight: 32
+                radius: 8
+                color: lockHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.06)
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "lock"
-                    color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
+                    color: Qt.rgba(1, 1, 1, 0.80)
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -220,19 +238,21 @@ Item {
                 }
             }
 
-            // Live Time Pill
-            StyledRect {
-                implicitWidth: timeText.implicitWidth + Tokens.padding.medium * 2
-                implicitHeight: 36
-                radius: Tokens.rounding.full
-                color: Glass.enabled ? Glass.frost : Colours.palette.m3secondaryContainer
+            // Live Time Pill with Tabular Figures
+            Rectangle {
+                implicitWidth: timeText.implicitWidth + 18
+                implicitHeight: 32
+                radius: 8
+                color: Qt.rgba(1, 1, 1, 0.05)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.06)
 
                 StyledText {
                     id: timeText
                     anchors.centerIn: parent
                     text: Qt.formatTime(new Date(), "hh:mm")
-                    font: Tokens.font.title.small
-                    color: Glass.enabled ? Glass.ice : Colours.palette.m3onSecondaryContainer
+                    font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
+                    color: Qt.rgba(1, 1, 1, 0.95)
 
                     Timer {
                         interval: 1000
@@ -240,33 +260,6 @@ Item {
                         running: true
                         onTriggered: timeText.text = Qt.formatTime(new Date(), "hh:mm")
                     }
-                }
-            }
-
-            // Hide / Slide down button
-            StyledRect {
-                id: hideBtn
-
-                implicitWidth: 36
-                implicitHeight: 36
-                radius: Tokens.rounding.full
-                color: hideHover.hovered ? (Glass.enabled ? Glass.frostHigh : Colours.palette.m3surfaceContainerHighest) : (Glass.enabled ? Glass.mist : Colours.palette.m3surfaceContainer)
-
-                MaterialIcon {
-                    anchors.centerIn: parent
-                    text: "keyboard_arrow_down"
-                    color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
-                    fontStyle: Tokens.font.icon.medium
-                }
-
-                HoverHandler {
-                    id: hideHover
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.requestHide()
                 }
             }
         }

@@ -11,26 +11,22 @@ import qs.components.containers
 import qs.services
 import qs.utils
 
-// JellyFace Desktop Dashboard Widget: transforms the bottom dock into a full frosted-glass dashboard widget
-// with search bar connected to Brave, 3 app category cards, system resource gauges (CPU/RAM/Disk),
-// live network sparkline, disk analyzer launcher, active window activity, profile card, live notifications,
-// and primary emails feed.
+// JellyFace Desktop Dashboard Widget: Fixed center desktop underlap widget.
+// Sits on WlrLayer.Bottom directly above wallpaper; automatically visible when workspace is empty,
+// and gracefully hides whenever any application window is active on the workspace.
 Scope {
     id: root
 
-    // one entry per tile: { json } (the app object as JSON text; a ListModel cannot hold nested objects)
     property ListModel apps: ListModel {}
-    property var extra: ({})          // any other keys in dock.json, kept as they are
+    property var extra: ({})
     property string lastWritten
     readonly property int count: apps.count
 
-    // what is open: "" | "app" (a tile's menu) | "dock" (the dock's menu) | "addApp" | "addWeb"
     property string popup
     property int popupIndex: -1
-    property point popupAnchor        // screen position the menu points at (tile centre, top edge)
+    property point popupAnchor
     property bool dragging
 
-    // Monochrome Material Symbols for the dock, matched on an app's name, web address or desktop id (lower case).
     readonly property var symbols: [
         [["youtube"], "smart_display"],
         [["pinterest"], "push_pin"],
@@ -80,7 +76,6 @@ Scope {
         return i >= 0 && i < apps.count ? JSON.parse(apps.get(i).json) : null;
     }
 
-    // The windows that belong to an app.
     function windowsOf(app: var): var {
         if (!app)
             return [];
@@ -101,7 +96,6 @@ Scope {
             Quickshell.execDetached(["distrobox-host-exec", "gtk-launch", app.id]);
     }
 
-    // Running app: focus its window (a further click cycles through its windows). Otherwise launch it.
     function open(app: var): void {
         JellyPanel.open = false;
         const wins = windowsOf(app);
@@ -178,7 +172,7 @@ Scope {
         if (item) {
             const p = item.mapToItem(win.contentItem, item.width / 2, 0);
             const s = win.screen;
-            popupAnchor = Qt.point((s.width - win.width) / 2 + p.x, s.height - win.margins.bottom - win.height + p.y);
+            popupAnchor = Qt.point((s.width - win.width) / 2 + p.x, (s.height - win.height) / 2 + p.y);
         }
         popup = kind;
     }
@@ -203,23 +197,35 @@ Scope {
 
         screen: Quickshell.screens[0]
         name: "dock-dashboard"
-        WlrLayershell.layer: JellyPanel.open ? WlrLayer.Overlay : WlrLayer.Top
+
+        // Underlapped layer on the desktop: beneath all normal windows
+        WlrLayershell.layer: WlrLayer.Bottom
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
-        anchors.bottom: true
-        margins.bottom: 24
+        // No edge anchors: Layer-shell protocol centers the window horizontally and vertically
+        anchors.top: false
+        anchors.bottom: false
+        anchors.left: false
+        anchors.right: false
 
-        readonly property real dockW: Math.min(1080, Math.floor((screen?.width ?? 1920) * 0.92))
-        readonly property real dockH: 660
+        readonly property real dockW: Math.min(1040, Math.floor((screen?.width ?? 1920) * 0.94))
+        readonly property real dockH: Math.min(620, Math.floor((screen?.height ?? 1080) * 0.88))
 
         implicitWidth: dockW
         implicitHeight: dockH
 
-        mask: Region {
+        // Visible only when workspace is clean (no unminimized windows on active workspace and no fullscreen)
+        readonly property bool hasWindowsOnWorkspace: CosmicWindows.windows.some(w => w.workspace_active && !w.minimized)
+        readonly property bool shown: !hasWindowsOnWorkspace && !CosmicWindows.fullscreen
+
+        mask: win.shown ? activeMask : null
+
+        Region {
+            id: activeMask
             item: dashboard
         }
 
-        BackgroundEffect.blurRegion: Glass.enabled ? dockBlur : null
+        BackgroundEffect.blurRegion: (Glass.enabled && win.shown) ? dockBlur : null
 
         Region {
             id: dockBlur
@@ -229,84 +235,28 @@ Scope {
             }
         }
 
-        // Logical geometry of the dashboard widget
-        readonly property rect dockRect: Qt.rect(((screen?.width ?? 1920) - win.implicitWidth) / 2, (screen?.height ?? 1080) - margins.bottom - win.implicitHeight, win.implicitWidth, win.implicitHeight)
-
-        // Windows covering the dashboard area on current active workspace
-        readonly property bool covered: CosmicWindows.fullscreen || CosmicWindows.windows.some(w => w.workspace_active && !w.minimized && w.w > 0 && w.x < dockRect.x + dockRect.width && w.x + w.w > dockRect.x && w.y < dockRect.y + dockRect.height && w.y + w.h > dockRect.y)
-
-        property bool manualHidden: false
-        readonly property bool wanted: !manualHidden && (JellyPanel.open || !covered || hover.hovered || DockReveal.edge || root.popup !== "")
-        property bool shown: true
-
-        Component.onCompleted: if (!wanted) hideTimer.restart()
-        onWantedChanged: {
-            if (wanted) {
-                hideTimer.stop();
-                shown = true;
-            } else {
-                hideTimer.restart();
-            }
-        }
-
-        Connections {
-            function onEdgeChanged(): void {
-                if (DockReveal.edge) {
-                    win.manualHidden = false;
-                    win.shown = true;
-                }
-            }
-
-            target: DockReveal
-        }
-
-        Timer {
-            id: hideTimer
-
-            interval: 450
-            onTriggered: win.shown = win.wanted
-        }
-
-        Binding {
-            target: DockReveal
-            property: "left"
-            value: win.dockRect.x
-        }
-
-        Binding {
-            target: DockReveal
-            property: "right"
-            value: win.dockRect.x + win.dockRect.width
-        }
-
         DockDashboard {
             id: dashboard
 
             dock: root
             width: win.dockW
             height: win.dockH
+            anchors.centerIn: parent
 
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            anchors.bottomMargin: win.shown ? 0 : -(win.dockH + win.margins.bottom + 20)
-            opacity: win.shown ? 1 : 0
+            opacity: win.shown ? 1.0 : 0.0
+            scale: win.shown ? 1.0 : 0.97
+            visible: opacity > 0
 
-            Behavior on anchors.bottomMargin {
+            Behavior on opacity {
+                Anim {
+                    duration: 240
+                }
+            }
+
+            Behavior on scale {
                 Anim {
                     type: Anim.DefaultSpatial
                 }
-            }
-            Behavior on opacity {
-                Anim {}
-            }
-
-            HoverHandler {
-                id: hover
-            }
-
-            onRequestHide: {
-                win.manualHidden = true;
-                win.shown = false;
             }
         }
     }

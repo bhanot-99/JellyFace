@@ -9,72 +9,97 @@ import qs.components
 import qs.services
 import qs.utils
 
-StyledRect {
+Rectangle {
     id: root
 
-    color: Glass.enabled ? Glass.mist : Colours.tPalette.m3surfaceContainer
-    radius: Tokens.rounding.extraLarge
-    implicitHeight: 180
+    readonly property bool hasNotifs: Notifs.notClosed.length > 0
+
+    color: Qt.rgba(1, 1, 1, 0.04)
+    radius: 16
+    border.width: 1
+    border.color: Qt.rgba(255, 255, 255, 0.06)
+
+    // Purpose-built adaptive height: sleek micro-banner when empty, expanded list when notifications exist
+    implicitHeight: root.hasNotifs ? 140 : 44
+    Layout.minimumHeight: root.hasNotifs ? 120 : 44
+    Layout.preferredHeight: root.hasNotifs ? 140 : 44
+
+    Behavior on implicitHeight {
+        Anim {
+            type: Anim.DefaultSpatial
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Tokens.padding.medium
-        spacing: Tokens.spacing.small
+        anchors.margins: 10
+        spacing: 6
 
-        // Header
+        // Header Row / Micro-Banner
         RowLayout {
             Layout.fillWidth: true
-            spacing: Tokens.spacing.small
+            spacing: 8
 
-            StyledRect {
-                implicitWidth: 26
-                implicitHeight: 26
-                radius: Tokens.rounding.medium
-                color: Qt.alpha(Colours.palette.m3primary, Glass.enabled ? 0.25 : 0.15)
+            Rectangle {
+                implicitWidth: 22
+                implicitHeight: 22
+                radius: 6
+                color: root.hasNotifs ? Qt.rgba(239 / 255, 68 / 255, 68 / 255, 0.15) : Qt.rgba(52 / 255, 211 / 255, 153 / 255, 0.15)
 
                 MaterialIcon {
                     anchors.centerIn: parent
-                    text: "notifications"
-                    color: Colours.palette.m3primary
+                    text: root.hasNotifs ? "notifications" : "done_all"
+                    color: root.hasNotifs ? "#f87171" : "#34d399"
                     fontStyle: Tokens.font.icon.small
                 }
             }
 
             StyledText {
-                text: Tr.tr("Live Notifications")
-                font: Tokens.font.title.small
-                color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
+                text: root.hasNotifs ? Tr.tr("Live Notifications") : Tr.tr("All caught up")
+                font: Tokens.font.body.builders.medium.weight(Font.Medium).build()
+                color: Qt.rgba(1, 1, 1, 0.95)
                 Layout.fillWidth: true
             }
 
-            // Notification Count Badge
-            StyledRect {
-                implicitWidth: badgeText.implicitWidth + 12
-                implicitHeight: 20
-                radius: 10
-                color: Notifs.notClosed.length > 0 ? Colours.palette.m3errorContainer : (Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainerHighest)
+            // Notification Count Badge (if any)
+            Rectangle {
+                implicitWidth: badgeText.implicitWidth + 8
+                implicitHeight: 18
+                radius: 6
+                visible: root.hasNotifs
+                color: Qt.rgba(239 / 255, 68 / 255, 68 / 255, 0.20)
+                border.width: 1
+                border.color: Qt.rgba(239 / 255, 68 / 255, 68 / 255, 0.35)
 
                 StyledText {
                     id: badgeText
                     anchors.centerIn: parent
                     text: `${Notifs.notClosed.length}`
                     font: Tokens.font.label.small
-                    color: Notifs.notClosed.length > 0 ? Colours.palette.m3onErrorContainer : (Glass.enabled ? Glass.haze : Colours.palette.m3onSurfaceVariant)
+                    color: "#f87171"
                 }
             }
 
-            // Clear All Button (if any)
-            StyledRect {
-                implicitWidth: 24
-                implicitHeight: 24
-                radius: 12
-                visible: Notifs.notClosed.length > 0
-                color: clearHover.hovered ? (Glass.enabled ? Glass.frostHigh : Colours.palette.m3surfaceContainerHighest) : "transparent"
+            // Subtitle when empty
+            StyledText {
+                text: "No new notifications"
+                font: Tokens.font.label.small
+                color: Qt.rgba(1, 1, 1, 0.40)
+                visible: !root.hasNotifs
+            }
+
+            // Clear All Button (when notifications exist)
+            Rectangle {
+                implicitWidth: 20
+                implicitHeight: 20
+                radius: 4
+                visible: root.hasNotifs
+                color: clearHover.hovered ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "clear_all"
-                    color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurfaceVariant
+                    color: Qt.rgba(1, 1, 1, 0.60)
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -98,50 +123,30 @@ StyledRect {
             }
         }
 
-        // Body: List or Empty State
+        // Notification List (only visible when notifications exist)
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            visible: root.hasNotifs
 
-            // Empty State
-            ColumnLayout {
-                anchors.centerIn: parent
-                spacing: 4
-                visible: Notifs.notClosed.length === 0
-
-                MaterialIcon {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: "done_all"
-                    color: Glass.enabled ? Glass.haze : Colours.palette.m3outline
-                    fontStyle: Tokens.font.icon.large
-                }
-
-                StyledText {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: Tr.tr("All caught up!")
-                    font: Tokens.font.body.small
-                    color: Glass.enabled ? Glass.haze : Colours.palette.m3onSurfaceVariant
-                }
-            }
-
-            // Notification Items List
             ListView {
                 anchors.fill: parent
                 model: Notifs.notClosed
                 clip: true
-                spacing: 6
-                visible: Notifs.notClosed.length > 0
+                spacing: 4
 
-                delegate: StyledRect {
+                delegate: Rectangle {
                     id: notifItem
 
                     required property var modelData
                     readonly property var n: modelData
 
                     width: ListView.view.width
-                    implicitHeight: 46
-                    radius: Tokens.rounding.medium
-                    color: itemHover.hovered ? (Glass.enabled ? Glass.frostHigh : Colours.palette.m3surfaceContainerHighest) : (Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainerHigh)
+                    implicitHeight: 38
+                    radius: 8
+                    color: itemHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.03)
+                    border.width: 1
+                    border.color: Qt.rgba(255, 255, 255, 0.04)
 
                     HoverHandler {
                         id: itemHover
@@ -152,22 +157,21 @@ StyledRect {
                         anchors.margins: 6
                         spacing: 8
 
-                        // App Icon
-                        StyledRect {
-                            implicitWidth: 32
-                            implicitHeight: 32
-                            radius: Tokens.rounding.medium
-                            color: Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainer
+                        Rectangle {
+                            implicitWidth: 24
+                            implicitHeight: 24
+                            radius: 6
+                            color: Qt.rgba(1, 1, 1, 0.06)
 
                             Loader {
                                 anchors.centerIn: parent
-                                width: 20
-                                height: 20
+                                width: 16
+                                height: 16
                                 active: (notifItem.n?.appIcon ?? "") !== ""
                                 sourceComponent: Image {
                                     source: Quickshell.iconPath(notifItem.n?.appIcon, true) || notifItem.n?.appIcon || ""
-                                    sourceSize.width: 20
-                                    sourceSize.height: 20
+                                    sourceSize.width: 16
+                                    sourceSize.height: 16
                                     fillMode: Image.PreserveAspectFit
                                 }
                             }
@@ -177,24 +181,23 @@ StyledRect {
                                 active: !notifItem.n?.appIcon
                                 sourceComponent: MaterialIcon {
                                     text: "notifications"
-                                    color: Colours.palette.m3primary
+                                    color: Qt.rgba(1, 1, 1, 0.80)
                                     fontStyle: Tokens.font.icon.small
                                 }
                             }
                         }
 
-                        // Text content
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 1
+                            spacing: 0
 
                             RowLayout {
                                 spacing: 4
 
                                 StyledText {
-                                    text: notifItem.n?.appName || Tr.tr("Notification")
+                                    text: notifItem.n?.appName || "Notification"
                                     font: Tokens.font.label.small
-                                    color: Colours.palette.m3primary
+                                    color: "#38bdf8"
                                 }
 
                                 Item {
@@ -204,30 +207,30 @@ StyledRect {
                                 StyledText {
                                     text: notifItem.n?.time ? Qt.formatTime(new Date(notifItem.n.time), "hh:mm") : ""
                                     font: Tokens.font.label.small
-                                    color: Glass.enabled ? Glass.haze : Colours.palette.m3outline
+                                    color: Qt.rgba(1, 1, 1, 0.40)
                                 }
                             }
 
                             StyledText {
                                 Layout.fillWidth: true
                                 text: notifItem.n?.summary || ""
-                                font: Tokens.font.body.builders.small.weight(Font.Medium).build()
-                                color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
+                                font: Tokens.font.label.small
+                                color: Qt.rgba(1, 1, 1, 0.90)
                                 elide: Text.ElideRight
                             }
                         }
 
                         // Dismiss button
-                        StyledRect {
-                            implicitWidth: 22
-                            implicitHeight: 22
-                            radius: 11
-                            color: closeHover.hovered ? Colours.palette.m3errorContainer : "transparent"
+                        Rectangle {
+                            implicitWidth: 18
+                            implicitHeight: 18
+                            radius: 4
+                            color: closeHover.hovered ? Qt.rgba(239 / 255, 68 / 255, 68 / 255, 0.20) : "transparent"
 
                             MaterialIcon {
                                 anchors.centerIn: parent
                                 text: "close"
-                                color: closeHover.hovered ? Colours.palette.m3onErrorContainer : (Glass.enabled ? Glass.haze : Colours.palette.m3onSurfaceVariant)
+                                color: closeHover.hovered ? "#f87171" : Qt.rgba(1, 1, 1, 0.40)
                                 fontStyle: Tokens.font.icon.small
                             }
 

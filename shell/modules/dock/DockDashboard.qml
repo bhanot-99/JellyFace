@@ -10,21 +10,33 @@ import qs.services
 import qs.utils
 import "components"
 
-StyledRect {
+Rectangle {
     id: root
 
     required property var dock
-    signal requestHide()
 
-    color: Glass.enabled ? Glass.smoke : Colours.tPalette.m3surfaceContainer
-    radius: 28
-    border.width: Glass.enabled ? 1 : 0
-    border.color: Glass.enabled ? Glass.rim : "transparent"
+    // Layered Glass Surface: Deep smoked acrylic container
+    color: Qt.rgba(20 / 255, 22 / 255, 28 / 255, 0.72)
+    radius: 24
+    border.width: 1
+    border.color: Qt.rgba(255, 255, 255, 0.08)
 
-    implicitWidth: 1060
-    implicitHeight: 660
+    // Top hairline specular light highlight
+    Rectangle {
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: parent.radius
+        anchors.rightMargin: parent.radius
+        height: 1
+        color: Qt.rgba(255, 255, 255, 0.16)
+        z: 2
+    }
 
-    // Categorize dock apps into the 3 groups
+    implicitWidth: 1040
+    implicitHeight: 620
+
+    // Categorize dock apps into the 3 groups cleanly
     readonly property var categorizedApps: {
         const work = [];
         const ai = [];
@@ -55,83 +67,93 @@ StyledRect {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Tokens.padding.large
-        spacing: Tokens.spacing.small
+        anchors.margins: 16
+        spacing: 12
 
-        // 1. Top Header Bar
+        // Top Header Row
         DashboardHeader {
             Layout.fillWidth: true
-            onRequestHide: root.requestHide()
+            Layout.preferredHeight: 44
         }
 
-        // 2. Top Row: 3 App Category Cards
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 136
-            spacing: Tokens.spacing.small
-
-            AppCategoryCard {
-                Layout.fillWidth: true
-                dock: root.dock
-                title: Tr.tr("Work & Dev")
-                categoryIcon: "code"
-                accentColor: Colours.palette.m3primary
-                appsList: root.categorizedApps.work
-            }
-
-            AppCategoryCard {
-                Layout.fillWidth: true
-                dock: root.dock
-                title: Tr.tr("AI & Web Services")
-                categoryIcon: "psychology"
-                accentColor: Colours.palette.m3tertiary
-                appsList: root.categorizedApps.ai
-            }
-
-            AppCategoryCard {
-                Layout.fillWidth: true
-                dock: root.dock
-                title: Tr.tr("Media & Tools")
-                categoryIcon: "apps"
-                accentColor: Colours.palette.m3secondary
-                appsList: root.categorizedApps.media
-            }
-        }
-
-        // 3. Middle / Bottom Grid: System Stats (Left 62%) and Right Stack (Profile + Notifs + Emails 38%)
+        // Main 2-Column Asymmetric Grid (64% / 36%) with 12px Gutter & Matching Bottom Bounds
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: Tokens.spacing.small
+            spacing: 12
 
-            // Left Section: System Stats Card
-            SystemStatsCard {
+            // Left Column: App Trays + System Stats & Network
+            ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.preferredWidth: 640
-            }
+                Layout.preferredWidth: 650
+                spacing: 12
 
-            // Right Section: Stacked Profile, Notifications & Emails Cards
-            ColumnLayout {
-                Layout.preferredWidth: 380
-                Layout.fillHeight: true
-                spacing: Tokens.spacing.small
-
-                ProfileCard {
+                // Top 3 App Trays
+                RowLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 104
+                    Layout.preferredHeight: 96
+                    spacing: 10
+
+                    AppCategoryCard {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        dock: root.dock
+                        title: Tr.tr("Work & Dev")
+                        categoryIcon: "code"
+                        accentColor: "#38bdf8"
+                        appsList: root.categorizedApps.work
+                    }
+
+                    AppCategoryCard {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        dock: root.dock
+                        title: Tr.tr("AI & Web")
+                        categoryIcon: "psychology"
+                        accentColor: "#a855f7"
+                        appsList: root.categorizedApps.ai
+                    }
+
+                    AppCategoryCard {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        dock: root.dock
+                        title: Tr.tr("Media & Tools")
+                        categoryIcon: "apps"
+                        accentColor: "#34d399"
+                        appsList: root.categorizedApps.media
+                    }
                 }
 
-                NotificationsCard {
+                // System Stats & Network Activity Card (Fills remaining height)
+                SystemStatsCard {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.preferredHeight: 154
+                }
+            }
+
+            // Right Column: Profile + Live Notifications + Primary Mails
+            ColumnLayout {
+                Layout.preferredWidth: 350
+                Layout.fillHeight: true
+                spacing: 12
+
+                // Profile Card ("Me")
+                ProfileCard {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 88
                 }
 
+                // Live Notifications (Adaptive collapsed micro-banner when empty)
+                NotificationsCard {
+                    Layout.fillWidth: true
+                }
+
+                // Primary Mails Feed (Fills remaining height with zero clipping)
                 EmailsCard {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.preferredHeight: 164
                 }
             }
         }

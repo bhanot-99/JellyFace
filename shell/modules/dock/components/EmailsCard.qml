@@ -9,71 +9,77 @@ import qs.components
 import qs.services
 import qs.utils
 
-StyledRect {
+Rectangle {
     id: root
 
-    color: Glass.enabled ? Glass.mist : Colours.tPalette.m3surfaceContainer
-    radius: Tokens.rounding.extraLarge
-    implicitHeight: 210
+    color: Qt.rgba(1, 1, 1, 0.04)
+    radius: 16
+    border.width: 1
+    border.color: Qt.rgba(255, 255, 255, 0.06)
+
+    implicitHeight: 200
+    Layout.minimumHeight: 180
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Tokens.padding.medium
-        spacing: Tokens.spacing.small
+        anchors.margins: 12
+        spacing: 8
 
         // Header
         RowLayout {
             Layout.fillWidth: true
-            spacing: Tokens.spacing.small
+            spacing: 8
 
-            StyledRect {
-                implicitWidth: 26
-                implicitHeight: 26
-                radius: Tokens.rounding.medium
-                color: Qt.alpha(Colours.palette.m3secondary, Glass.enabled ? 0.25 : 0.15)
+            Rectangle {
+                implicitWidth: 22
+                implicitHeight: 22
+                radius: 6
+                color: Qt.rgba(168 / 255, 85 / 255, 247 / 255, 0.15) // Violet
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "mail"
-                    color: Colours.palette.m3secondary
+                    color: "#c084fc"
                     fontStyle: Tokens.font.icon.small
                 }
             }
 
             StyledText {
                 text: Tr.tr("Primary Mails")
-                font: Tokens.font.title.small
-                color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
+                font: Tokens.font.body.builders.medium.weight(Font.Medium).build()
+                color: Qt.rgba(1, 1, 1, 0.95)
                 Layout.fillWidth: true
             }
 
             // Unread Badge
-            StyledRect {
-                implicitWidth: unreadText.implicitWidth + 12
-                implicitHeight: 20
-                radius: 10
-                color: MailService.unreadCount > 0 ? Colours.palette.m3secondaryContainer : (Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainerHighest)
+            Rectangle {
+                implicitWidth: unreadText.implicitWidth + 8
+                implicitHeight: 18
+                radius: 6
+                color: MailService.unreadCount > 0 ? Qt.rgba(168 / 255, 85 / 255, 247 / 255, 0.20) : Qt.rgba(1, 1, 1, 0.06)
+                border.width: 1
+                border.color: MailService.unreadCount > 0 ? Qt.rgba(168 / 255, 85 / 255, 247 / 255, 0.35) : Qt.rgba(255, 255, 255, 0.06)
 
                 StyledText {
                     id: unreadText
                     anchors.centerIn: parent
                     text: `${MailService.unreadCount} unread`
                     font: Tokens.font.label.small
-                    color: MailService.unreadCount > 0 ? Colours.palette.m3onSecondaryContainer : (Glass.enabled ? Glass.haze : Colours.palette.m3onSurfaceVariant)
+                    color: MailService.unreadCount > 0 ? "#c084fc" : Qt.rgba(1, 1, 1, 0.50)
                 }
             }
 
             // Refresh button
-            StyledRect {
-                implicitWidth: 24
-                implicitHeight: 24
-                radius: 12
-                color: refreshHover.hovered ? (Glass.enabled ? Glass.frostHigh : Colours.palette.m3surfaceContainerHighest) : "transparent"
+            Rectangle {
+                implicitWidth: 20
+                implicitHeight: 20
+                radius: 4
+                color: refreshHover.hovered ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "refresh"
-                    color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurfaceVariant
+                    color: Qt.rgba(1, 1, 1, 0.50)
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -89,7 +95,7 @@ StyledRect {
             }
         }
 
-        // Body: Email List
+        // Body: Scrollable Email List with un-crushed layout
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -98,18 +104,20 @@ StyledRect {
                 anchors.fill: parent
                 model: MailService.emails
                 clip: true
-                spacing: 6
+                spacing: 4
 
-                delegate: StyledRect {
+                delegate: Rectangle {
                     id: mailItem
 
                     required property var modelData
                     readonly property var m: modelData
 
                     width: ListView.view.width
-                    implicitHeight: 46
-                    radius: Tokens.rounding.medium
-                    color: mailHover.hovered ? (Glass.enabled ? Glass.frostHigh : Colours.palette.m3surfaceContainerHighest) : (mailItem.m?.unread ? (Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainerHigh) : "transparent")
+                    implicitHeight: 44
+                    radius: 8
+                    color: mailHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : (mailItem.m?.unread ? Qt.rgba(1, 1, 1, 0.04) : "transparent")
+                    border.width: 1
+                    border.color: mailItem.m?.unread ? Qt.rgba(255, 255, 255, 0.06) : "transparent"
 
                     HoverHandler {
                         id: mailHover
@@ -130,22 +138,22 @@ StyledRect {
                         anchors.margins: 6
                         spacing: 8
 
-                        // Initial Avatar circle
+                        // Initial Avatar
                         Rectangle {
-                            implicitWidth: 28
-                            implicitHeight: 28
-                            radius: 14
-                            color: mailItem.m?.unread ? Colours.palette.m3primary : (Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainerHighest)
+                            implicitWidth: 26
+                            implicitHeight: 26
+                            radius: 6
+                            color: mailItem.m?.unread ? "#c084fc" : Qt.rgba(1, 1, 1, 0.08)
 
                             StyledText {
                                 anchors.centerIn: parent
                                 text: (mailItem.m?.sender ?? "M").charAt(0).toUpperCase()
                                 font: Tokens.font.label.small
-                                color: mailItem.m?.unread ? Colours.palette.m3onPrimary : (Glass.enabled ? Glass.hazeHigh : Colours.palette.m3onSurfaceVariant)
+                                color: mailItem.m?.unread ? "#ffffff" : Qt.rgba(1, 1, 1, 0.60)
                             }
                         }
 
-                        // Mail info
+                        // Mail Info
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 1
@@ -155,8 +163,8 @@ StyledRect {
 
                                 StyledText {
                                     text: mailItem.m?.sender || "Sender"
-                                    font: mailItem.m?.unread ? Tokens.font.body.builders.small.weight(Font.Bold).build() : Tokens.font.body.small
-                                    color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
+                                    font: mailItem.m?.unread ? Tokens.font.body.builders.small.weight(Font.DemiBold).build() : Tokens.font.label.small
+                                    color: Qt.rgba(1, 1, 1, 0.95)
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
                                 }
@@ -164,25 +172,25 @@ StyledRect {
                                 StyledText {
                                     text: mailItem.m?.time || ""
                                     font: Tokens.font.label.small
-                                    color: Glass.enabled ? Glass.haze : Colours.palette.m3outline
+                                    color: Qt.rgba(1, 1, 1, 0.40)
                                 }
                             }
 
                             StyledText {
                                 Layout.fillWidth: true
                                 text: mailItem.m?.subject || ""
-                                font: Tokens.font.body.small
-                                color: mailItem.m?.unread ? (Glass.enabled ? Glass.ice : Colours.palette.m3onSurface) : (Glass.enabled ? Glass.haze : Colours.palette.m3onSurfaceVariant)
+                                font: Tokens.font.label.small
+                                color: mailItem.m?.unread ? Qt.rgba(1, 1, 1, 0.85) : Qt.rgba(1, 1, 1, 0.50)
                                 elide: Text.ElideRight
                             }
                         }
 
-                        // Unread dot
+                        // Unread Dot
                         Rectangle {
-                            implicitWidth: 6
-                            implicitHeight: 6
-                            radius: 3
-                            color: Colours.palette.m3primary
+                            implicitWidth: 5
+                            implicitHeight: 5
+                            radius: 2.5
+                            color: "#c084fc"
                             visible: mailItem.m?.unread ?? false
                         }
                     }
@@ -190,17 +198,20 @@ StyledRect {
             }
         }
 
-        // Quick Client Launchers
+        // Fixed Footer Action Launchers: Exactly 30px height, zero crushing
         RowLayout {
             Layout.fillWidth: true
+            Layout.preferredHeight: 30
             spacing: 8
 
             // Open in Brave (Gmail)
-            StyledRect {
+            Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: 28
-                radius: Tokens.rounding.full
-                color: gmailHover.hovered ? (Glass.enabled ? Glass.frostHigh : Colours.palette.m3surfaceContainerHighest) : (Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainerHigh)
+                implicitHeight: 30
+                radius: 8
+                color: gmailHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
+                border.width: 1
+                border.color: Qt.rgba(255, 255, 255, 0.06)
 
                 Row {
                     anchors.centerIn: parent
@@ -209,15 +220,15 @@ StyledRect {
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "open_in_browser"
-                        color: Colours.palette.m3primary
+                        color: Qt.rgba(1, 1, 1, 0.80)
                         fontStyle: Tokens.font.icon.small
                     }
 
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "Gmail (Brave)"
+                        text: "Gmail"
                         font: Tokens.font.label.small
-                        color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
+                        color: Qt.rgba(1, 1, 1, 0.90)
                     }
                 }
 
@@ -233,11 +244,13 @@ StyledRect {
             }
 
             // Launch Thunderbird
-            StyledRect {
+            Rectangle {
                 Layout.fillWidth: true
-                implicitHeight: 28
-                radius: Tokens.rounding.full
-                color: tbHover.hovered ? (Glass.enabled ? Glass.frostHigh : Colours.palette.m3surfaceContainerHighest) : (Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainerHigh)
+                implicitHeight: 30
+                radius: 8
+                color: tbHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
+                border.width: 1
+                border.color: Qt.rgba(255, 255, 255, 0.06)
 
                 Row {
                     anchors.centerIn: parent
@@ -246,7 +259,7 @@ StyledRect {
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "mail"
-                        color: Colours.palette.m3secondary
+                        color: Qt.rgba(1, 1, 1, 0.80)
                         fontStyle: Tokens.font.icon.small
                     }
 
@@ -254,7 +267,7 @@ StyledRect {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Thunderbird"
                         font: Tokens.font.label.small
-                        color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
+                        color: Qt.rgba(1, 1, 1, 0.90)
                     }
                 }
 

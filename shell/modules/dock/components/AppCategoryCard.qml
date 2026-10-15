@@ -10,7 +10,7 @@ import qs.components
 import qs.services
 import qs.utils
 
-StyledRect {
+Rectangle {
     id: root
 
     required property var dock
@@ -19,25 +19,29 @@ StyledRect {
     required property color accentColor
     property var appsList: []
 
-    color: Glass.enabled ? Glass.mist : Colours.tPalette.m3surfaceContainer
-    radius: Tokens.rounding.extraLarge
-    implicitHeight: 140
+    color: Qt.rgba(1, 1, 1, 0.04)
+    radius: 16
+    border.width: 1
+    border.color: Qt.rgba(255, 255, 255, 0.06)
+
+    implicitHeight: 96
+    Layout.minimumHeight: 96
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: Tokens.padding.medium
-        spacing: Tokens.spacing.small
+        anchors.margins: 12
+        spacing: 8
 
-        // Card Header
+        // Card Header: Title + Baseline-aligned Count Badge
         RowLayout {
             Layout.fillWidth: true
-            spacing: Tokens.spacing.small
+            spacing: 6
 
-            StyledRect {
-                implicitWidth: 28
-                implicitHeight: 28
-                radius: Tokens.rounding.medium
-                color: Qt.alpha(root.accentColor, Glass.enabled ? 0.25 : 0.15)
+            Rectangle {
+                implicitWidth: 22
+                implicitHeight: 22
+                radius: 6
+                color: Qt.alpha(root.accentColor, 0.18)
 
                 MaterialIcon {
                     anchors.centerIn: parent
@@ -49,29 +53,33 @@ StyledRect {
 
             StyledText {
                 text: root.title
-                font: Tokens.font.title.small
-                color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
-                Layout.fillWidth: true
-                elide: Text.ElideRight
+                font: Tokens.font.body.builders.medium.weight(Font.Medium).build()
+                color: Qt.rgba(1, 1, 1, 0.95)
+                Layout.alignment: Qt.AlignVCenter
             }
 
-            StyledRect {
-                implicitWidth: countText.implicitWidth + 12
-                implicitHeight: 20
-                radius: Tokens.rounding.full
-                color: Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainerHighest
+            Rectangle {
+                implicitWidth: countText.implicitWidth + 8
+                implicitHeight: 18
+                radius: 6
+                color: Qt.rgba(1, 1, 1, 0.06)
+                Layout.alignment: Qt.AlignVCenter
 
                 StyledText {
                     id: countText
                     anchors.centerIn: parent
                     text: `${root.appsList.length}`
                     font: Tokens.font.label.small
-                    color: Glass.enabled ? Glass.haze : Colours.palette.m3onSurfaceVariant
+                    color: Qt.rgba(1, 1, 1, 0.60)
                 }
+            }
+
+            Item {
+                Layout.fillWidth: true
             }
         }
 
-        // App Icons Row / Flow
+        // App Icons Row: Uniform 32x32px hit-targets, 8px squircle radii, fixed 6px gap
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -87,7 +95,7 @@ StyledRect {
                 Row {
                     id: appsRow
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 8
+                    spacing: 6
 
                     Repeater {
                         model: root.appsList
@@ -114,23 +122,27 @@ StyledRect {
                                 return Quickshell.iconPath(i, true) || `file://${Paths.home}/.local/share/flatpak/exports/share/icons/hicolor/256x256/apps/${i}.png` || Quickshell.iconPath("application-x-executable") || "";
                             }
 
-                            implicitWidth: 44
-                            implicitHeight: 56
+                            implicitWidth: 36
+                            implicitHeight: 44
 
-                            StyledRect {
+                            Rectangle {
                                 id: pill
                                 anchors.top: parent.top
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                implicitWidth: 44
-                                implicitHeight: 44
-                                radius: Tokens.rounding.medium
-                                color: tileHover.hovered ? (Glass.enabled ? Glass.frostHigh : Colours.palette.m3surfaceContainerHighest) : (tile.running ? (Glass.enabled ? Glass.frost : Colours.palette.m3surfaceContainerHigh) : "transparent")
+                                implicitWidth: 34
+                                implicitHeight: 34
+                                radius: 8
+                                color: tileHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : (tile.running ? Qt.rgba(1, 1, 1, 0.06) : "transparent")
+                                border.width: 1
+                                border.color: tile.focused ? Qt.rgba(255, 255, 255, 0.25) : (tileHover.hovered ? Qt.rgba(255, 255, 255, 0.10) : "transparent")
 
                                 Behavior on color {
-                                    CAnim {}
+                                    CAnim {
+                                        duration: 150
+                                    }
                                 }
 
-                                scale: tileMouse.pressed ? 0.92 : (tileHover.hovered ? 1.08 : 1.0)
+                                scale: tileMouse.pressed ? 0.92 : (tileHover.hovered ? 1.05 : 1.0)
                                 Behavior on scale {
                                     Anim {
                                         type: Anim.FastSpatial
@@ -139,13 +151,13 @@ StyledRect {
 
                                 Loader {
                                     anchors.centerIn: parent
-                                    width: 26
-                                    height: 26
+                                    width: 20
+                                    height: 20
                                     active: tile.iconSource !== ""
                                     sourceComponent: Image {
                                         source: tile.iconSource
-                                        sourceSize.width: 26
-                                        sourceSize.height: 26
+                                        sourceSize.width: 20
+                                        sourceSize.height: 20
                                         smooth: true
                                         fillMode: Image.PreserveAspectFit
                                     }
@@ -156,8 +168,8 @@ StyledRect {
                                     active: tile.iconSource === ""
                                     sourceComponent: MaterialIcon {
                                         text: tile.symbol || "apps"
-                                        color: Glass.enabled ? Glass.ice : Colours.palette.m3primary
-                                        fontStyle: Tokens.font.icon.medium
+                                        color: Qt.rgba(1, 1, 1, 0.90)
+                                        fontStyle: Tokens.font.icon.small
                                     }
                                 }
 
@@ -182,15 +194,15 @@ StyledRect {
                                 }
                             }
 
-                            // Running / Active indicator dot
+                            // Running / Active indicator micro-dot
                             Rectangle {
                                 anchors.bottom: parent.bottom
-                                anchors.bottomMargin: 2
+                                anchors.bottomMargin: 1
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                width: tile.focused ? 12 : (tile.running ? 5 : 0)
-                                height: 4
-                                radius: 2
-                                color: tile.focused ? (Glass.enabled ? Glass.ice : Colours.palette.m3primary) : root.accentColor
+                                width: tile.focused ? 10 : (tile.running ? 4 : 0)
+                                height: 3
+                                radius: 1.5
+                                color: tile.focused ? "#38bdf8" : "#34d399"
                                 visible: tile.running
 
                                 Behavior on width {
@@ -200,16 +212,18 @@ StyledRect {
                                 }
                             }
 
-                            // Tooltip on hover
-                            StyledRect {
+                            // Clean Tooltip on hover
+                            Rectangle {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 anchors.bottom: parent.top
-                                anchors.bottomMargin: 6
+                                anchors.bottomMargin: 4
                                 z: 100
-                                implicitWidth: tipText.implicitWidth + 12
-                                implicitHeight: tipText.implicitHeight + 6
-                                radius: Tokens.rounding.full
-                                color: Glass.enabled ? Glass.sheet : Colours.palette.m3surfaceContainerHighest
+                                implicitWidth: tipText.implicitWidth + 10
+                                implicitHeight: tipText.implicitHeight + 4
+                                radius: 6
+                                color: Qt.rgba(20, 22, 28, 0.92)
+                                border.width: 1
+                                border.color: Qt.rgba(255, 255, 255, 0.12)
                                 visible: tileHover.hovered && !tileMouse.pressed
 
                                 StyledText {
@@ -217,7 +231,7 @@ StyledRect {
                                     anchors.centerIn: parent
                                     text: tile.label
                                     font: Tokens.font.label.small
-                                    color: Glass.enabled ? Glass.ice : Colours.palette.m3onSurface
+                                    color: Qt.rgba(1, 1, 1, 0.95)
                                 }
                             }
                         }
