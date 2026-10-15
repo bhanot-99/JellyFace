@@ -166,6 +166,8 @@ JellyFace -- a desktop shell for COSMIC (Pop!_OS)
   jellyface agenda set <ics-path|ical-url>   choose the calendar for the desktop Agenda card (also: agenda, agenda status)
   jellyface cosmic-tweaks [--revert]   auto-hide COSMIC's own top panel (backs it up first)
   jellyface greeter test|window|install|status|...   JellyFace as the login screen (self-healing; see greeter/)
+  jellyface mail [refresh|status|set-password|set-account]
+                                  sync and configure Gmail (bhanot1054@gmail.com) for dashboard
   jellyface doctor                check that everything is in place
 USAGE
 }
@@ -191,6 +193,7 @@ case "${1:-help}" in
     theme)         shift; exec python3 -I "$JF_ROOT/scripts/theme.py" "$@" ;;
     glass)         shift; exec python3 -I "$JF_ROOT/scripts/theme.py" glass "$@" ;;
     agenda)        shift; exec python3 -I "$JF_ROOT/scripts/agenda.py" "$@" ;;
+    mail)          shift; exec python3 -I "$JF_ROOT/scripts/mail.py" "$@" ;;
     fix-icons)     shift; exec "$JF_ROOT/scripts/fix-icons.sh" "$@" ;;
     cosmic-tweaks) shift; exec "$JF_ROOT/scripts/cosmic-tweaks.sh" "$@" ;;
     greeter)       shift; exec "$JF_ROOT/scripts/greeter.sh" "$@" ;;

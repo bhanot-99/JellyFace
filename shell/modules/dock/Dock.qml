@@ -637,17 +637,6 @@ Scope {
             Region { item: dashboard.mailCard?.surface }
         }
 
-        BackgroundEffect.blurRegion: (Glass.enabled && dashboardWin.shown) ? dashboardBlur : null
-
-        Region {
-            id: dashboardBlur
-
-            GlassRegion { pane: dashboard.commandBarCard?.surface }
-            GlassRegion { pane: dashboard.systemMonitorCard?.surface }
-            GlassRegion { pane: dashboard.notifCard?.surface }
-            GlassRegion { pane: dashboard.mailCard?.surface }
-        }
-
         DockDashboard {
             id: dashboard
 
