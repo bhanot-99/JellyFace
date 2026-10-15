@@ -18,29 +18,49 @@ ModularCard {
     minW: 580
     minH: 52
     canResize: true
-    contentPadding: 12
+    contentPadding: 10
 
     RowLayout {
         anchors.fill: parent
         spacing: 12
 
-        // 1. Left: Branding & Distro
+        // 1. Left: Branding & Distro in Elevated Tactile Squircle
         RowLayout {
             spacing: 8
             Layout.alignment: Qt.AlignVCenter
 
             Rectangle {
-                implicitWidth: 32
-                implicitHeight: 32
-                radius: 8
-                color: Qt.rgba(1, 1, 1, 0.06)
+                implicitWidth: 34
+                implicitHeight: 34
+                radius: 12
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: "#444852"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: "#31343b"
+                    }
+                }
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.08)
+                border.color: Qt.rgba(1, 1, 1, 0.14)
+
+                // Top-lit bevel specular hairline
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: parent.radius
+                    anchors.rightMargin: parent.radius
+                    height: 1
+                    color: Qt.rgba(1, 1, 1, 0.28)
+                }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "dashboard"
-                    color: Qt.rgba(1, 1, 1, 0.95)
+                    color: "#FFFFFF"
                     fontStyle: Tokens.font.icon.small
                 }
             }
@@ -52,42 +72,68 @@ ModularCard {
                 StyledText {
                     text: Tr.tr("Workspace")
                     font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                    color: Qt.rgba(1, 1, 1, 0.95)
+                    color: "#FFFFFF"
                 }
 
                 StyledText {
                     text: SysInfo.osPrettyName || "Pop!_OS 24.04"
                     font: Tokens.font.label.small
-                    color: Qt.rgba(1, 1, 1, 0.50)
+                    color: "#9CA3AF"
                 }
             }
         }
 
         Item {
             Layout.fillWidth: true
-            Layout.maximumWidth: 20
+            Layout.maximumWidth: 16
         }
 
-        // 2. Center: Brave Direct Search Box with Regex Domain Detection
+        // 2. Center: Brave Direct Search Box as Recessed Inset Pill Well
         Rectangle {
             id: searchBox
 
             Layout.fillWidth: true
-            Layout.preferredHeight: 36
-            radius: 10
-            color: searchField.activeFocus ? Qt.rgba(1, 1, 1, 0.08) : (searchHover.hovered ? Qt.rgba(1, 1, 1, 0.06) : Qt.rgba(1, 1, 1, 0.04))
-            border.width: 1
-            border.color: searchField.activeFocus ? Qt.rgba(255, 255, 255, 0.25) : Qt.rgba(255, 255, 255, 0.08)
-
-            Behavior on color {
-                CAnim {
-                    duration: 150
+            Layout.preferredHeight: 38
+            radius: 9999
+            gradient: Gradient {
+                GradientStop {
+                    position: 0.0
+                    color: "#1b1c20"
+                }
+                GradientStop {
+                    position: 1.0
+                    color: "#24262b"
                 }
             }
+            border.width: 1
+            border.color: searchField.activeFocus ? Qt.rgba(255, 255, 255, 0.35) : (searchHover.hovered ? Qt.rgba(255, 255, 255, 0.14) : Qt.rgba(255, 255, 255, 0.08))
+
             Behavior on border.color {
                 CAnim {
                     duration: 150
                 }
+            }
+
+            // Top recessed inner shadow hairline
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                height: 1
+                color: Qt.rgba(0, 0, 0, 0.65)
+            }
+
+            // Bottom subtle bevel reflection
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: 16
+                anchors.rightMargin: 16
+                height: 1
+                color: Qt.rgba(255, 255, 255, 0.06)
             }
 
             HoverHandler {
@@ -96,13 +142,13 @@ ModularCard {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 10
+                anchors.leftMargin: 12
                 anchors.rightMargin: 6
                 spacing: 8
 
                 MaterialIcon {
                     text: "search"
-                    color: searchField.activeFocus ? Qt.rgba(1, 1, 1, 0.95) : Qt.rgba(1, 1, 1, 0.45)
+                    color: searchField.activeFocus ? "#FFFFFF" : "#9CA3AF"
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -113,15 +159,15 @@ ModularCard {
                     Layout.alignment: Qt.AlignVCenter
                     font.family: Tokens.font.body.medium.family
                     font.pixelSize: 13
-                    color: Qt.rgba(1, 1, 1, 0.95)
-                    selectedTextColor: "#ffffff"
-                    selectionColor: Colours.palette.m3primary
+                    color: "#FFFFFF"
+                    selectedTextColor: "#FFFFFF"
+                    selectionColor: "#444852"
                     clip: true
 
                     Text {
                         anchors.fill: parent
                         text: Tr.tr("Search with Brave or enter URL...")
-                        color: Qt.rgba(1, 1, 1, 0.40)
+                        color: "#71717A"
                         font: searchField.font
                         visible: !searchField.text && !searchField.activeFocus
                         verticalAlignment: Text.AlignVCenter
@@ -130,7 +176,6 @@ ModularCard {
                     onAccepted: {
                         const trimmed = searchField.text.trim();
                         if (trimmed.length > 0) {
-                            // Regex domain check: ^[\w-]+\.[a-z]{2,}(/.*)?$ or starts with http:// or https://
                             const isUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://") || /^[\w-]+\.[a-z]{2,}(\/.*)?$/i.test(trimmed);
                             if (isUrl) {
                                 const url = (trimmed.startsWith("http://") || trimmed.startsWith("https://")) ? trimmed : ("https://" + trimmed);
@@ -145,16 +190,35 @@ ModularCard {
                     }
                 }
 
-                // Instant Brave Browser Launch Button
+                // Elevated Tactile Brave Button
                 Rectangle {
                     id: braveLaunchBtn
 
-                    implicitWidth: braveLabel.implicitWidth + 12
-                    implicitHeight: 24
-                    radius: 8
-                    color: braveHover.hovered ? Qt.rgba(251 / 255, 146 / 255, 60 / 255, 0.25) : Qt.rgba(1, 1, 1, 0.05)
+                    implicitWidth: braveLabel.implicitWidth + 16
+                    implicitHeight: 26
+                    radius: 9999
+                    gradient: Gradient {
+                        GradientStop {
+                            position: 0.0
+                            color: braveHover.hovered ? "#4f5460" : "#444852"
+                        }
+                        GradientStop {
+                            position: 1.0
+                            color: braveHover.hovered ? "#383b44" : "#31343b"
+                        }
+                    }
                     border.width: 1
-                    border.color: braveHover.hovered ? "#fb923c" : Qt.rgba(1, 1, 1, 0.06)
+                    border.color: braveHover.hovered ? Qt.rgba(255, 255, 255, 0.30) : Qt.rgba(255, 255, 255, 0.15)
+
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        height: 1
+                        color: Qt.rgba(255, 255, 255, 0.28)
+                    }
 
                     Row {
                         id: braveLabel
@@ -164,7 +228,7 @@ ModularCard {
                         MaterialIcon {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "travel_explore"
-                            color: "#fb923c"
+                            color: "#FFFFFF"
                             fontStyle: Tokens.font.icon.small
                         }
 
@@ -172,7 +236,7 @@ ModularCard {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Brave"
                             font: Tokens.font.label.small
-                            color: Qt.rgba(1, 1, 1, 0.90)
+                            color: "#FFFFFF"
                         }
                     }
 
@@ -191,31 +255,50 @@ ModularCard {
 
         Item {
             Layout.fillWidth: true
-            Layout.maximumWidth: 20
+            Layout.maximumWidth: 16
         }
 
-        // 3. Right: Command Actions & Dynamic Clock
+        // 3. Right: Tactile Command Action Buttons & Clock
         RowLayout {
             spacing: 8
             Layout.alignment: Qt.AlignVCenter
 
-            // Notification Center Toggle Bell
+            // Notification Center Toggle Bell (Tactile Squircle)
             Rectangle {
                 id: notifBell
 
                 readonly property bool notifVis: DashboardState.isCardVisible("notifications", true)
 
-                implicitWidth: 32
-                implicitHeight: 32
-                radius: 8
-                color: notifBellHover.hovered ? Qt.rgba(1, 1, 1, 0.10) : (notifVis ? Qt.rgba(56 / 255, 189 / 255, 248 / 255, 0.15) : Qt.rgba(1, 1, 1, 0.04))
+                implicitWidth: 34
+                implicitHeight: 34
+                radius: 12
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: notifBellHover.hovered ? "#4f5460" : "#444852"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: notifBellHover.hovered ? "#383b44" : "#31343b"
+                    }
+                }
                 border.width: 1
-                border.color: notifVis ? "#38bdf8" : Qt.rgba(255, 255, 255, 0.06)
+                border.color: notifVis ? Qt.rgba(255, 255, 255, 0.35) : Qt.rgba(255, 255, 255, 0.12)
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: parent.radius
+                    anchors.rightMargin: parent.radius
+                    height: 1
+                    color: Qt.rgba(255, 255, 255, 0.25)
+                }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: Notifs.dnd ? "notifications_off" : "notifications"
-                    color: notifBell.notifVis ? "#38bdf8" : Qt.rgba(1, 1, 1, 0.60)
+                    color: "#FFFFFF"
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -234,22 +317,30 @@ ModularCard {
             Rectangle {
                 id: lockToggleBtn
 
-                implicitWidth: lockContent.implicitWidth + 18
-                implicitHeight: 32
-                radius: 8
-                color: !DashboardState.isLocked ? Qt.rgba(245 / 255, 158 / 255, 11 / 255, 0.25) : (lockHover.hovered ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.04))
-                border.width: 1
-                border.color: !DashboardState.isLocked ? "#f59e0b" : Qt.rgba(255, 255, 255, 0.08)
-
-                Behavior on color {
-                    CAnim {
-                        duration: 150
+                implicitWidth: lockContent.implicitWidth + 20
+                implicitHeight: 34
+                radius: 9999
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: !DashboardState.isLocked ? "#4f5460" : (lockHover.hovered ? "#444852" : "#373a42")
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: !DashboardState.isLocked ? "#383b44" : (lockHover.hovered ? "#31343b" : "#26282e")
                     }
                 }
-                Behavior on border.color {
-                    CAnim {
-                        duration: 150
-                    }
+                border.width: 1
+                border.color: !DashboardState.isLocked ? Qt.rgba(255, 255, 255, 0.35) : Qt.rgba(255, 255, 255, 0.14)
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    height: 1
+                    color: Qt.rgba(255, 255, 255, 0.28)
                 }
 
                 Row {
@@ -260,15 +351,15 @@ ModularCard {
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: DashboardState.isLocked ? "lock" : "lock_open"
-                        color: !DashboardState.isLocked ? "#f59e0b" : Qt.rgba(1, 1, 1, 0.80)
+                        color: "#FFFFFF"
                         fontStyle: Tokens.font.icon.small
                     }
 
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
                         text: DashboardState.isLocked ? Tr.tr("Lock") : Tr.tr("Edit Mode")
-                        font: Tokens.font.label.small
-                        color: !DashboardState.isLocked ? "#f59e0b" : Qt.rgba(1, 1, 1, 0.85)
+                        font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
+                        color: "#FFFFFF"
                     }
                 }
 
@@ -285,19 +376,38 @@ ModularCard {
 
             // Dynamic 1-Second Refresh Live Clock with Tabular Numerals
             Rectangle {
-                implicitWidth: clockText.implicitWidth + 18
-                implicitHeight: 32
-                radius: 8
-                color: Qt.rgba(1, 1, 1, 0.05)
+                implicitWidth: clockText.implicitWidth + 20
+                implicitHeight: 34
+                radius: 9999
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: "#373a42"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: "#26282e"
+                    }
+                }
                 border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.06)
+                border.color: Qt.rgba(255, 255, 255, 0.12)
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    height: 1
+                    color: Qt.rgba(255, 255, 255, 0.22)
+                }
 
                 StyledText {
                     id: clockText
                     anchors.centerIn: parent
                     text: Qt.formatTime(new Date(), "hh:mm:ss")
                     font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                    color: Qt.rgba(1, 1, 1, 0.95)
+                    color: "#FFFFFF"
 
                     Timer {
                         interval: 1000

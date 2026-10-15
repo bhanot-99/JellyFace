@@ -44,7 +44,7 @@ ModularCard {
         dock: root.dock
         title: Tr.tr("Work & Dev")
         categoryIcon: "code"
-        accentColor: "#38bdf8"
+        accentColor: "#FFFFFF"
         appsList: root.appsList
     }
 }

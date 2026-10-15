@@ -55,15 +55,24 @@ Item {
         target: DashboardState
     }
 
-    // Main Card Surface: Layered Frosted Glass Backdrop
+    // Main Card Surface: Tactile Matte Slate-Titanium Skeuo-Modern Container (20px Superellipse)
     Rectangle {
         id: surface
 
         anchors.fill: parent
-        radius: 16
-        color: Qt.rgba(22 / 255, 25 / 255, 35 / 255, 0.72)
+        radius: 20
+        gradient: Gradient {
+            GradientStop {
+                position: 0.0
+                color: "#f0373a42"
+            }
+            GradientStop {
+                position: 1.0
+                color: "#f026282e"
+            }
+        }
         border.width: 1
-        border.color: !DashboardState.isLocked ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? "#f59e0b" : Qt.rgba(245 / 255, 158 / 255, 11 / 255, 0.50)) : Qt.rgba(255, 255, 255, 0.08)
+        border.color: !DashboardState.isLocked ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? Qt.rgba(1, 1, 1, 0.30) : Qt.rgba(1, 1, 1, 0.18)) : Qt.rgba(1, 1, 1, 0.08)
 
         Behavior on border.color {
             CAnim {
@@ -71,7 +80,7 @@ Item {
             }
         }
 
-        // Top hairline specular highlight
+        // Tactile Top-Lit Bevel Specular Highlight (Hairline)
         Rectangle {
             anchors.top: parent.top
             anchors.left: parent.left
@@ -79,10 +88,21 @@ Item {
             anchors.leftMargin: parent.radius
             anchors.rightMargin: parent.radius
             height: 1
-            color: Qt.rgba(255, 255, 255, 0.16)
+            color: Qt.rgba(1, 1, 1, 0.22)
         }
 
-        // Edit Mode Freeform Drag Handler: Underneath contentContainer, catches drags on card surface/empty areas
+        // Tactile Bottom Recessed Edge (Shadow)
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: parent.radius
+            anchors.rightMargin: parent.radius
+            height: 1
+            color: Qt.rgba(0, 0, 0, 0.50)
+        }
+
+        // Edit Mode Freeform Drag Handler: Underneath contentContainer, catches drags on card surface
         MouseArea {
             id: cardDragArea
 
@@ -123,7 +143,7 @@ Item {
             }
         }
 
-        // Content Container with generous padding (higher z so buttons and inputs work)
+        // Content Container with generous padding
         Item {
             id: contentContainer
 
@@ -132,32 +152,52 @@ Item {
             z: 10
         }
 
-        // Edit Mode: Top-Left Card Tag Handle Pill with Direct Drag Target
+        // Edit Mode: Sleek Embossed Slate Drag Handle Pill (Replaces orange badge)
         Rectangle {
             id: tagLabelBox
 
             anchors.left: parent.left
             anchors.top: parent.top
-            anchors.leftMargin: 12
-            anchors.topMargin: -14
-            implicitWidth: tagLabelRow.implicitWidth + 16
+            anchors.leftMargin: 14
+            anchors.topMargin: -13
+            implicitWidth: tagLabelRow.implicitWidth + 18
             implicitHeight: 26
-            radius: 7
-            color: tagMouse.pressed ? "#d97706" : (tagMouse.containsMouse ? "#fbbf24" : "#f59e0b")
+            radius: 8
+            gradient: Gradient {
+                GradientStop {
+                    position: 0.0
+                    color: tagMouse.pressed ? "#2e3138" : (tagMouse.containsMouse ? "#444852" : "#373a42")
+                }
+                GradientStop {
+                    position: 1.0
+                    color: tagMouse.pressed ? "#222428" : (tagMouse.containsMouse ? "#31343b" : "#26282e")
+                }
+            }
             border.width: 1
-            border.color: "#ffffff"
+            border.color: Qt.rgba(1, 1, 1, 0.16)
             visible: !DashboardState.isLocked
             z: 50
+
+            // Top-lit micro-highlight
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: parent.radius
+                anchors.rightMargin: parent.radius
+                height: 1
+                color: Qt.rgba(1, 1, 1, 0.28)
+            }
 
             Row {
                 id: tagLabelRow
                 anchors.centerIn: parent
-                spacing: 4
+                spacing: 5
 
                 MaterialIcon {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "drag_indicator"
-                    color: "#000000"
+                    color: "#E5E7EB"
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -165,7 +205,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.title || root.cardId
                     font: Tokens.font.label.small
-                    color: "#000000"
+                    color: "#E5E7EB"
                 }
             }
 
@@ -208,25 +248,46 @@ Item {
             }
         }
 
-        // Edit Mode: High-Hit Target Corner Resize Handle (32x32px)
+        // Edit Mode: Tactile Corner Resize Handle (Hidden when locked)
         Rectangle {
             id: resizeGrip
 
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            implicitWidth: 32
-            implicitHeight: 32
+            anchors.rightMargin: 4
+            anchors.bottomMargin: 4
+            implicitWidth: 28
+            implicitHeight: 28
             radius: 8
-            color: resizeMouse.containsMouse || root.isResizing ? "#f59e0b" : Qt.rgba(245 / 255, 158 / 255, 11 / 255, 0.40)
+            gradient: Gradient {
+                GradientStop {
+                    position: 0.0
+                    color: resizeMouse.containsMouse || root.isResizing ? "#4f5460" : "#373a42"
+                }
+                GradientStop {
+                    position: 1.0
+                    color: resizeMouse.containsMouse || root.isResizing ? "#383b44" : "#26282e"
+                }
+            }
             border.width: 1
-            border.color: resizeMouse.containsMouse || root.isResizing ? "#ffffff" : Qt.rgba(255, 255, 255, 0.20)
+            border.color: resizeMouse.containsMouse || root.isResizing ? Qt.rgba(1, 1, 1, 0.30) : Qt.rgba(1, 1, 1, 0.12)
             visible: root.canResize && !DashboardState.isLocked
             z: 60
+
+            Rectangle {
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.leftMargin: parent.radius
+                anchors.rightMargin: parent.radius
+                height: 1
+                color: Qt.rgba(1, 1, 1, 0.25)
+            }
 
             MaterialIcon {
                 anchors.centerIn: parent
                 text: "south_east"
-                color: resizeMouse.containsMouse || root.isResizing ? "#000000" : "#ffffff"
+                color: "#E5E7EB"
                 fontStyle: Tokens.font.icon.small
             }
 

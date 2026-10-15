@@ -22,7 +22,7 @@ ModularCard {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: 10
 
         // Header
         RowLayout {
@@ -30,55 +30,96 @@ ModularCard {
             spacing: 8
 
             Rectangle {
-                implicitWidth: 22
-                implicitHeight: 22
-                radius: 6
-                color: Qt.rgba(168 / 255, 85 / 255, 247 / 255, 0.15)
+                implicitWidth: 24
+                implicitHeight: 24
+                radius: 8
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: "#444852"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: "#31343b"
+                    }
+                }
+                border.width: 1
+                border.color: Qt.rgba(255, 255, 255, 0.12)
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: parent.radius
+                    anchors.rightMargin: parent.radius
+                    height: 1
+                    color: Qt.rgba(255, 255, 255, 0.25)
+                }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "mail"
-                    color: "#c084fc"
+                    color: "#FFFFFF"
                     fontStyle: Tokens.font.icon.small
                 }
             }
 
             StyledText {
                 text: Tr.tr("Primary Mails")
-                font: Tokens.font.body.builders.medium.weight(Font.Medium).build()
-                color: Qt.rgba(1, 1, 1, 0.95)
+                font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
+                color: "#FFFFFF"
                 Layout.fillWidth: true
             }
 
-            // Unread Badge
+            // Tactile Unread Pill Badge (Pure White Glow)
             Rectangle {
-                implicitWidth: unreadText.implicitWidth + 8
-                implicitHeight: 18
-                radius: 6
-                color: MailService.unreadCount > 0 ? Qt.rgba(168 / 255, 85 / 255, 247 / 255, 0.20) : Qt.rgba(1, 1, 1, 0.06)
+                implicitWidth: unreadText.implicitWidth + 12
+                implicitHeight: 20
+                radius: 9999
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: MailService.unreadCount > 0 ? "#444852" : "#1b1c20"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: MailService.unreadCount > 0 ? "#31343b" : "#24262b"
+                    }
+                }
                 border.width: 1
-                border.color: MailService.unreadCount > 0 ? Qt.rgba(168 / 255, 85 / 255, 247 / 255, 0.35) : Qt.rgba(255, 255, 255, 0.06)
+                border.color: MailService.unreadCount > 0 ? Qt.rgba(255, 255, 255, 0.25) : Qt.rgba(255, 255, 255, 0.08)
 
                 StyledText {
                     id: unreadText
                     anchors.centerIn: parent
                     text: `${MailService.unreadCount} unread`
                     font: Tokens.font.label.small
-                    color: MailService.unreadCount > 0 ? "#c084fc" : Qt.rgba(1, 1, 1, 0.50)
+                    color: MailService.unreadCount > 0 ? "#FFFFFF" : "#9CA3AF"
                 }
             }
 
-            // Refresh button
+            // Tactile Refresh Button
             Rectangle {
-                implicitWidth: 20
-                implicitHeight: 20
-                radius: 4
-                color: refreshHover.hovered ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+                implicitWidth: 24
+                implicitHeight: 24
+                radius: 8
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: refreshHover.hovered ? "#4f5460" : "#373a42"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: refreshHover.hovered ? "#383b44" : "#26282e"
+                    }
+                }
+                border.width: 1
+                border.color: Qt.rgba(255, 255, 255, 0.12)
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "refresh"
-                    color: Qt.rgba(1, 1, 1, 0.50)
+                    color: "#E5E7EB"
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -94,7 +135,7 @@ ModularCard {
             }
         }
 
-        // Body: Scrollable Email List
+        // Body: Scrollable Email List with Segmented Tactile Cards
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -103,7 +144,7 @@ ModularCard {
                 anchors.fill: parent
                 model: MailService.emails
                 clip: true
-                spacing: 4
+                spacing: 6
 
                 delegate: Rectangle {
                     id: mailItem
@@ -112,11 +153,31 @@ ModularCard {
                     readonly property var m: modelData
 
                     width: ListView.view.width
-                    implicitHeight: 44
-                    radius: 8
-                    color: mailHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : (mailItem.m?.unread ? Qt.rgba(1, 1, 1, 0.04) : "transparent")
+                    implicitHeight: 48
+                    radius: 12
+                    gradient: Gradient {
+                        GradientStop {
+                            position: 0.0
+                            color: mailHover.hovered ? "#4a4e58" : (mailItem.m?.unread ? "#3d4047" : "#2e3137")
+                        }
+                        GradientStop {
+                            position: 1.0
+                            color: mailHover.hovered ? "#353840" : (mailItem.m?.unread ? "#2a2c32" : "#222428")
+                        }
+                    }
                     border.width: 1
-                    border.color: mailItem.m?.unread ? Qt.rgba(255, 255, 255, 0.06) : "transparent"
+                    border.color: mailHover.hovered ? Qt.rgba(255, 255, 255, 0.22) : (mailItem.m?.unread ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.05))
+
+                    // Top-lit bevel specular hairline
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: parent.radius
+                        anchors.rightMargin: parent.radius
+                        height: 1
+                        color: Qt.rgba(255, 255, 255, 0.20)
+                    }
 
                     HoverHandler {
                         id: mailHover
@@ -134,21 +195,32 @@ ModularCard {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.margins: 6
-                        spacing: 8
+                        anchors.margins: 8
+                        spacing: 10
 
-                        // Initial Avatar
+                        // Recessed Avatar Well
                         Rectangle {
-                            implicitWidth: 26
-                            implicitHeight: 26
-                            radius: 6
-                            color: mailItem.m?.unread ? "#c084fc" : Qt.rgba(1, 1, 1, 0.08)
+                            implicitWidth: 30
+                            implicitHeight: 30
+                            radius: 8
+                            gradient: Gradient {
+                                GradientStop {
+                                    position: 0.0
+                                    color: mailItem.m?.unread ? "#444852" : "#1b1c20"
+                                }
+                                GradientStop {
+                                    position: 1.0
+                                    color: mailItem.m?.unread ? "#31343b" : "#24262b"
+                                }
+                            }
+                            border.width: 1
+                            border.color: Qt.rgba(255, 255, 255, 0.08)
 
                             StyledText {
                                 anchors.centerIn: parent
                                 text: (mailItem.m?.sender ?? "M").charAt(0).toUpperCase()
                                 font: Tokens.font.label.small
-                                color: mailItem.m?.unread ? "#ffffff" : Qt.rgba(1, 1, 1, 0.60)
+                                color: "#FFFFFF"
                             }
                         }
 
@@ -163,7 +235,7 @@ ModularCard {
                                 StyledText {
                                     text: mailItem.m?.sender || "Sender"
                                     font: mailItem.m?.unread ? Tokens.font.body.builders.small.weight(Font.DemiBold).build() : Tokens.font.label.small
-                                    color: Qt.rgba(1, 1, 1, 0.95)
+                                    color: "#FFFFFF"
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
                                 }
@@ -171,7 +243,7 @@ ModularCard {
                                 StyledText {
                                     text: mailItem.m?.time || ""
                                     font: Tokens.font.label.small
-                                    color: Qt.rgba(1, 1, 1, 0.40)
+                                    color: "#6B7280"
                                 }
                             }
 
@@ -179,17 +251,17 @@ ModularCard {
                                 Layout.fillWidth: true
                                 text: mailItem.m?.subject || ""
                                 font: Tokens.font.label.small
-                                color: mailItem.m?.unread ? Qt.rgba(1, 1, 1, 0.85) : Qt.rgba(1, 1, 1, 0.50)
+                                color: mailItem.m?.unread ? "#E5E7EB" : "#9CA3AF"
                                 elide: Text.ElideRight
                             }
                         }
 
-                        // Unread Dot
+                        // Pure White Glowing Unread Dot
                         Rectangle {
-                            implicitWidth: 5
-                            implicitHeight: 5
-                            radius: 2.5
-                            color: "#c084fc"
+                            implicitWidth: 6
+                            implicitHeight: 6
+                            radius: 3
+                            color: "#FFFFFF"
                             visible: mailItem.m?.unread ?? false
                         }
                     }
@@ -197,37 +269,69 @@ ModularCard {
             }
         }
 
-        // Fixed Footer Action Launchers: Exactly 30px height, zero crushing
+        // Fixed Footer Action Launchers: Tactile Pill Bevels (Matching Image 2 footer)
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 30
+            Layout.preferredHeight: 32
             spacing: 8
 
-            // Open in Brave (Gmail)
+            // Open in Brave (Gmail) Tactile Pill Button
             Rectangle {
+                id: gmailBtn
                 Layout.fillWidth: true
-                implicitHeight: 30
-                radius: 8
-                color: gmailHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
+                implicitHeight: 32
+                radius: 9999
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: gmailHover.hovered ? "#4f5460" : "#444852"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: gmailHover.hovered ? "#383b44" : "#31343b"
+                    }
+                }
                 border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.06)
+                border.color: gmailHover.hovered ? Qt.rgba(255, 255, 255, 0.30) : Qt.rgba(255, 255, 255, 0.14)
+
+                // Top-lit bevel specular hairline
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    height: 1
+                    color: Qt.rgba(255, 255, 255, 0.28)
+                }
+
+                // Bottom recessed shadow hairline
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    height: 1
+                    color: Qt.rgba(0, 0, 0, 0.40)
+                }
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 4
+                    spacing: 5
 
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "open_in_browser"
-                        color: Qt.rgba(1, 1, 1, 0.80)
+                        color: "#FFFFFF"
                         fontStyle: Tokens.font.icon.small
                     }
 
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Gmail"
-                        font: Tokens.font.label.small
-                        color: Qt.rgba(1, 1, 1, 0.90)
+                        font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
+                        color: "#FFFFFF"
                     }
                 }
 
@@ -242,31 +346,63 @@ ModularCard {
                 }
             }
 
-            // Launch Thunderbird
+            // Launch Thunderbird Tactile Pill Button
             Rectangle {
+                id: tbBtn
                 Layout.fillWidth: true
-                implicitHeight: 30
-                radius: 8
-                color: tbHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.04)
+                implicitHeight: 32
+                radius: 9999
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: tbHover.hovered ? "#4f5460" : "#444852"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: tbHover.hovered ? "#383b44" : "#31343b"
+                    }
+                }
                 border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.06)
+                border.color: tbHover.hovered ? Qt.rgba(255, 255, 255, 0.30) : Qt.rgba(255, 255, 255, 0.14)
+
+                // Top-lit bevel specular hairline
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    height: 1
+                    color: Qt.rgba(255, 255, 255, 0.28)
+                }
+
+                // Bottom recessed shadow hairline
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 12
+                    height: 1
+                    color: Qt.rgba(0, 0, 0, 0.40)
+                }
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 4
+                    spacing: 5
 
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "mail"
-                        color: Qt.rgba(1, 1, 1, 0.80)
+                        color: "#FFFFFF"
                         fontStyle: Tokens.font.icon.small
                     }
 
                     StyledText {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Thunderbird"
-                        font: Tokens.font.label.small
-                        color: Qt.rgba(1, 1, 1, 0.90)
+                        font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
+                        color: "#FFFFFF"
                     }
                 }
 

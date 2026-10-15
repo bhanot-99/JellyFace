@@ -15,8 +15,8 @@ ModularCard {
 
     cardId: "notifications"
     title: Tr.tr("Notification Center")
-    minW: 300
-    minH: 52
+    minW: 320
+    minH: 60
     canResize: true
     contentPadding: 14
 
@@ -24,7 +24,7 @@ ModularCard {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: 10
 
         // Header Row / Micro-Banner
         RowLayout {
@@ -32,65 +32,106 @@ ModularCard {
             spacing: 8
 
             Rectangle {
-                implicitWidth: 22
-                implicitHeight: 22
-                radius: 6
-                color: root.hasNotifs ? Qt.rgba(239 / 255, 68 / 255, 68 / 255, 0.15) : Qt.rgba(52 / 255, 211 / 255, 153 / 255, 0.15)
+                implicitWidth: 24
+                implicitHeight: 24
+                radius: 8
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: "#444852"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: "#31343b"
+                    }
+                }
+                border.width: 1
+                border.color: Qt.rgba(255, 255, 255, 0.12)
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: parent.radius
+                    anchors.rightMargin: parent.radius
+                    height: 1
+                    color: Qt.rgba(255, 255, 255, 0.25)
+                }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: root.hasNotifs ? "notifications" : "done_all"
-                    color: root.hasNotifs ? "#f87171" : "#34d399"
+                    color: "#FFFFFF"
                     fontStyle: Tokens.font.icon.small
                 }
             }
 
             StyledText {
-                text: root.hasNotifs ? Tr.tr("Live Notifications") : Tr.tr("All caught up")
-                font: Tokens.font.body.builders.medium.weight(Font.Medium).build()
-                color: Qt.rgba(1, 1, 1, 0.95)
+                text: root.hasNotifs ? Tr.tr("Notifications") : Tr.tr("All Caught Up")
+                font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
+                color: "#FFFFFF"
                 Layout.fillWidth: true
             }
 
-            // Notification Count Badge
+            // Tactile Unread Count Pill Badge
             Rectangle {
-                implicitWidth: badgeText.implicitWidth + 8
-                implicitHeight: 18
-                radius: 6
+                implicitWidth: badgeText.implicitWidth + 12
+                implicitHeight: 20
+                radius: 9999
                 visible: root.hasNotifs
-                color: Qt.rgba(239 / 255, 68 / 255, 68 / 255, 0.20)
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: "#444852"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: "#31343b"
+                    }
+                }
                 border.width: 1
-                border.color: Qt.rgba(239 / 255, 68 / 255, 68 / 255, 0.35)
+                border.color: Qt.rgba(255, 255, 255, 0.20)
 
                 StyledText {
                     id: badgeText
                     anchors.centerIn: parent
                     text: `${Notifs.notClosed.length}`
                     font: Tokens.font.label.small
-                    color: "#f87171"
+                    color: "#FFFFFF"
                 }
             }
 
             // Subtitle when empty
             StyledText {
-                text: "No new alerts"
+                text: Tr.tr("No alerts")
                 font: Tokens.font.label.small
-                color: Qt.rgba(1, 1, 1, 0.40)
+                color: "#9CA3AF"
                 visible: !root.hasNotifs
             }
 
-            // Clear All Button
+            // Clear All Button (Tactile Inset Micro-Button)
             Rectangle {
-                implicitWidth: 20
-                implicitHeight: 20
-                radius: 4
+                implicitWidth: 24
+                implicitHeight: 24
+                radius: 8
                 visible: root.hasNotifs
-                color: clearHover.hovered ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: clearHover.hovered ? "#3d4047" : "#1b1c20"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: clearHover.hovered ? "#2a2c32" : "#24262b"
+                    }
+                }
+                border.width: 1
+                border.color: clearHover.hovered ? Qt.rgba(255, 255, 255, 0.20) : Qt.rgba(255, 255, 255, 0.08)
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "clear_all"
-                    color: Qt.rgba(1, 1, 1, 0.60)
+                    color: "#9CA3AF"
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -114,7 +155,7 @@ ModularCard {
             }
         }
 
-        // Notification List (smooth scrollable)
+        // Notification List (Tactile Segmented Sub-Cards)
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -124,7 +165,7 @@ ModularCard {
                 anchors.fill: parent
                 model: Notifs.notClosed
                 clip: true
-                spacing: 4
+                spacing: 6
 
                 delegate: Rectangle {
                     id: notifItem
@@ -133,11 +174,31 @@ ModularCard {
                     readonly property var n: modelData
 
                     width: ListView.view.width
-                    implicitHeight: 40
-                    radius: 8
-                    color: itemHover.hovered ? Qt.rgba(1, 1, 1, 0.08) : Qt.rgba(1, 1, 1, 0.03)
+                    implicitHeight: 48
+                    radius: 12
+                    gradient: Gradient {
+                        GradientStop {
+                            position: 0.0
+                            color: itemHover.hovered ? "#4a4e58" : "#3d4047"
+                        }
+                        GradientStop {
+                            position: 1.0
+                            color: itemHover.hovered ? "#353840" : "#2a2c32"
+                        }
+                    }
                     border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.04)
+                    border.color: itemHover.hovered ? Qt.rgba(255, 255, 255, 0.20) : Qt.rgba(255, 255, 255, 0.08)
+
+                    // Top-lit specular hairline
+                    Rectangle {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: parent.radius
+                        anchors.rightMargin: parent.radius
+                        height: 1
+                        color: Qt.rgba(255, 255, 255, 0.20)
+                    }
 
                     HoverHandler {
                         id: itemHover
@@ -145,24 +206,36 @@ ModularCard {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.margins: 6
-                        spacing: 8
+                        anchors.margins: 8
+                        spacing: 10
 
+                        // Recessed App Icon Well
                         Rectangle {
-                            implicitWidth: 26
-                            implicitHeight: 26
-                            radius: 6
-                            color: Qt.rgba(1, 1, 1, 0.06)
+                            implicitWidth: 30
+                            implicitHeight: 30
+                            radius: 8
+                            gradient: Gradient {
+                                GradientStop {
+                                    position: 0.0
+                                    color: "#1b1c20"
+                                }
+                                GradientStop {
+                                    position: 1.0
+                                    color: "#24262b"
+                                }
+                            }
+                            border.width: 1
+                            border.color: Qt.rgba(255, 255, 255, 0.06)
 
                             Loader {
                                 anchors.centerIn: parent
-                                width: 16
-                                height: 16
+                                width: 18
+                                height: 18
                                 active: (notifItem.n?.appIcon ?? "") !== ""
                                 sourceComponent: Image {
                                     source: Quickshell.iconPath(notifItem.n?.appIcon, true) || notifItem.n?.appIcon || ""
-                                    sourceSize.width: 16
-                                    sourceSize.height: 16
+                                    sourceSize.width: 18
+                                    sourceSize.height: 18
                                     fillMode: Image.PreserveAspectFit
                                 }
                             }
@@ -172,7 +245,7 @@ ModularCard {
                                 active: !notifItem.n?.appIcon
                                 sourceComponent: MaterialIcon {
                                     text: "notifications"
-                                    color: Qt.rgba(1, 1, 1, 0.80)
+                                    color: "#FFFFFF"
                                     fontStyle: Tokens.font.icon.small
                                 }
                             }
@@ -180,15 +253,15 @@ ModularCard {
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 0
+                            spacing: 1
 
                             RowLayout {
-                                spacing: 4
+                                spacing: 6
 
                                 StyledText {
-                                    text: notifItem.n?.appName || "Notification"
-                                    font: Tokens.font.label.small
-                                    color: "#38bdf8"
+                                    text: notifItem.n?.appName || "Alert"
+                                    font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
+                                    color: "#FFFFFF"
                                 }
 
                                 Item {
@@ -198,7 +271,7 @@ ModularCard {
                                 StyledText {
                                     text: notifItem.n?.time ? Qt.formatTime(new Date(notifItem.n.time), "hh:mm") : ""
                                     font: Tokens.font.label.small
-                                    color: Qt.rgba(1, 1, 1, 0.40)
+                                    color: "#6B7280"
                                 }
                             }
 
@@ -206,22 +279,22 @@ ModularCard {
                                 Layout.fillWidth: true
                                 text: notifItem.n?.summary || ""
                                 font: Tokens.font.label.small
-                                color: Qt.rgba(1, 1, 1, 0.90)
+                                color: "#E5E7EB"
                                 elide: Text.ElideRight
                             }
                         }
 
                         // Dismiss button
                         Rectangle {
-                            implicitWidth: 18
-                            implicitHeight: 18
-                            radius: 4
-                            color: closeHover.hovered ? Qt.rgba(239 / 255, 68 / 255, 68 / 255, 0.20) : "transparent"
+                            implicitWidth: 20
+                            implicitHeight: 20
+                            radius: 6
+                            color: closeHover.hovered ? Qt.rgba(255, 255, 255, 0.15) : "transparent"
 
                             MaterialIcon {
                                 anchors.centerIn: parent
                                 text: "close"
-                                color: closeHover.hovered ? "#f87171" : Qt.rgba(1, 1, 1, 0.40)
+                                color: closeHover.hovered ? "#FFFFFF" : "#9CA3AF"
                                 fontStyle: Tokens.font.icon.small
                             }
 
@@ -241,6 +314,45 @@ ModularCard {
                             }
                         }
                     }
+                }
+            }
+        }
+
+        // Empty state banner
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: !root.hasNotifs
+            radius: 12
+            gradient: Gradient {
+                GradientStop {
+                    position: 0.0
+                    color: "#1b1c20"
+                }
+                GradientStop {
+                    position: 1.0
+                    color: "#24262b"
+                }
+            }
+            border.width: 1
+            border.color: Qt.rgba(255, 255, 255, 0.06)
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 6
+
+                MaterialIcon {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "check_circle"
+                    color: "#9CA3AF"
+                    fontStyle: Tokens.font.icon.small
+                }
+
+                StyledText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Tr.tr("No pending notifications")
+                    font: Tokens.font.label.small
+                    color: "#9CA3AF"
                 }
             }
         }

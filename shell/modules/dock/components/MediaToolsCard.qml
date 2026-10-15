@@ -44,7 +44,7 @@ ModularCard {
         dock: root.dock
         title: Tr.tr("Media & Tools")
         categoryIcon: "apps"
-        accentColor: "#34d399"
+        accentColor: "#FFFFFF"
         appsList: root.appsList
     }
 }

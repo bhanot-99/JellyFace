@@ -31,48 +31,80 @@ Rectangle {
     }
 
     color: "transparent"
-    radius: 12
+    radius: 14
     border.width: 0
 
-    implicitHeight: 88
-    Layout.minimumHeight: 88
+    implicitHeight: 90
+    Layout.minimumHeight: 90
 
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 2
         spacing: 6
 
-        // Card Header: Title + Baseline-aligned Count Badge
+        // Card Header: Tactile Monochromatic Icon + Title + Inset Count Badge
         RowLayout {
             Layout.fillWidth: true
             spacing: 6
 
             Rectangle {
-                implicitWidth: 22
-                implicitHeight: 22
-                radius: 6
-                color: Qt.alpha(root.accentColor, 0.18)
+                implicitWidth: 24
+                implicitHeight: 24
+                radius: 8
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: "#444852"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: "#31343b"
+                    }
+                }
+                border.width: 1
+                border.color: Qt.rgba(255, 255, 255, 0.12)
+
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: parent.radius
+                    anchors.rightMargin: parent.radius
+                    height: 1
+                    color: Qt.rgba(255, 255, 255, 0.25)
+                }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: root.categoryIcon
-                    color: root.accentColor
+                    color: "#FFFFFF"
                     fontStyle: Tokens.font.icon.small
                 }
             }
 
             StyledText {
                 text: root.title
-                font: Tokens.font.body.builders.medium.weight(Font.Medium).build()
-                color: Qt.rgba(1, 1, 1, 0.95)
+                font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
+                color: "#FFFFFF"
                 Layout.alignment: Qt.AlignVCenter
             }
 
             Rectangle {
-                implicitWidth: countText.implicitWidth + 8
+                implicitWidth: countText.implicitWidth + 10
                 implicitHeight: 18
-                radius: 6
-                color: Qt.rgba(1, 1, 1, 0.06)
+                radius: 9999
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: "#1b1c20"
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: "#24262b"
+                    }
+                }
+                border.width: 1
+                border.color: Qt.rgba(255, 255, 255, 0.08)
                 Layout.alignment: Qt.AlignVCenter
 
                 StyledText {
@@ -80,7 +112,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: `${root.appsList.length}`
                     font: Tokens.font.label.small
-                    color: Qt.rgba(1, 1, 1, 0.60)
+                    color: "#9CA3AF"
                 }
             }
 
@@ -89,7 +121,7 @@ Rectangle {
             }
         }
 
-        // App Icons Row: Uniform 32x32px hit-targets, 8px squircle radii, fixed 6px gap
+        // App Icons Row: Tactile Slate-Titanium Elevated Tiles with Top-Lit Bevels
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -105,7 +137,7 @@ Rectangle {
                 Row {
                     id: appsRow
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 6
+                    spacing: 7
 
                     Repeater {
                         model: root.appsList
@@ -132,24 +164,38 @@ Rectangle {
                                 return Quickshell.iconPath(i, true) || `file://${Paths.home}/.local/share/flatpak/exports/share/icons/hicolor/256x256/apps/${i}.png` || Quickshell.iconPath("application-x-executable") || "";
                             }
 
-                            implicitWidth: 36
-                            implicitHeight: 44
+                            implicitWidth: 38
+                            implicitHeight: 46
 
                             Rectangle {
                                 id: pill
                                 anchors.top: parent.top
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                implicitWidth: 34
-                                implicitHeight: 34
-                                radius: 8
-                                color: tileHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : (tile.running ? Qt.rgba(1, 1, 1, 0.06) : "transparent")
-                                border.width: 1
-                                border.color: tile.focused ? Qt.rgba(255, 255, 255, 0.25) : (tileHover.hovered ? Qt.rgba(255, 255, 255, 0.10) : "transparent")
-
-                                Behavior on color {
-                                    CAnim {
-                                        duration: 150
+                                implicitWidth: 36
+                                implicitHeight: 36
+                                radius: 12
+                                gradient: Gradient {
+                                    GradientStop {
+                                        position: 0.0
+                                        color: tileHover.hovered ? "#4f5460" : (tile.focused ? "#484c56" : "#3d4047")
                                     }
+                                    GradientStop {
+                                        position: 1.0
+                                        color: tileHover.hovered ? "#383b44" : (tile.focused ? "#32353c" : "#2a2c32")
+                                    }
+                                }
+                                border.width: 1
+                                border.color: tile.focused ? Qt.rgba(255, 255, 255, 0.40) : (tileHover.hovered ? Qt.rgba(255, 255, 255, 0.22) : Qt.rgba(255, 255, 255, 0.09))
+
+                                // Top-lit bevel specular hairline
+                                Rectangle {
+                                    anchors.top: parent.top
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.leftMargin: parent.radius
+                                    anchors.rightMargin: parent.radius
+                                    height: 1
+                                    color: Qt.rgba(255, 255, 255, 0.22)
                                 }
 
                                 scale: tileMouse.pressed ? 0.92 : (tileHover.hovered ? 1.05 : 1.0)
@@ -178,7 +224,7 @@ Rectangle {
                                     active: tile.iconSource === ""
                                     sourceComponent: MaterialIcon {
                                         text: tile.symbol || "apps"
-                                        color: Qt.rgba(1, 1, 1, 0.90)
+                                        color: "#FFFFFF"
                                         fontStyle: Tokens.font.icon.small
                                     }
                                 }
@@ -206,7 +252,7 @@ Rectangle {
                                 }
                             }
 
-                            // Running / Active indicator micro-dot
+                            // Running / Active indicator micro-dot (Pure White Key Glow)
                             Rectangle {
                                 anchors.bottom: parent.bottom
                                 anchors.bottomMargin: 1
@@ -214,7 +260,7 @@ Rectangle {
                                 width: tile.focused ? 10 : (tile.running ? 4 : 0)
                                 height: 3
                                 radius: 1.5
-                                color: tile.focused ? "#38bdf8" : "#34d399"
+                                color: "#FFFFFF"
                                 visible: tile.running
 
                                 Behavior on width {
@@ -224,26 +270,45 @@ Rectangle {
                                 }
                             }
 
-                            // Clean Tooltip on hover
+                            // Tactile Slate Tooltip on hover
                             Rectangle {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 anchors.bottom: parent.top
                                 anchors.bottomMargin: 4
                                 z: 100
-                                implicitWidth: tipText.implicitWidth + 10
-                                implicitHeight: tipText.implicitHeight + 4
-                                radius: 6
-                                color: Qt.rgba(20, 22, 28, 0.92)
+                                implicitWidth: tipText.implicitWidth + 12
+                                implicitHeight: tipText.implicitHeight + 6
+                                radius: 8
+                                gradient: Gradient {
+                                    GradientStop {
+                                        position: 0.0
+                                        color: "#373a42"
+                                    }
+                                    GradientStop {
+                                        position: 1.0
+                                        color: "#26282e"
+                                    }
+                                }
                                 border.width: 1
-                                border.color: Qt.rgba(255, 255, 255, 0.12)
+                                border.color: Qt.rgba(255, 255, 255, 0.16)
                                 visible: tileHover.hovered && !tileMouse.pressed
+
+                                Rectangle {
+                                    anchors.top: parent.top
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.leftMargin: parent.radius
+                                    anchors.rightMargin: parent.radius
+                                    height: 1
+                                    color: Qt.rgba(255, 255, 255, 0.22)
+                                }
 
                                 StyledText {
                                     id: tipText
                                     anchors.centerIn: parent
                                     text: tile.label
                                     font: Tokens.font.label.small
-                                    color: Qt.rgba(1, 1, 1, 0.95)
+                                    color: "#FFFFFF"
                                 }
                             }
                         }
