@@ -433,12 +433,26 @@ def mark_read(mail_id):
 def open_client(client_type="gmail"):
     """Launch mail client securely and detached without shell injection or zombie processes."""
     cfg = load_config()
-    account = cfg.get("email", DEFAULT_EMAIL)
-    gmail_url = f"https://mail.google.com/mail/u/{account}/"
+    account = (cfg.get("email") or DEFAULT_EMAIL).strip()
+    if account and "@" in account:
+        gmail_url = f"https://mail.google.com/mail/?authuser={account}"
+    elif account.isdigit():
+        gmail_url = f"https://mail.google.com/mail/u/{account}/"
+    else:
+        gmail_url = "https://mail.google.com/mail/"
+
+    prefix = ["distrobox-host-exec"] if (os.path.exists("/run/host") or os.environ.get("CONTAINER_ID")) else []
 
     if client_type == "gmail":
+        has_brave = subprocess.run(
+            prefix + ["which", "brave-browser"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        ).returncode == 0
+
+        cmd = prefix + (["brave-browser", f"--app={gmail_url}"] if has_brave else ["xdg-open", gmail_url])
         subprocess.Popen(
-            ["distrobox-host-exec", "brave-browser", f"--app={gmail_url}"],
+            cmd,
             start_new_session=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
@@ -446,20 +460,26 @@ def open_client(client_type="gmail"):
     else:
         # Check if thunderbird binary exists on host
         has_tb = subprocess.run(
-            ["distrobox-host-exec", "which", "thunderbird"],
+            prefix + ["which", "thunderbird"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         ).returncode == 0
         if has_tb:
             subprocess.Popen(
-                ["distrobox-host-exec", "gtk-launch", "thunderbird"],
+                prefix + ["gtk-launch", "thunderbird"],
                 start_new_session=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
         else:
+            has_brave = subprocess.run(
+                prefix + ["which", "brave-browser"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            ).returncode == 0
+            cmd = prefix + (["brave-browser", f"--app={gmail_url}"] if has_brave else ["xdg-open", gmail_url])
             subprocess.Popen(
-                ["distrobox-host-exec", "brave-browser", f"--app={gmail_url}"],
+                cmd,
                 start_new_session=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
