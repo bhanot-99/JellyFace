@@ -20,6 +20,12 @@ ModularCard {
     canResize: true
     contentPadding: 10
 
+    readonly property bool searchFocused: searchField.activeFocus
+    function unfocusSearch(): void {
+        searchField.text = "";
+        searchField.focus = false;
+    }
+
     RowLayout {
         anchors.fill: parent
         spacing: 12
@@ -87,9 +93,9 @@ ModularCard {
             Layout.fillWidth: true
             Layout.preferredHeight: 38
             radius: Tokens.rounding.full
-            color: Glass.well
+            color: searchField.activeFocus ? Qt.rgba(0.08, 0.10, 0.14, 0.85) : Glass.well
             border.width: 1
-            border.color: searchField.activeFocus ? Glass.ice : (searchHover.hovered ? Qt.rgba(1, 1, 1, 0.30) : Glass.rim)
+            border.color: searchField.activeFocus ? Glass.ice : (searchBoxMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.35) : Glass.rim)
 
             Behavior on border.color {
                 CAnim {
@@ -97,8 +103,20 @@ ModularCard {
                 }
             }
 
-            HoverHandler {
-                id: searchHover
+            Behavior on color {
+                CAnim {
+                    duration: 150
+                }
+            }
+
+            // Click anywhere on the search pill well to immediately focus and type
+            MouseArea {
+                id: searchBoxMouse
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.IBeamCursor
+                z: 0
+                onClicked: searchField.forceActiveFocus()
             }
 
             RowLayout {
@@ -106,48 +124,118 @@ ModularCard {
                 anchors.leftMargin: 12
                 anchors.rightMargin: 6
                 spacing: 8
+                z: 1
 
-                MaterialIcon {
-                    text: "search"
-                    color: searchField.activeFocus ? Glass.ice : Glass.haze
-                    fontStyle: Tokens.font.icon.small
-                }
-
-                TextInput {
-                    id: searchField
-
-                    Layout.fillWidth: true
+                // Search icon button (submits search if text exists, otherwise focuses)
+                Rectangle {
+                    implicitWidth: 26
+                    implicitHeight: 26
+                    radius: Tokens.rounding.full
+                    color: searchIconMouse.containsMouse ? Glass.frost : "transparent"
                     Layout.alignment: Qt.AlignVCenter
-                    font.family: Tokens.font.body.medium.family
-                    font.pixelSize: 13
-                    color: Glass.ice
-                    selectedTextColor: Glass.ink
-                    selectionColor: Glass.ice
-                    clip: true
 
-                    Text {
-                        anchors.fill: parent
-                        text: Tr.tr("Search with Brave or enter URL...")
-                        color: Glass.haze
-                        opacity: 0.60
-                        font: searchField.font
-                        visible: !searchField.text && !searchField.activeFocus
-                        verticalAlignment: Text.AlignVCenter
+                    MaterialIcon {
+                        anchors.centerIn: parent
+                        text: "search"
+                        color: searchField.activeFocus ? Glass.ice : Glass.haze
+                        fontStyle: Tokens.font.icon.small
                     }
 
-                    onAccepted: {
-                        const trimmed = searchField.text.trim();
-                        if (trimmed.length > 0) {
-                            const isUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://") || /^[\w-]+\.[a-z]{2,}(\/.*)?$/i.test(trimmed);
-                            if (isUrl) {
-                                const url = (trimmed.startsWith("http://") || trimmed.startsWith("https://")) ? trimmed : ("https://" + trimmed);
-                                Quickshell.execDetached(["distrobox-host-exec", "brave-browser", url]);
+                    MouseArea {
+                        id: searchIconMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            if (searchField.text.trim().length > 0) {
+                                searchField.accepted();
                             } else {
-                                const searchUrl = "https://search.brave.com/search?q=" + encodeURIComponent(trimmed);
-                                Quickshell.execDetached(["distrobox-host-exec", "brave-browser", searchUrl]);
+                                searchField.forceActiveFocus();
                             }
+                        }
+                    }
+                }
+
+                // Dedicated text input container spanning full width and height
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    TextInput {
+                        id: searchField
+
+                        anchors.fill: parent
+                        verticalAlignment: TextInput.AlignVCenter
+                        font.family: Tokens.font.body.medium.family
+                        font.pixelSize: 13
+                        color: Glass.ice
+                        selectedTextColor: Glass.ink
+                        selectionColor: Glass.ice
+                        selectByMouse: true
+                        activeFocusOnPress: true
+                        cursorVisible: activeFocus
+                        clip: true
+
+                        Text {
+                            anchors.fill: parent
+                            text: Tr.tr("Search with Brave or enter URL...")
+                            color: Glass.haze
+                            opacity: 0.60
+                            font: searchField.font
+                            visible: !searchField.text && !searchField.activeFocus
+                            verticalAlignment: Text.AlignVCenter
+                            enabled: false
+                        }
+
+                        Keys.onReturnPressed: searchField.accepted()
+                        Keys.onEnterPressed: searchField.accepted()
+                        Keys.onEscapePressed: {
                             searchField.text = "";
                             searchField.focus = false;
+                        }
+
+                        onAccepted: {
+                            const trimmed = searchField.text.trim();
+                            if (trimmed.length > 0) {
+                                const isUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://") || /^[\w-]+\.[a-z]{2,}(\/.*)?$/i.test(trimmed);
+                                if (isUrl) {
+                                    const url = (trimmed.startsWith("http://") || trimmed.startsWith("https://")) ? trimmed : ("https://" + trimmed);
+                                    Quickshell.execDetached(["distrobox-host-exec", "brave-browser", url]);
+                                } else {
+                                    const searchUrl = "https://search.brave.com/search?q=" + encodeURIComponent(trimmed);
+                                    Quickshell.execDetached(["distrobox-host-exec", "brave-browser", searchUrl]);
+                                }
+                                searchField.text = "";
+                                searchField.focus = false;
+                            }
+                        }
+                    }
+                }
+
+                // Clear button when text is present
+                Rectangle {
+                    visible: searchField.text.length > 0
+                    implicitWidth: 20
+                    implicitHeight: 20
+                    radius: Tokens.rounding.full
+                    color: clearMouse.containsMouse ? Glass.frostHigh : "transparent"
+                    Layout.alignment: Qt.AlignVCenter
+
+                    MaterialIcon {
+                        anchors.centerIn: parent
+                        text: "close"
+                        color: Glass.haze
+                        fontStyle: Tokens.font.icon.small
+                    }
+
+                    MouseArea {
+                        id: clearMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            searchField.text = "";
+                            searchField.forceActiveFocus();
                         }
                     }
                 }
@@ -155,14 +243,15 @@ ModularCard {
                 // Elevated Tactile Brave Button (Glass.frost + scale: 0.96 on press)
                 Rectangle {
                     id: braveLaunchBtn
+                    z: 5
 
                     implicitWidth: braveLabel.implicitWidth + 16
                     implicitHeight: 26
                     radius: Tokens.rounding.full
-                    color: braveMouse.pressed ? Glass.frostHigh : (braveHover.hovered ? Glass.frostHigh : Glass.frost)
+                    color: braveMouse.pressed ? Glass.frostHigh : (braveMouse.containsMouse ? Glass.frostHigh : Glass.frost)
                     border.width: 1
-                    border.color: Glass.rim
-                    scale: braveMouse.pressed ? 0.96 : 1.0
+                    border.color: braveMouse.containsMouse ? Glass.ice : Glass.rim
+                    scale: braveMouse.pressed ? 0.94 : (braveMouse.containsMouse ? 1.03 : 1.0)
 
                     Behavior on scale {
                         Anim {
@@ -201,15 +290,18 @@ ModularCard {
                         }
                     }
 
-                    HoverHandler {
-                        id: braveHover
-                    }
-
                     MouseArea {
                         id: braveMouse
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: Quickshell.execDetached(["distrobox-host-exec", "gtk-launch", "brave-browser"])
+                        onClicked: {
+                            if (searchField.text.trim().length > 0) {
+                                searchField.accepted();
+                            } else {
+                                Quickshell.execDetached(["distrobox-host-exec", "brave-browser"]);
+                            }
+                        }
                     }
                 }
             }
@@ -234,10 +326,10 @@ ModularCard {
                 implicitWidth: 34
                 implicitHeight: 34
                 radius: Tokens.rounding.medium
-                color: notifBellMouse.pressed ? Glass.frostHigh : (notifBellHover.hovered ? Glass.frostHigh : Glass.frost)
+                color: notifBellMouse.pressed ? Glass.frostHigh : (notifBellMouse.containsMouse ? Glass.frostHigh : Glass.frost)
                 border.width: 1
-                border.color: notifVis ? Glass.ice : Glass.rim
-                scale: notifBellMouse.pressed ? 0.96 : 1.0
+                border.color: notifVis || notifBellMouse.containsMouse ? Glass.ice : Glass.rim
+                scale: notifBellMouse.pressed ? 0.94 : (notifBellMouse.containsMouse ? 1.05 : 1.0)
 
                 Behavior on scale {
                     Anim {
@@ -263,13 +355,10 @@ ModularCard {
                     fontStyle: Tokens.font.icon.small
                 }
 
-                HoverHandler {
-                    id: notifBellHover
-                }
-
                 MouseArea {
                     id: notifBellMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: DashboardState.setCardVisible("notifications", !notifBell.notifVis)
                 }
@@ -282,10 +371,10 @@ ModularCard {
                 implicitWidth: lockContent.implicitWidth + 20
                 implicitHeight: 34
                 radius: Tokens.rounding.full
-                color: !DashboardState.isLocked ? Glass.ice : (lockMouse.pressed ? Glass.frostHigh : (lockHover.hovered ? Glass.frostHigh : Glass.frost))
+                color: !DashboardState.isLocked ? Glass.ice : (lockMouse.pressed ? Glass.frostHigh : (lockMouse.containsMouse ? Glass.frostHigh : Glass.frost))
                 border.width: 1
-                border.color: !DashboardState.isLocked ? Glass.ice : Glass.rim
-                scale: lockMouse.pressed ? 0.96 : 1.0
+                border.color: !DashboardState.isLocked || lockMouse.containsMouse ? Glass.ice : Glass.rim
+                scale: lockMouse.pressed ? 0.94 : (lockMouse.containsMouse ? 1.04 : 1.0)
 
                 Behavior on scale {
                     Anim {
@@ -324,13 +413,10 @@ ModularCard {
                     }
                 }
 
-                HoverHandler {
-                    id: lockHover
-                }
-
                 MouseArea {
                     id: lockMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: DashboardState.toggleLock()
                 }

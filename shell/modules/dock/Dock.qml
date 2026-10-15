@@ -600,8 +600,11 @@ Scope {
         screen: Quickshell.screens[0]
         name: "dock-dashboard"
 
-        WlrLayershell.layer: !DashboardState.isLocked ? WlrLayer.Top : WlrLayer.Bottom
+        readonly property bool isSearchActive: !!dashboard.commandBarCard?.searchFocused
+
+        WlrLayershell.layer: (!DashboardState.isLocked || isSearchActive) ? WlrLayer.Top : WlrLayer.Bottom
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.keyboardFocus: isSearchActive ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
 
         anchors.top: true
         anchors.bottom: true
@@ -626,7 +629,7 @@ Scope {
             height: dashboardWin.height
         }
 
-        mask: !dashboardWin.shown ? emptyRegion : (!DashboardState.isLocked ? fullRegion : cardMasks)
+        mask: !dashboardWin.shown ? emptyRegion : (!DashboardState.isLocked || isSearchActive ? fullRegion : cardMasks)
 
         Region {
             id: cardMasks
@@ -637,8 +640,22 @@ Scope {
             Region { item: dashboard.mailCard?.surface }
         }
 
+        // Tap outside when search is active to unfocus
+        MouseArea {
+            id: searchOutsideDismiss
+            anchors.fill: parent
+            enabled: dashboardWin.isSearchActive
+            z: 0
+            onClicked: {
+                if (dashboard.commandBarCard) {
+                    dashboard.commandBarCard.unfocusSearch();
+                }
+            }
+        }
+
         DockDashboard {
             id: dashboard
+            z: 1
 
             opacity: dashboardWin.shown ? 1.0 : 0.0
             visible: opacity > 0

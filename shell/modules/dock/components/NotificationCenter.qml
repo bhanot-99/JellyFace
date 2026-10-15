@@ -99,23 +99,28 @@ ModularCard {
                 implicitHeight: 26
                 radius: Tokens.rounding.small
                 visible: root.hasNotifs
-                color: clearHover.hovered ? Glass.frostHigh : Glass.frost
+                color: clearMouse.pressed ? Glass.frostHigh : (clearMouse.containsMouse ? Glass.frostHigh : Glass.frost)
                 border.width: 1
-                border.color: Glass.rim
+                border.color: clearMouse.containsMouse ? Glass.ice : Glass.rim
+                scale: clearMouse.pressed ? 0.92 : (clearMouse.containsMouse ? 1.05 : 1.0)
+
+                Behavior on scale {
+                    Anim {
+                        type: Anim.FastSpatial
+                    }
+                }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "clear_all"
-                    color: Glass.ice
+                    color: clearMouse.containsMouse ? Glass.ice : Glass.haze
                     fontStyle: Tokens.font.icon.small
                 }
 
-                HoverHandler {
-                    id: clearHover
-                }
-
                 MouseArea {
+                    id: clearMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         for (let i = 0; i < Notifs.notClosed.length; i++) {

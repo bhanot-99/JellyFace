@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls as Controls
 import Quickshell
 import Jellyface.Config
 import Jellyface.I18n
@@ -18,17 +19,24 @@ ModularCard {
     minW: 320
     minH: 180
     canResize: true
-    contentPadding: 16
+    contentPadding: 14
+
+    function cleanLine(str: var): string {
+        if (!str) return "";
+        return ("" + str).replace(/[\r\n\t]+/g, " ").replace(/\s{2,}/g, " ").trim();
+    }
 
     ColumnLayout {
         anchors.fill: parent
         spacing: 10
 
-        // Header
+        // 1. Header (Fixed Height)
         RowLayout {
             Layout.fillWidth: true
+            Layout.preferredHeight: 32
             spacing: 8
 
+            // Card / Mail Icon
             Rectangle {
                 implicitWidth: 26
                 implicitHeight: 26
@@ -81,15 +89,19 @@ ModularCard {
                 }
             }
 
-            // Tactile Refresh Button
+            // Tactile Refresh / Gmail Sync Button
             Rectangle {
+                id: refreshBtn
                 implicitWidth: 26
                 implicitHeight: 26
+                Layout.preferredWidth: 26
+                Layout.preferredHeight: 26
+                z: 20
                 radius: Tokens.rounding.small
-                color: refreshMouse.pressed ? Glass.frostHigh : (refreshHover.hovered ? Glass.frostHigh : Glass.frost)
+                color: refreshMouse.pressed ? Glass.frostHigh : (refreshMouse.containsMouse ? Glass.frostHigh : Glass.frost)
                 border.width: 1
-                border.color: Glass.rim
-                scale: refreshMouse.pressed ? 0.94 : 1.0
+                border.color: refreshMouse.containsMouse || MailService.isSyncing ? Glass.ice : Glass.rim
+                scale: refreshMouse.pressed ? 0.92 : (refreshMouse.containsMouse ? 1.05 : 1.0)
 
                 Behavior on scale {
                     Anim {
@@ -97,163 +109,271 @@ ModularCard {
                     }
                 }
 
-                MaterialIcon {
-                    anchors.centerIn: parent
-                    text: "refresh"
-                    color: Glass.ice
-                    fontStyle: Tokens.font.icon.small
+                Behavior on border.color {
+                    CAnim {
+                        duration: 150
+                    }
                 }
 
-                HoverHandler {
-                    id: refreshHover
+                Behavior on color {
+                    CAnim {
+                        duration: 150
+                    }
+                }
+
+                MaterialIcon {
+                    id: refreshIcon
+                    anchors.centerIn: parent
+                    text: "refresh"
+                    color: MailService.isSyncing ? Glass.ice : (refreshMouse.containsMouse ? Glass.ice : Glass.haze)
+                    fontStyle: Tokens.font.icon.small
+
+                    RotationAnimation on rotation {
+                        running: MailService.isSyncing
+                        loops: Animation.Infinite
+                        from: 0
+                        to: 360
+                        duration: 750
+                    }
                 }
 
                 MouseArea {
                     id: refreshMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: MailService.refresh()
+                    preventStealing: true
+                    onClicked: {
+                        console.info("MailFeed: Refresh button clicked!");
+                        MailService.refresh();
+                    }
                 }
             }
         }
 
-        // Body: Scrollable Email List with Segmented Tactile Cards
-        Item {
+        // 2. Scrollable Dynamic Feed (Fills all remaining height)
+        ListView {
+            id: mailListView
             Layout.fillWidth: true
             Layout.fillHeight: true
+            clip: true
+            spacing: 8
+            boundsBehavior: Flickable.StopAtBounds
 
-            ListView {
+            Controls.ScrollBar.vertical: Controls.ScrollBar {
+                id: vbar
+                policy: Controls.ScrollBar.AsNeeded
+                width: 4
+
+                contentItem: Rectangle {
+                    implicitWidth: 4
+                    radius: 2
+                    color: Glass.ice
+                    opacity: vbar.pressed ? 0.65 : (vbar.hovered ? 0.45 : 0.25)
+                    Behavior on opacity {
+                        NumberAnimation {
+                            duration: 150
+                        }
+                    }
+                }
+            }
+
+            model: MailService.emails
+
+            // Empty State Placeholder
+            Item {
                 anchors.fill: parent
-                model: MailService.emails
-                clip: true
-                spacing: 6
+                visible: MailService.emails.length === 0
 
-                delegate: Rectangle {
-                    id: mailItem
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 6
 
-                    required property var modelData
-                    readonly property var m: modelData
+                    MaterialIcon {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: "mark_email_read"
+                        color: Glass.haze
+                        fontStyle: Tokens.font.icon.medium
+                    }
 
-                    width: ListView.view.width
-                    implicitHeight: 48
-                    radius: Tokens.rounding.medium
-                    color: mailHover.hovered ? Glass.frostHigh : (mailItem.m?.unread ? Glass.frost : Glass.mistHigh)
-                    border.width: 1
-                    border.color: mailHover.hovered ? Glass.ice : (mailItem.m?.unread ? Qt.rgba(1, 1, 1, 0.30) : Glass.rim)
+                    StyledText {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: Tr.tr("No Recent Emails")
+                        font: Tokens.font.label.medium
+                        color: Glass.haze
+                    }
+                }
+            }
 
-                    // Top-lit bevel specular hairline
+            delegate: Rectangle {
+                id: mailItem
+
+                required property var modelData
+                readonly property var m: modelData
+
+                width: ListView.view.width
+                implicitHeight: Math.max(52, mailContentRow.implicitHeight + 16)
+                radius: Tokens.rounding.medium
+                color: mailMouse.containsMouse ? Glass.frostHigh : (mailItem.m?.unread ? Glass.frost : Glass.mistHigh)
+                border.width: 1
+                border.color: mailMouse.containsMouse ? Glass.ice : (mailItem.m?.unread ? Qt.rgba(1, 1, 1, 0.30) : Glass.rim)
+
+                Behavior on color {
+                    CAnim {
+                        duration: 150
+                    }
+                }
+                Behavior on border.color {
+                    CAnim {
+                        duration: 150
+                    }
+                }
+
+                // Top-lit bevel specular hairline
+                Rectangle {
+                    anchors.top: parent.top
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: parent.radius
+                    anchors.rightMargin: parent.radius
+                    height: 1
+                    color: Glass.ice
+                    opacity: 0.35
+                }
+
+                MouseArea {
+                    id: mailMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        if (mailItem.m?.id)
+                            MailService.markRead(mailItem.m.id);
+                        MailService.openGmail();
+                    }
+                }
+
+                RowLayout {
+                    id: mailContentRow
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 10
+
+                    // Recessed Avatar Well
                     Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: parent.radius
-                        anchors.rightMargin: parent.radius
-                        height: 1
-                        color: Glass.ice
-                        opacity: 0.35
-                    }
+                        implicitWidth: 32
+                        implicitHeight: 32
+                        Layout.alignment: Qt.AlignVCenter
+                        radius: Tokens.rounding.small
+                        color: mailItem.m?.unread ? Glass.frost : Glass.well
+                        border.width: 1
+                        border.color: Glass.rim
 
-                    HoverHandler {
-                        id: mailHover
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (mailItem.m?.id)
-                                MailService.markRead(mailItem.m.id);
-                            MailService.openGmail();
-                        }
-                    }
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 10
-
-                        // Recessed Avatar Well
-                        Rectangle {
-                            implicitWidth: 32
-                            implicitHeight: 32
-                            radius: Tokens.rounding.small
-                            color: mailItem.m?.unread ? Glass.frost : Glass.well
-                            border.width: 1
-                            border.color: Glass.rim
-
-                            StyledText {
-                                anchors.centerIn: parent
-                                text: (mailItem.m?.sender ?? "M").charAt(0).toUpperCase()
-                                font: Tokens.font.label.small
-                                color: Glass.ice
-                            }
-                        }
-
-                        // Mail Info
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 1
-
-                            RowLayout {
-                                spacing: 4
-
-                                StyledText {
-                                    text: mailItem.m?.sender || "Sender"
-                                    font: mailItem.m?.unread ? Tokens.font.body.builders.small.weight(Font.DemiBold).build() : Tokens.font.label.small
-                                    color: Glass.ice
-                                    elide: Text.ElideRight
-                                    Layout.fillWidth: true
-                                }
-
-                                StyledText {
-                                    text: mailItem.m?.time || ""
-                                    font: Tokens.font.label.small
-                                    color: Glass.haze
-                                }
-                            }
-
-                            StyledText {
-                                Layout.fillWidth: true
-                                text: mailItem.m?.subject || ""
-                                font: Tokens.font.label.small
-                                color: mailItem.m?.unread ? Glass.ice : Glass.haze
-                                elide: Text.ElideRight
-                            }
-                        }
-
-                        // Glowing Unread Dot
-                        Rectangle {
-                            implicitWidth: 6
-                            implicitHeight: 6
-                            radius: 3
+                        StyledText {
+                            anchors.centerIn: parent
+                            text: (mailItem.m?.sender ?? "M").charAt(0).toUpperCase()
+                            font: Tokens.font.label.small
                             color: Glass.ice
-                            visible: mailItem.m?.unread ?? false
                         }
+                    }
+
+                    // Mail Info Column
+                    ColumnLayout {
+                        id: mailContentColumn
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: 2
+
+                        // Top Row: Sender (left) & Timestamp (right)
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+
+                            StyledText {
+                                text: root.cleanLine(mailItem.m?.sender || "Sender")
+                                font: mailItem.m?.unread ? Tokens.font.body.builders.small.weight(Font.DemiBold).build() : Tokens.font.label.small
+                                color: Glass.ice
+                                elide: Text.ElideRight
+                                maximumLineCount: 1
+                                Layout.fillWidth: true
+                            }
+
+                            StyledText {
+                                text: mailItem.m?.time || ""
+                                font: Tokens.font.label.small
+                                color: Glass.haze
+                                Layout.alignment: Qt.AlignRight
+                            }
+                        }
+
+                        // Middle Row: Subject
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: root.cleanLine(mailItem.m?.subject || "(No Subject)")
+                            font: Tokens.font.label.small
+                            color: mailItem.m?.unread ? Glass.ice : Glass.haze
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+
+                        // Snippet line (shows preview if different from subject)
+                        StyledText {
+                            id: snippetText
+                            Layout.fillWidth: true
+                            text: root.cleanLine(mailItem.m?.preview || "")
+                            visible: text.length > 0 && text !== root.cleanLine(mailItem.m?.subject || "")
+                            font.pixelSize: 11
+                            color: Glass.haze
+                            opacity: 0.75
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+                    }
+
+                    // Glowing Unread Dot
+                    Rectangle {
+                        implicitWidth: 6
+                        implicitHeight: 6
+                        radius: 3
+                        color: Glass.ice
+                        visible: mailItem.m?.unread ?? false
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.rightMargin: 2
                     }
                 }
             }
         }
 
-        // Fixed Footer Action Launchers: Tactile Pill Bevels (Glass.frost + scale 0.96)
+        // 3. Footer Action Keys (Fixed Height, Stays Pinned to Bottom)
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 32
-            spacing: 8
+            Layout.preferredHeight: 38
+            spacing: 10
 
             // Open in Brave (Gmail) Tactile Pill Button
             Rectangle {
                 id: gmailBtn
                 Layout.fillWidth: true
-                implicitHeight: 32
+                implicitHeight: 36
                 radius: Tokens.rounding.full
-                color: gmailMouse.pressed ? Glass.frostHigh : (gmailHover.hovered ? Glass.frostHigh : Glass.frost)
+                color: gmailMouse.pressed ? Glass.frostHigh : (gmailMouse.containsMouse ? Glass.frostHigh : Glass.frost)
                 border.width: 1
-                border.color: Glass.rim
-                scale: gmailMouse.pressed ? 0.96 : 1.0
+                border.color: gmailMouse.containsMouse ? Glass.ice : Glass.rim
+                scale: gmailMouse.pressed ? 0.96 : (gmailMouse.containsMouse ? 1.02 : 1.0)
 
                 Behavior on scale {
                     Anim {
                         type: Anim.FastSpatial
+                    }
+                }
+                Behavior on border.color {
+                    CAnim {
+                        duration: 150
+                    }
+                }
+                Behavior on color {
+                    CAnim {
+                        duration: 150
                     }
                 }
 
@@ -271,7 +391,7 @@ ModularCard {
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 5
+                    spacing: 6
 
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
@@ -288,13 +408,10 @@ ModularCard {
                     }
                 }
 
-                HoverHandler {
-                    id: gmailHover
-                }
-
                 MouseArea {
                     id: gmailMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: MailService.openGmail()
                 }
@@ -304,16 +421,26 @@ ModularCard {
             Rectangle {
                 id: tbBtn
                 Layout.fillWidth: true
-                implicitHeight: 32
+                implicitHeight: 36
                 radius: Tokens.rounding.full
-                color: tbMouse.pressed ? Glass.frostHigh : (tbHover.hovered ? Glass.frostHigh : Glass.frost)
+                color: tbMouse.pressed ? Glass.frostHigh : (tbMouse.containsMouse ? Glass.frostHigh : Glass.frost)
                 border.width: 1
-                border.color: Glass.rim
-                scale: tbMouse.pressed ? 0.96 : 1.0
+                border.color: tbMouse.containsMouse ? Glass.ice : Glass.rim
+                scale: tbMouse.pressed ? 0.96 : (tbMouse.containsMouse ? 1.02 : 1.0)
 
                 Behavior on scale {
                     Anim {
                         type: Anim.FastSpatial
+                    }
+                }
+                Behavior on border.color {
+                    CAnim {
+                        duration: 150
+                    }
+                }
+                Behavior on color {
+                    CAnim {
+                        duration: 150
                     }
                 }
 
@@ -331,7 +458,7 @@ ModularCard {
 
                 Row {
                     anchors.centerIn: parent
-                    spacing: 5
+                    spacing: 6
 
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
@@ -348,13 +475,10 @@ ModularCard {
                     }
                 }
 
-                HoverHandler {
-                    id: tbHover
-                }
-
                 MouseArea {
                     id: tbMouse
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: MailService.openClient("thunderbird")
                 }

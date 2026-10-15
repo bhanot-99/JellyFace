@@ -135,7 +135,7 @@ Item {
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton
             cursorShape: root.isDragging ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-            preventStealing: true
+            propagateComposedEvents: true
             z: 2
 
             drag.target: root
@@ -144,17 +144,19 @@ Item {
             drag.minimumY: 0
             drag.maximumX: root.parent ? Math.max(0, root.parent.width - root.width) : 3840
             drag.maximumY: root.parent ? Math.max(0, root.parent.height - root.height) : 2160
-            drag.threshold: 0
+            drag.threshold: 8
 
-            onPressed: {
-                root.isDragging = true;
+            onPressed: mouse => {
+                mouse.accepted = false; // Allow children to handle clicks first
             }
 
             onReleased: {
-                root.isDragging = false;
-                root.x = Math.round(root.x / 16) * 16;
-                root.y = Math.round(root.y / 16) * 16;
-                DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
+                if (root.isDragging) {
+                    root.isDragging = false;
+                    root.x = Math.round(root.x / 16) * 16;
+                    root.y = Math.round(root.y / 16) * 16;
+                    DashboardState.setCardGeometry(root.cardId, root.x, root.y, root.width, root.height);
+                }
             }
 
             onCanceled: {

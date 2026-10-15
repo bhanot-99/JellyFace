@@ -38,11 +38,14 @@ DEFAULT_EMAIL = "bhanot1054@gmail.com"
 
 
 def write_private_json(path, data):
-    """Atomically write JSON data with 0600 file permissions."""
+    """Write JSON data atomically with 0600 file permissions."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
-    with os.fdopen(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w", encoding="utf-8") as f:
+    with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+        f.flush()
+        os.fsync(f.fileno())
+    os.chmod(tmp, 0o600)
     os.replace(tmp, path)
 
 
@@ -393,6 +396,7 @@ def refresh():
     save_state(state)
     unread_count = sum(1 for m in emails if m.get("unread"))
     print(f"[mail] Successfully synced {len(emails)} emails ({unread_count} unread) from {account}")
+    print("__JELLYFACE_MAIL_JSON__" + json.dumps(state, ensure_ascii=False))
 
 
 def mark_read(mail_id):
