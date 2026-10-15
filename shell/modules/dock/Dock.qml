@@ -240,7 +240,6 @@ Scope {
             Region { item: dashboard.mediaToolsCard }
             Region { item: dashboard.profileCard }
             Region { item: dashboard.systemMonitorCard }
-            Region { item: dashboard.activeTasksCard }
             Region { item: dashboard.notifCard }
             Region { item: dashboard.mailCard }
         }
@@ -256,7 +255,6 @@ Scope {
             GlassRegion { pane: dashboard.mediaToolsCard }
             GlassRegion { pane: dashboard.profileCard }
             GlassRegion { pane: dashboard.systemMonitorCard }
-            GlassRegion { pane: dashboard.activeTasksCard }
             GlassRegion { pane: dashboard.notifCard }
             GlassRegion { pane: dashboard.mailCard }
         }

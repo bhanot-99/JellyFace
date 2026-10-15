@@ -11,7 +11,7 @@ import "components"
 
 // Decoupled Desktop Widget Ecosystem Canvas:
 // Master outer container eliminated. Acts as an unconstrained transparent desktop canvas
-// hosting 9 autonomous floating modular cards with freeform drag/drop, interactive resizing,
+// hosting 8 autonomous floating modular cards with freeform drag/drop, interactive resizing,
 // coordinate persistence, and global edit/lock mode.
 Item {
     id: root
@@ -30,7 +30,6 @@ Item {
     readonly property alias mediaToolsCard: mediaTools
     readonly property alias profileCard: profile
     readonly property alias systemMonitorCard: systemMonitor
-    readonly property alias activeTasksCard: activeTasks
     readonly property alias notifCard: notifCard
     readonly property alias mailCard: mail
 
@@ -94,18 +93,7 @@ Item {
         z: 5
     }
 
-    // 6. ActiveTasksCard Module (Open Windows Taskbar)
-    ActiveTasksCard {
-        id: activeTasks
-
-        defaultX: root.cx - 520
-        defaultY: root.baseTop + 536
-        defaultW: 640
-        defaultH: 54
-        z: 5
-    }
-
-    // 7. ProfileStatusCard Module (Avatar, Host, Distro, Uptime)
+    // 6. ProfileStatusCard Module (Avatar, Host, Distro, Uptime)
     ProfileStatusCard {
         id: profile
 
@@ -116,7 +104,7 @@ Item {
         z: 5
     }
 
-    // 8. NotificationCenter Module (Live Notifications Feed)
+    // 7. NotificationCenter Module (Live Notifications Feed)
     NotificationCenter {
         id: notifCard
 
@@ -127,7 +115,7 @@ Item {
         z: 5
     }
 
-    // 9. MailFeed Module (Primary Mails Feed & Client Launchers)
+    // 8. MailFeed Module (Primary Mails Feed & Client Launchers)
     MailFeed {
         id: mail
 
