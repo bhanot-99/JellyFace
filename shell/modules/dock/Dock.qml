@@ -10,10 +10,13 @@ import qs.components
 import qs.components.containers
 import qs.services
 import qs.utils
+import "."
 
-// JellyFace Modular Desktop Widget Ecosystem:
-// Independent floating windows/cards on WlrLayer.Bottom with freeform drag/drop,
-// corner resizing, snap-to-grid, canvas persistence, and global edit/lock mode.
+// JellyFace Dock & Desktop Widget Ecosystem:
+// 1. Original Bottom Dock: Glass capsule at the bottom centre of the screen with auto-hide,
+//    hover magnification, drag-to-reorder, and running window indicators.
+// 2. Desktop Dashboard: Clean 2-column modular widgets (CommandBar, System Monitor, Notifications, Mail)
+//    anchored to the desktop wallpaper on WlrLayer.Bottom.
 Scope {
     id: root
 
@@ -172,7 +175,7 @@ Scope {
         if (item) {
             const p = item.mapToItem(win.contentItem, item.width / 2, 0);
             const s = win.screen;
-            popupAnchor = Qt.point((s.width - win.width) / 2 + p.x, (s.height - win.height) / 2 + p.y);
+            popupAnchor = Qt.point((s.width - win.width) / 2 + p.x, s.height - win.margins.bottom - win.height + p.y);
         }
         popup = kind;
     }
@@ -192,13 +195,411 @@ Scope {
         dock: root
     }
 
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 1. Original Bottom Dock Window (Floating Glass Capsule)
+    // ─────────────────────────────────────────────────────────────────────────────
     StyledWindow {
         id: win
 
         screen: Quickshell.screens[0]
+        name: "dock"
+        WlrLayershell.layer: JellyPanel.open ? WlrLayer.Overlay : WlrLayer.Top
+        WlrLayershell.exclusionMode: ExclusionMode.Ignore
+
+        anchors.bottom: true
+        margins.bottom: Math.max(contentItem.Tokens.padding.small, contentItem.Config.border.thickness) + contentItem.Tokens.padding.extraLargeIncreased
+
+        implicitWidth: panel.fullWidth
+        implicitHeight: panel.fullHeight + panel.lift
+        mask: Region {
+            item: panel
+        }
+
+        BackgroundEffect.blurRegion: Glass.enabled ? dockBlur : null
+
+        Region {
+            id: dockBlur
+
+            GlassRegion {
+                pane: tip
+            }
+        }
+
+        readonly property rect dockRect: Qt.rect(((screen?.width ?? 1920) - panel.fullWidth) / 2, (screen?.height ?? 1080) - margins.bottom - panel.fullHeight, panel.fullWidth, panel.fullHeight)
+        readonly property bool covered: CosmicWindows.fullscreen || CosmicWindows.windows.some(w => w.workspace_active && !w.minimized && w.w > 0 && w.x < dockRect.x + dockRect.width && w.x + w.w > dockRect.x && w.y < dockRect.y + dockRect.height && w.y + w.h > dockRect.y)
+        readonly property bool wanted: JellyPanel.open || !covered || hover.hovered || DockReveal.edge || root.popup !== "" || root.dragging
+        property bool shown: true
+
+        Component.onCompleted: if (!wanted) hideTimer.restart()
+        onWantedChanged: {
+            if (wanted) {
+                hideTimer.stop();
+                shown = true;
+            } else {
+                hideTimer.restart();
+            }
+        }
+
+        Timer {
+            id: hideTimer
+
+            interval: 450
+            onTriggered: win.shown = win.wanted
+        }
+
+        Binding {
+            target: DockReveal
+            property: "left"
+            value: win.dockRect.x
+        }
+
+        Binding {
+            target: DockReveal
+            property: "right"
+            value: win.dockRect.x + win.dockRect.width
+        }
+
+        StyledRect {
+            id: tip
+
+            readonly property bool wanted: panel.tipLabel !== "" && win.shown && !root.dragging && root.popup === ""
+            property bool showing
+
+            onWantedChanged: {
+                if (wanted) {
+                    tipTimer.restart();
+                } else {
+                    tipTimer.stop();
+                    showing = false;
+                }
+            }
+
+            x: Math.max(0, Math.min(win.width - width, panel.tipX - width / 2))
+            y: panel.y - height - 14
+            implicitWidth: tipText.implicitWidth + Tokens.padding.large * 2
+            implicitHeight: tipText.implicitHeight + Tokens.padding.small * 2
+            radius: Tokens.rounding.full
+            color: Glass.enabled ? Glass.sheet : Colours.palette.m3surfaceContainerHigh
+            opacity: showing ? 1 : 0
+            visible: opacity > 0
+
+            Behavior on opacity {
+                Anim {
+                    duration: 120
+                }
+            }
+            Behavior on x {
+                enabled: tip.showing
+                Anim {
+                    duration: 160
+                }
+            }
+
+            Timer {
+                id: tipTimer
+
+                interval: 350
+                onTriggered: tip.showing = true
+            }
+
+            StyledText {
+                id: tipText
+
+                anchors.centerIn: parent
+                text: panel.tipLabel
+                color: Colours.palette.m3onSurface
+                font: Tokens.font.body.small
+            }
+        }
+
+        StyledRect {
+            id: panel
+
+            readonly property real gap: 2
+            readonly property real pad: 6
+            readonly property real iconPt: Tokens.font.icon.large.pointSize * 1.25
+            readonly property real growth: (iconPt - Tokens.font.icon.large.pointSize) * 4 / 3
+            readonly property real tileH: 56 + growth
+            readonly property real lift: 56
+            property string tipLabel
+            property real tipX
+            readonly property int slots: Math.max(root.count, 1)
+            readonly property real tileW: Math.max(40, Math.min(68 + growth, Math.floor(((win.screen?.width ?? 1920) * 0.9 - pad * 2 - (slots - 1) * gap) / slots)))
+            readonly property real fullWidth: slots * tileW + (slots - 1) * gap + pad * 2
+            readonly property real fullHeight: tileH + pad * 2
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: win.shown ? 0 : -(fullHeight + win.margins.bottom + 8)
+            opacity: win.shown ? 1 : 0
+
+            Behavior on anchors.bottomMargin {
+                Anim {
+                    type: Anim.DefaultSpatial
+                }
+            }
+            Behavior on opacity {
+                Anim {}
+            }
+
+            color: "transparent"
+            radius: fullHeight / 2
+            implicitWidth: fullWidth
+            implicitHeight: fullHeight
+
+            Behavior on implicitWidth {
+                Anim {
+                    type: Anim.DefaultSpatial
+                }
+            }
+            Behavior on implicitHeight {
+                Anim {
+                    type: Anim.DefaultSpatial
+                }
+            }
+
+            HoverHandler {
+                id: hover
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                onClicked: mouse => root.openPopup("dock", -1, panel)
+            }
+
+            ListView {
+                id: row
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: panel.pad
+                width: panel.fullWidth - panel.pad * 2
+                height: panel.tileH
+                orientation: ListView.Horizontal
+                spacing: panel.gap
+                interactive: false
+                model: root.apps
+
+                move: Transition {
+                    Anim {
+                        property: "x"
+                        type: Anim.DefaultSpatial
+                    }
+                }
+
+                moveDisplaced: Transition {
+                    Anim {
+                        property: "x"
+                        type: Anim.DefaultSpatial
+                    }
+                }
+
+                addDisplaced: moveDisplaced
+                removeDisplaced: moveDisplaced
+                add: Transition {
+                    Anim {
+                        property: "scale"
+                        from: 0.4
+                        to: 1
+                        type: Anim.DefaultSpatial
+                    }
+                }
+
+                delegate: Tile {}
+            }
+
+            Item {
+                id: dragLayer
+
+                anchors.fill: row
+                z: 10
+            }
+        }
+    }
+
+    component Tile: Item {
+        id: slot
+
+        required property int index
+        required property string json
+        readonly property var app: JSON.parse(json)
+        readonly property var entry: app?.id ? DesktopEntries.heuristicLookup(app.id) : null
+        readonly property var windows: root.windowsOf(app)
+        readonly property bool running: windows.length > 0
+        readonly property bool focused: windows.some(w => w.id === CosmicWindows.activeId)
+        readonly property string label: app?.name ?? entry?.name ?? app?.id ?? ""
+        readonly property string symbol: app?.symbol || root.symbolFor(`${app?.name ?? ""} ${app?.match ?? ""} ${app?.id ?? ""} ${entry?.name ?? ""}`) || Icons.getAppCategoryIcon(app?.id ?? "", "apps")
+
+        readonly property string iconSource: {
+            const i = app?.icon || entry?.icon || app?.id || "";
+            if (i.startsWith("/"))
+                return `file://${i}`;
+            if (i.includes("/"))
+                return `file://${Quickshell.shellPath(`../${i}`)}`;
+            return Quickshell.iconPath(i, true) || `file://${Paths.home}/.local/share/flatpak/exports/share/icons/hicolor/256x256/apps/${i}.png` || Quickshell.iconPath("application-x-executable");
+        }
+
+        width: panel.tileW
+        height: panel.tileH
+
+        MouseArea {
+            id: area
+
+            property bool held
+            property bool dragged
+            property real pressX
+            property real grabOffset
+
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            cursorShape: held ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+            onContainsMouseChanged: {
+                if (containsMouse) {
+                    panel.tipLabel = slot.label;
+                    panel.tipX = slot.mapToItem(win.contentItem, slot.width / 2, 0).x;
+                } else if (panel.tipLabel === slot.label) {
+                    panel.tipLabel = "";
+                }
+            }
+
+            onPressed: mouse => {
+                pressX = mapToItem(dragLayer, mouse.x, 0).x;
+                grabOffset = mouse.x;
+                dragged = false;
+            }
+            onPositionChanged: mouse => {
+                if (!(pressedButtons & Qt.LeftButton))
+                    return;
+                const px = mapToItem(dragLayer, mouse.x, 0).x;
+                if (!held && Math.abs(px - pressX) > 8) {
+                    held = true;
+                    dragged = true;
+                    root.dragging = true;
+                }
+                if (held) {
+                    content.x = Math.max(-panel.tileW / 2, Math.min(dragLayer.width - panel.tileW / 2, px - grabOffset));
+                    const to = Math.max(0, Math.min(root.count - 1, Math.floor((content.x + panel.tileW / 2) / (panel.tileW + panel.gap))));
+                    if (to !== slot.index)
+                        root.apps.move(slot.index, to, 1);
+                }
+            }
+            onReleased: mouse => {
+                if (held) {
+                    held = false;
+                    root.dragging = false;
+                    root.save();
+                }
+            }
+            onCanceled: {
+                held = false;
+                root.dragging = false;
+            }
+            onClicked: mouse => {
+                if (dragged)
+                    return;
+                if (mouse.button === Qt.RightButton)
+                    root.openPopup("app", slot.index, slot);
+                else
+                    root.open(slot.app);
+            }
+        }
+
+        Item {
+            id: content
+
+            width: panel.tileW
+            height: panel.tileH
+
+            states: State {
+                when: area.held
+
+                ParentChange {
+                    target: content
+                    parent: dragLayer
+                }
+            }
+
+            transitions: Transition {
+                ParentAnimation {
+                    NumberAnimation {
+                        properties: "x,y"
+                        duration: 200
+                        easing.type: Easing.OutCubic
+                    }
+                }
+            }
+
+            ClippingRectangle {
+                id: icon
+
+                readonly property real base: panel.tileH - 6
+                readonly property bool badge: !!slot.app?.bg
+                anchors.horizontalCenter: parent.horizontalCenter
+                y: (parent.height - height) / 2 - lift
+                property real lift: area.held ? 10 : area.pressed ? 0 : area.containsMouse ? 8 : 0
+                width: base
+                height: base
+                radius: badge ? base / 2 : 0
+                color: badge ? slot.app.bg : "transparent"
+                transformOrigin: Item.Bottom
+                scale: area.held ? 1.25 : area.pressed ? 0.92 : area.containsMouse ? 1.3 : 1
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 260
+                        easing.type: Easing.OutBack
+                        easing.overshoot: 2
+                    }
+                }
+                Behavior on lift {
+                    NumberAnimation {
+                        duration: 220
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                IconImage {
+                    anchors.centerIn: parent
+                    implicitSize: icon.base * (1 - 2 * (slot.app?.inset ?? 0))
+                    source: slot.iconSource
+                    asynchronous: true
+                }
+            }
+
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: 1
+                height: 4
+                width: slot.focused ? 14 : 4
+                radius: 2
+                color: Colours.palette.m3onSurface
+                opacity: slot.running ? (slot.focused ? 0.95 : 0.6) : 0
+
+                Behavior on width {
+                    Anim {
+                        duration: 160
+                    }
+                }
+                Behavior on opacity {
+                    Anim {
+                        duration: 160
+                    }
+                }
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // 2. Desktop Dashboard Widgets Window (Underlapped Modular Cards)
+    // ─────────────────────────────────────────────────────────────────────────────
+    StyledWindow {
+        id: dashboardWin
+
+        screen: Quickshell.screens[0]
         name: "dock-dashboard"
 
-        // Underlapped desktop surface when locked, elevated to Top in Edit Mode for fluid repositioning
         WlrLayershell.layer: !DashboardState.isLocked ? WlrLayer.Top : WlrLayer.Bottom
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
@@ -210,7 +611,6 @@ Scope {
         implicitWidth: screen?.width ?? 1920
         implicitHeight: screen?.height ?? 1080
 
-        // Visible only when workspace is clean (no unminimized windows on active workspace and no fullscreen)
         readonly property bool hasWindowsOnWorkspace: CosmicWindows.windows.some(w => w.workspace_active && !w.minimized)
         readonly property bool shown: !hasWindowsOnWorkspace && !CosmicWindows.fullscreen
 
@@ -222,38 +622,27 @@ Scope {
             id: fullRegion
             x: 0
             y: 0
-            width: win.width
-            height: win.height
+            width: dashboardWin.width
+            height: dashboardWin.height
         }
 
-        // Non-card canvas space is completely click-through to wallpaper/desktop when locked.
-        // In Edit Mode, fullRegion allows smooth dragging and resizing across the display.
-        // When hidden (apps active on workspace), emptyRegion ensures 100% click-through.
-        mask: !win.shown ? emptyRegion : (!DashboardState.isLocked ? fullRegion : cardMasks)
+        mask: !dashboardWin.shown ? emptyRegion : (!DashboardState.isLocked ? fullRegion : cardMasks)
 
         Region {
             id: cardMasks
 
             Region { item: dashboard.commandBarCard?.surface }
-            Region { item: dashboard.workDevCard?.surface }
-            Region { item: dashboard.aiWebCard?.surface }
-            Region { item: dashboard.mediaToolsCard?.surface }
-            Region { item: dashboard.profileCard?.surface }
             Region { item: dashboard.systemMonitorCard?.surface }
             Region { item: dashboard.notifCard?.surface }
             Region { item: dashboard.mailCard?.surface }
         }
 
-        BackgroundEffect.blurRegion: (Glass.enabled && win.shown) ? dockBlur : null
+        BackgroundEffect.blurRegion: (Glass.enabled && dashboardWin.shown) ? dashboardBlur : null
 
         Region {
-            id: dockBlur
+            id: dashboardBlur
 
             GlassRegion { pane: dashboard.commandBarCard?.surface }
-            GlassRegion { pane: dashboard.workDevCard?.surface }
-            GlassRegion { pane: dashboard.aiWebCard?.surface }
-            GlassRegion { pane: dashboard.mediaToolsCard?.surface }
-            GlassRegion { pane: dashboard.profileCard?.surface }
             GlassRegion { pane: dashboard.systemMonitorCard?.surface }
             GlassRegion { pane: dashboard.notifCard?.surface }
             GlassRegion { pane: dashboard.mailCard?.surface }
@@ -262,8 +651,7 @@ Scope {
         DockDashboard {
             id: dashboard
 
-            dock: root
-            opacity: win.shown ? 1.0 : 0.0
+            opacity: dashboardWin.shown ? 1.0 : 0.0
             visible: opacity > 0
 
             Behavior on opacity {
