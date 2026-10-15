@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import QtQuick.Effects
 import Jellyface.Config
 import qs.components
 import qs.services
@@ -93,14 +92,7 @@ Item {
             }
         }
 
-        // Soft Ambient Lift: Native Qt Quick MultiEffect
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.45)
-            blurMax: 15
-            shadowVerticalOffset: 8
-        }
+
 
         // Top-Lit 1px Specular Edge Highlight (Hairline)
         Rectangle {

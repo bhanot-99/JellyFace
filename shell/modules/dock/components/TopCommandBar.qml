@@ -97,17 +97,6 @@ ModularCard {
                 }
             }
 
-            // Top recessed inner shadow hairline
-            Rectangle {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 16
-                anchors.rightMargin: 16
-                height: 1
-                color: Qt.rgba(0, 0, 0, 0.40)
-            }
-
             HoverHandler {
                 id: searchHover
             }
