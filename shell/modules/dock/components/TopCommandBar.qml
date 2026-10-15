@@ -24,7 +24,7 @@ ModularCard {
         anchors.fill: parent
         spacing: 12
 
-        // 1. Left: Branding & Distro in Elevated Tactile Squircle
+        // 1. Left: Branding & Distro in Elevated Tactile Squircle (Glass.frost + Glass.rim)
         RowLayout {
             spacing: 8
             Layout.alignment: Qt.AlignVCenter
@@ -32,19 +32,10 @@ ModularCard {
             Rectangle {
                 implicitWidth: 34
                 implicitHeight: 34
-                radius: 12
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: "#444852"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: "#31343b"
-                    }
-                }
+                radius: Tokens.rounding.medium
+                color: Glass.frost
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.14)
+                border.color: Glass.rim
 
                 // Top-lit bevel specular hairline
                 Rectangle {
@@ -54,13 +45,14 @@ ModularCard {
                     anchors.leftMargin: parent.radius
                     anchors.rightMargin: parent.radius
                     height: 1
-                    color: Qt.rgba(1, 1, 1, 0.28)
+                    color: Glass.ice
+                    opacity: 0.35
                 }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "dashboard"
-                    color: "#FFFFFF"
+                    color: Glass.ice
                     fontStyle: Tokens.font.icon.small
                 }
             }
@@ -72,13 +64,13 @@ ModularCard {
                 StyledText {
                     text: Tr.tr("Workspace")
                     font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                    color: "#FFFFFF"
+                    color: Glass.ice
                 }
 
                 StyledText {
                     text: SysInfo.osPrettyName || "Pop!_OS 24.04"
                     font: Tokens.font.label.small
-                    color: "#9CA3AF"
+                    color: Glass.haze
                 }
             }
         }
@@ -88,25 +80,16 @@ ModularCard {
             Layout.maximumWidth: 16
         }
 
-        // 2. Center: Brave Direct Search Box as Recessed Inset Pill Well
+        // 2. Center: Brave Direct Search Box as Recessed Inset Pill Well (Glass.well + Glass.rim)
         Rectangle {
             id: searchBox
 
             Layout.fillWidth: true
             Layout.preferredHeight: 38
-            radius: 9999
-            gradient: Gradient {
-                GradientStop {
-                    position: 0.0
-                    color: "#1b1c20"
-                }
-                GradientStop {
-                    position: 1.0
-                    color: "#24262b"
-                }
-            }
+            radius: Tokens.rounding.full
+            color: Glass.well
             border.width: 1
-            border.color: searchField.activeFocus ? Qt.rgba(255, 255, 255, 0.35) : (searchHover.hovered ? Qt.rgba(255, 255, 255, 0.14) : Qt.rgba(255, 255, 255, 0.08))
+            border.color: searchField.activeFocus ? Glass.ice : (searchHover.hovered ? Qt.rgba(1, 1, 1, 0.30) : Glass.rim)
 
             Behavior on border.color {
                 CAnim {
@@ -122,18 +105,7 @@ ModularCard {
                 anchors.leftMargin: 16
                 anchors.rightMargin: 16
                 height: 1
-                color: Qt.rgba(0, 0, 0, 0.65)
-            }
-
-            // Bottom subtle bevel reflection
-            Rectangle {
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 16
-                anchors.rightMargin: 16
-                height: 1
-                color: Qt.rgba(255, 255, 255, 0.06)
+                color: Qt.rgba(0, 0, 0, 0.40)
             }
 
             HoverHandler {
@@ -148,7 +120,7 @@ ModularCard {
 
                 MaterialIcon {
                     text: "search"
-                    color: searchField.activeFocus ? "#FFFFFF" : "#9CA3AF"
+                    color: searchField.activeFocus ? Glass.ice : Glass.haze
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -159,15 +131,16 @@ ModularCard {
                     Layout.alignment: Qt.AlignVCenter
                     font.family: Tokens.font.body.medium.family
                     font.pixelSize: 13
-                    color: "#FFFFFF"
-                    selectedTextColor: "#FFFFFF"
-                    selectionColor: "#444852"
+                    color: Glass.ice
+                    selectedTextColor: Glass.ink
+                    selectionColor: Glass.ice
                     clip: true
 
                     Text {
                         anchors.fill: parent
                         text: Tr.tr("Search with Brave or enter URL...")
-                        color: "#71717A"
+                        color: Glass.haze
+                        opacity: 0.60
                         font: searchField.font
                         visible: !searchField.text && !searchField.activeFocus
                         verticalAlignment: Text.AlignVCenter
@@ -190,25 +163,23 @@ ModularCard {
                     }
                 }
 
-                // Elevated Tactile Brave Button
+                // Elevated Tactile Brave Button (Glass.frost + scale: 0.96 on press)
                 Rectangle {
                     id: braveLaunchBtn
 
                     implicitWidth: braveLabel.implicitWidth + 16
                     implicitHeight: 26
-                    radius: 9999
-                    gradient: Gradient {
-                        GradientStop {
-                            position: 0.0
-                            color: braveHover.hovered ? "#4f5460" : "#444852"
-                        }
-                        GradientStop {
-                            position: 1.0
-                            color: braveHover.hovered ? "#383b44" : "#31343b"
+                    radius: Tokens.rounding.full
+                    color: braveMouse.pressed ? Glass.frostHigh : (braveHover.hovered ? Glass.frostHigh : Glass.frost)
+                    border.width: 1
+                    border.color: Glass.rim
+                    scale: braveMouse.pressed ? 0.96 : 1.0
+
+                    Behavior on scale {
+                        Anim {
+                            type: Anim.FastSpatial
                         }
                     }
-                    border.width: 1
-                    border.color: braveHover.hovered ? Qt.rgba(255, 255, 255, 0.30) : Qt.rgba(255, 255, 255, 0.15)
 
                     Rectangle {
                         anchors.top: parent.top
@@ -217,7 +188,8 @@ ModularCard {
                         anchors.leftMargin: 8
                         anchors.rightMargin: 8
                         height: 1
-                        color: Qt.rgba(255, 255, 255, 0.28)
+                        color: Glass.ice
+                        opacity: 0.35
                     }
 
                     Row {
@@ -228,7 +200,7 @@ ModularCard {
                         MaterialIcon {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "travel_explore"
-                            color: "#FFFFFF"
+                            color: Glass.ice
                             fontStyle: Tokens.font.icon.small
                         }
 
@@ -236,7 +208,7 @@ ModularCard {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Brave"
                             font: Tokens.font.label.small
-                            color: "#FFFFFF"
+                            color: Glass.ice
                         }
                     }
 
@@ -245,6 +217,7 @@ ModularCard {
                     }
 
                     MouseArea {
+                        id: braveMouse
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: Quickshell.execDetached(["distrobox-host-exec", "gtk-launch", "brave-browser"])
@@ -263,7 +236,7 @@ ModularCard {
             spacing: 8
             Layout.alignment: Qt.AlignVCenter
 
-            // Notification Center Toggle Bell (Tactile Squircle)
+            // Notification Center Toggle Bell (Glass.frost Squircle)
             Rectangle {
                 id: notifBell
 
@@ -271,19 +244,17 @@ ModularCard {
 
                 implicitWidth: 34
                 implicitHeight: 34
-                radius: 12
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: notifBellHover.hovered ? "#4f5460" : "#444852"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: notifBellHover.hovered ? "#383b44" : "#31343b"
+                radius: Tokens.rounding.medium
+                color: notifBellMouse.pressed ? Glass.frostHigh : (notifBellHover.hovered ? Glass.frostHigh : Glass.frost)
+                border.width: 1
+                border.color: notifVis ? Glass.ice : Glass.rim
+                scale: notifBellMouse.pressed ? 0.96 : 1.0
+
+                Behavior on scale {
+                    Anim {
+                        type: Anim.FastSpatial
                     }
                 }
-                border.width: 1
-                border.color: notifVis ? Qt.rgba(255, 255, 255, 0.35) : Qt.rgba(255, 255, 255, 0.12)
 
                 Rectangle {
                     anchors.top: parent.top
@@ -292,13 +263,14 @@ ModularCard {
                     anchors.leftMargin: parent.radius
                     anchors.rightMargin: parent.radius
                     height: 1
-                    color: Qt.rgba(255, 255, 255, 0.25)
+                    color: Glass.ice
+                    opacity: 0.35
                 }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: Notifs.dnd ? "notifications_off" : "notifications"
-                    color: "#FFFFFF"
+                    color: Glass.ice
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -307,6 +279,7 @@ ModularCard {
                 }
 
                 MouseArea {
+                    id: notifBellMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: DashboardState.setCardVisible("notifications", !notifBell.notifVis)
@@ -319,19 +292,17 @@ ModularCard {
 
                 implicitWidth: lockContent.implicitWidth + 20
                 implicitHeight: 34
-                radius: 9999
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: !DashboardState.isLocked ? "#4f5460" : (lockHover.hovered ? "#444852" : "#373a42")
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: !DashboardState.isLocked ? "#383b44" : (lockHover.hovered ? "#31343b" : "#26282e")
+                radius: Tokens.rounding.full
+                color: !DashboardState.isLocked ? Glass.ice : (lockMouse.pressed ? Glass.frostHigh : (lockHover.hovered ? Glass.frostHigh : Glass.frost))
+                border.width: 1
+                border.color: !DashboardState.isLocked ? Glass.ice : Glass.rim
+                scale: lockMouse.pressed ? 0.96 : 1.0
+
+                Behavior on scale {
+                    Anim {
+                        type: Anim.FastSpatial
                     }
                 }
-                border.width: 1
-                border.color: !DashboardState.isLocked ? Qt.rgba(255, 255, 255, 0.35) : Qt.rgba(255, 255, 255, 0.14)
 
                 Rectangle {
                     anchors.top: parent.top
@@ -340,7 +311,8 @@ ModularCard {
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
                     height: 1
-                    color: Qt.rgba(255, 255, 255, 0.28)
+                    color: !DashboardState.isLocked ? "transparent" : Glass.ice
+                    opacity: 0.35
                 }
 
                 Row {
@@ -351,7 +323,7 @@ ModularCard {
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: DashboardState.isLocked ? "lock" : "lock_open"
-                        color: "#FFFFFF"
+                        color: !DashboardState.isLocked ? Glass.ink : Glass.ice
                         fontStyle: Tokens.font.icon.small
                     }
 
@@ -359,7 +331,7 @@ ModularCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: DashboardState.isLocked ? Tr.tr("Lock") : Tr.tr("Edit Mode")
                         font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                        color: "#FFFFFF"
+                        color: !DashboardState.isLocked ? Glass.ink : Glass.ice
                     }
                 }
 
@@ -368,6 +340,7 @@ ModularCard {
                 }
 
                 MouseArea {
+                    id: lockMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: DashboardState.toggleLock()
@@ -378,19 +351,10 @@ ModularCard {
             Rectangle {
                 implicitWidth: clockText.implicitWidth + 20
                 implicitHeight: 34
-                radius: 9999
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: "#373a42"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: "#26282e"
-                    }
-                }
+                radius: Tokens.rounding.full
+                color: Glass.frost
                 border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.12)
+                border.color: Glass.rim
 
                 Rectangle {
                     anchors.top: parent.top
@@ -399,7 +363,8 @@ ModularCard {
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
                     height: 1
-                    color: Qt.rgba(255, 255, 255, 0.22)
+                    color: Glass.ice
+                    opacity: 0.35
                 }
 
                 StyledText {
@@ -407,7 +372,7 @@ ModularCard {
                     anchors.centerIn: parent
                     text: Qt.formatTime(new Date(), "hh:mm:ss")
                     font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                    color: "#FFFFFF"
+                    color: Glass.ice
 
                     Timer {
                         interval: 1000

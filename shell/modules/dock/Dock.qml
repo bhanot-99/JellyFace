@@ -198,8 +198,8 @@ Scope {
         screen: Quickshell.screens[0]
         name: "dock-dashboard"
 
-        // Underlapped desktop surface
-        WlrLayershell.layer: WlrLayer.Bottom
+        // Underlapped desktop surface when locked, elevated to Top in Edit Mode for fluid repositioning
+        WlrLayershell.layer: !DashboardState.isLocked ? WlrLayer.Top : WlrLayer.Bottom
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
         anchors.top: true
@@ -234,14 +234,14 @@ Scope {
         Region {
             id: cardMasks
 
-            Region { item: dashboard.commandBarCard }
-            Region { item: dashboard.workDevCard }
-            Region { item: dashboard.aiWebCard }
-            Region { item: dashboard.mediaToolsCard }
-            Region { item: dashboard.profileCard }
-            Region { item: dashboard.systemMonitorCard }
-            Region { item: dashboard.notifCard }
-            Region { item: dashboard.mailCard }
+            Region { item: dashboard.commandBarCard?.surface }
+            Region { item: dashboard.workDevCard?.surface }
+            Region { item: dashboard.aiWebCard?.surface }
+            Region { item: dashboard.mediaToolsCard?.surface }
+            Region { item: dashboard.profileCard?.surface }
+            Region { item: dashboard.systemMonitorCard?.surface }
+            Region { item: dashboard.notifCard?.surface }
+            Region { item: dashboard.mailCard?.surface }
         }
 
         BackgroundEffect.blurRegion: (Glass.enabled && win.shown) ? dockBlur : null
@@ -249,14 +249,14 @@ Scope {
         Region {
             id: dockBlur
 
-            GlassRegion { pane: dashboard.commandBarCard }
-            GlassRegion { pane: dashboard.workDevCard }
-            GlassRegion { pane: dashboard.aiWebCard }
-            GlassRegion { pane: dashboard.mediaToolsCard }
-            GlassRegion { pane: dashboard.profileCard }
-            GlassRegion { pane: dashboard.systemMonitorCard }
-            GlassRegion { pane: dashboard.notifCard }
-            GlassRegion { pane: dashboard.mailCard }
+            GlassRegion { pane: dashboard.commandBarCard?.surface }
+            GlassRegion { pane: dashboard.workDevCard?.surface }
+            GlassRegion { pane: dashboard.aiWebCard?.surface }
+            GlassRegion { pane: dashboard.mediaToolsCard?.surface }
+            GlassRegion { pane: dashboard.profileCard?.surface }
+            GlassRegion { pane: dashboard.systemMonitorCard?.surface }
+            GlassRegion { pane: dashboard.notifCard?.surface }
+            GlassRegion { pane: dashboard.mailCard?.surface }
         }
 
         DockDashboard {

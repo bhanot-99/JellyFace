@@ -31,7 +31,7 @@ Rectangle {
     }
 
     color: "transparent"
-    radius: 14
+    radius: Tokens.rounding.large
     border.width: 0
 
     implicitHeight: 90
@@ -42,7 +42,7 @@ Rectangle {
         anchors.margins: 2
         spacing: 6
 
-        // Card Header: Tactile Monochromatic Icon + Title + Inset Count Badge
+        // Card Header: Tactile Glass Icon + Title + Count Badge
         RowLayout {
             Layout.fillWidth: true
             spacing: 6
@@ -50,19 +50,10 @@ Rectangle {
             Rectangle {
                 implicitWidth: 24
                 implicitHeight: 24
-                radius: 8
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: "#444852"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: "#31343b"
-                    }
-                }
+                radius: Tokens.rounding.small
+                color: Glass.frost
                 border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.12)
+                border.color: Glass.rim
 
                 Rectangle {
                     anchors.top: parent.top
@@ -71,13 +62,14 @@ Rectangle {
                     anchors.leftMargin: parent.radius
                     anchors.rightMargin: parent.radius
                     height: 1
-                    color: Qt.rgba(255, 255, 255, 0.25)
+                    color: Glass.ice
+                    opacity: 0.35
                 }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: root.categoryIcon
-                    color: "#FFFFFF"
+                    color: Glass.ice
                     fontStyle: Tokens.font.icon.small
                 }
             }
@@ -85,26 +77,17 @@ Rectangle {
             StyledText {
                 text: root.title
                 font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                color: "#FFFFFF"
+                color: Glass.ice
                 Layout.alignment: Qt.AlignVCenter
             }
 
             Rectangle {
                 implicitWidth: countText.implicitWidth + 10
                 implicitHeight: 18
-                radius: 9999
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: "#1b1c20"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: "#24262b"
-                    }
-                }
+                radius: Tokens.rounding.full
+                color: Glass.well
                 border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.08)
+                border.color: Glass.rim
                 Layout.alignment: Qt.AlignVCenter
 
                 StyledText {
@@ -112,7 +95,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: `${root.appsList.length}`
                     font: Tokens.font.label.small
-                    color: "#9CA3AF"
+                    color: Glass.haze
                 }
             }
 
@@ -121,7 +104,7 @@ Rectangle {
             }
         }
 
-        // App Icons Row: Tactile Slate-Titanium Elevated Tiles with Top-Lit Bevels
+        // App Icons Row: Tactile Glass Micro-Tiles with Top-Lit Specular Bevels
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -173,19 +156,10 @@ Rectangle {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 implicitWidth: 36
                                 implicitHeight: 36
-                                radius: 12
-                                gradient: Gradient {
-                                    GradientStop {
-                                        position: 0.0
-                                        color: tileHover.hovered ? "#4f5460" : (tile.focused ? "#484c56" : "#3d4047")
-                                    }
-                                    GradientStop {
-                                        position: 1.0
-                                        color: tileHover.hovered ? "#383b44" : (tile.focused ? "#32353c" : "#2a2c32")
-                                    }
-                                }
+                                radius: Tokens.rounding.small
+                                color: tileHover.hovered ? Glass.frostHigh : (tile.focused ? Glass.frostHigh : Glass.frost)
                                 border.width: 1
-                                border.color: tile.focused ? Qt.rgba(255, 255, 255, 0.40) : (tileHover.hovered ? Qt.rgba(255, 255, 255, 0.22) : Qt.rgba(255, 255, 255, 0.09))
+                                border.color: tile.focused ? Glass.ice : (tileHover.hovered ? Qt.rgba(1, 1, 1, 0.35) : Glass.rim)
 
                                 // Top-lit bevel specular hairline
                                 Rectangle {
@@ -195,7 +169,8 @@ Rectangle {
                                     anchors.leftMargin: parent.radius
                                     anchors.rightMargin: parent.radius
                                     height: 1
-                                    color: Qt.rgba(255, 255, 255, 0.22)
+                                    color: Glass.ice
+                                    opacity: 0.35
                                 }
 
                                 scale: tileMouse.pressed ? 0.92 : (tileHover.hovered ? 1.05 : 1.0)
@@ -224,7 +199,7 @@ Rectangle {
                                     active: tile.iconSource === ""
                                     sourceComponent: MaterialIcon {
                                         text: tile.symbol || "apps"
-                                        color: "#FFFFFF"
+                                        color: Glass.ice
                                         fontStyle: Tokens.font.icon.small
                                     }
                                 }
@@ -252,7 +227,7 @@ Rectangle {
                                 }
                             }
 
-                            // Running / Active indicator micro-dot (Pure White Key Glow)
+                            // Running / Active indicator micro-dot (Glass.ice Key Glow)
                             Rectangle {
                                 anchors.bottom: parent.bottom
                                 anchors.bottomMargin: 1
@@ -260,7 +235,7 @@ Rectangle {
                                 width: tile.focused ? 10 : (tile.running ? 4 : 0)
                                 height: 3
                                 radius: 1.5
-                                color: "#FFFFFF"
+                                color: Glass.ice
                                 visible: tile.running
 
                                 Behavior on width {
@@ -270,7 +245,7 @@ Rectangle {
                                 }
                             }
 
-                            // Tactile Slate Tooltip on hover
+                            // Tactile Glass Tooltip on hover
                             Rectangle {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 anchors.bottom: parent.top
@@ -278,19 +253,10 @@ Rectangle {
                                 z: 100
                                 implicitWidth: tipText.implicitWidth + 12
                                 implicitHeight: tipText.implicitHeight + 6
-                                radius: 8
-                                gradient: Gradient {
-                                    GradientStop {
-                                        position: 0.0
-                                        color: "#373a42"
-                                    }
-                                    GradientStop {
-                                        position: 1.0
-                                        color: "#26282e"
-                                    }
-                                }
+                                radius: Tokens.rounding.small
+                                color: Glass.sheet
                                 border.width: 1
-                                border.color: Qt.rgba(255, 255, 255, 0.16)
+                                border.color: Glass.rim
                                 visible: tileHover.hovered && !tileMouse.pressed
 
                                 Rectangle {
@@ -300,7 +266,8 @@ Rectangle {
                                     anchors.leftMargin: parent.radius
                                     anchors.rightMargin: parent.radius
                                     height: 1
-                                    color: Qt.rgba(255, 255, 255, 0.22)
+                                    color: Glass.ice
+                                    opacity: 0.35
                                 }
 
                                 StyledText {
@@ -308,7 +275,7 @@ Rectangle {
                                     anchors.centerIn: parent
                                     text: tile.label
                                     font: Tokens.font.label.small
-                                    color: "#FFFFFF"
+                                    color: Glass.ice
                                 }
                             }
                         }

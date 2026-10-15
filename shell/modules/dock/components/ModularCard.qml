@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import Jellyface.Config
 import qs.components
 import qs.services
@@ -23,7 +24,9 @@ Item {
     property bool canResize: false
     property bool defaultVisible: true
     property real contentPadding: 16
+    property real radius: Tokens.rounding.extraLarge
 
+    readonly property alias surface: surface
     default property alias content: contentContainer.data
 
     property bool isDragging: false
@@ -55,24 +58,20 @@ Item {
         target: DashboardState
     }
 
-    // Main Card Surface: Tactile Matte Slate-Titanium Skeuo-Modern Container (20px Superellipse)
+    // Main Card Surface: Bound to dynamic Glass.qml engine (G1 mist over backdrop) with 15px MultiEffect lift
     Rectangle {
         id: surface
 
         anchors.fill: parent
-        radius: 20
-        gradient: Gradient {
-            GradientStop {
-                position: 0.0
-                color: "#f0373a42"
-            }
-            GradientStop {
-                position: 1.0
-                color: "#f026282e"
-            }
-        }
+        radius: root.radius
+
+        // G1 mist over wallpaper luminance buffer via Glass.standalone
+        color: Glass.enabled ? Glass.standalone(Glass.mist) : Colours.tPalette.m3surfaceContainer
+
         border.width: 1
-        border.color: !DashboardState.isLocked ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? Qt.rgba(1, 1, 1, 0.30) : Qt.rgba(1, 1, 1, 0.18)) : Qt.rgba(1, 1, 1, 0.08)
+        border.color: !DashboardState.isLocked
+            ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? Qt.rgba(1, 1, 1, 0.40) : Qt.rgba(1, 1, 1, 0.22))
+            : Glass.rim
 
         Behavior on border.color {
             CAnim {
@@ -80,7 +79,30 @@ Item {
             }
         }
 
-        // Tactile Top-Lit Bevel Specular Highlight (Hairline)
+        Behavior on color {
+            CAnim {
+                duration: 200
+            }
+        }
+
+        // Tactile Spring & Organic Physics deformation on card during freeform drag
+        scale: root.isDragging ? 0.985 : 1.0
+        Behavior on scale {
+            Anim {
+                type: Anim.FastSpatial
+            }
+        }
+
+        // Soft Ambient Lift: Native Qt Quick MultiEffect
+        layer.enabled: true
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Qt.rgba(0, 0, 0, 0.45)
+            blurMax: 15
+            shadowVerticalOffset: 8
+        }
+
+        // Top-Lit 1px Specular Edge Highlight (Hairline)
         Rectangle {
             anchors.top: parent.top
             anchors.left: parent.left
@@ -88,18 +110,28 @@ Item {
             anchors.leftMargin: parent.radius
             anchors.rightMargin: parent.radius
             height: 1
-            color: Qt.rgba(1, 1, 1, 0.22)
+            color: Glass.rim
         }
 
-        // Tactile Bottom Recessed Edge (Shadow)
+        // Top-Lit Soft Sheen (Fading glass gradient start inside pane)
         Rectangle {
-            anchors.bottom: parent.bottom
+            anchors.top: parent.top
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.leftMargin: parent.radius
-            anchors.rightMargin: parent.radius
-            height: 1
-            color: Qt.rgba(0, 0, 0, 0.50)
+            anchors.leftMargin: parent.radius / 2
+            anchors.rightMargin: parent.radius / 2
+            height: Math.min(28, parent.height / 3)
+            radius: parent.radius
+            gradient: Gradient {
+                GradientStop {
+                    position: 0.0
+                    color: Glass.sheen
+                }
+                GradientStop {
+                    position: 1.0
+                    color: "transparent"
+                }
+            }
         }
 
         // Edit Mode Freeform Drag Handler: Underneath contentContainer, catches drags on card surface
@@ -152,29 +184,20 @@ Item {
             z: 10
         }
 
-        // Edit Mode: Sleek Embossed Slate Drag Handle Pill (Replaces orange badge)
+        // Edit Mode: Sleek Embossed Glass Drag Handle Pill (Hidden when locked)
         Rectangle {
             id: tagLabelBox
 
             anchors.left: parent.left
             anchors.top: parent.top
-            anchors.leftMargin: 14
+            anchors.leftMargin: 16
             anchors.topMargin: -13
             implicitWidth: tagLabelRow.implicitWidth + 18
             implicitHeight: 26
-            radius: 8
-            gradient: Gradient {
-                GradientStop {
-                    position: 0.0
-                    color: tagMouse.pressed ? "#2e3138" : (tagMouse.containsMouse ? "#444852" : "#373a42")
-                }
-                GradientStop {
-                    position: 1.0
-                    color: tagMouse.pressed ? "#222428" : (tagMouse.containsMouse ? "#31343b" : "#26282e")
-                }
-            }
+            radius: Tokens.rounding.small
+            color: tagMouse.pressed ? Glass.frostHigh : (tagMouse.containsMouse ? Glass.frost : Glass.mistHigh)
             border.width: 1
-            border.color: Qt.rgba(1, 1, 1, 0.16)
+            border.color: Glass.rim
             visible: !DashboardState.isLocked
             z: 50
 
@@ -186,7 +209,8 @@ Item {
                 anchors.leftMargin: parent.radius
                 anchors.rightMargin: parent.radius
                 height: 1
-                color: Qt.rgba(1, 1, 1, 0.28)
+                color: Glass.ice
+                opacity: 0.35
             }
 
             Row {
@@ -197,7 +221,7 @@ Item {
                 MaterialIcon {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "drag_indicator"
-                    color: "#E5E7EB"
+                    color: Glass.ice
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -205,7 +229,7 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     text: root.title || root.cardId
                     font: Tokens.font.label.small
-                    color: "#E5E7EB"
+                    color: Glass.ice
                 }
             }
 
@@ -248,7 +272,7 @@ Item {
             }
         }
 
-        // Edit Mode: Tactile Corner Resize Handle (Hidden when locked)
+        // Edit Mode: Tactile Glass Corner Resize Handle (Hidden when locked)
         Rectangle {
             id: resizeGrip
 
@@ -258,19 +282,10 @@ Item {
             anchors.bottomMargin: 4
             implicitWidth: 28
             implicitHeight: 28
-            radius: 8
-            gradient: Gradient {
-                GradientStop {
-                    position: 0.0
-                    color: resizeMouse.containsMouse || root.isResizing ? "#4f5460" : "#373a42"
-                }
-                GradientStop {
-                    position: 1.0
-                    color: resizeMouse.containsMouse || root.isResizing ? "#383b44" : "#26282e"
-                }
-            }
+            radius: Tokens.rounding.small
+            color: resizeMouse.containsMouse || root.isResizing ? Glass.frostHigh : Glass.frost
             border.width: 1
-            border.color: resizeMouse.containsMouse || root.isResizing ? Qt.rgba(1, 1, 1, 0.30) : Qt.rgba(1, 1, 1, 0.12)
+            border.color: Glass.rim
             visible: root.canResize && !DashboardState.isLocked
             z: 60
 
@@ -281,13 +296,14 @@ Item {
                 anchors.leftMargin: parent.radius
                 anchors.rightMargin: parent.radius
                 height: 1
-                color: Qt.rgba(1, 1, 1, 0.25)
+                color: Glass.ice
+                opacity: 0.35
             }
 
             MaterialIcon {
                 anchors.centerIn: parent
                 text: "south_east"
-                color: "#E5E7EB"
+                color: Glass.ice
                 fontStyle: Tokens.font.icon.small
             }
 

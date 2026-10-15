@@ -25,7 +25,7 @@ ModularCard {
         anchors.fill: parent
         spacing: 14
 
-        // Avatar: 48x48px with Tactile Extruded Bezel Rim
+        // Avatar: 48x48px with Tactile Extruded Glass Rim
         Item {
             implicitWidth: 48
             implicitHeight: 48
@@ -35,18 +35,9 @@ ModularCard {
                 id: avatarBg
                 anchors.fill: parent
                 radius: 24
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: "#444852"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: "#26282e"
-                    }
-                }
+                color: Glass.frost
                 border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.20)
+                border.color: Glass.rim
                 clip: true
 
                 // Top-lit bevel specular highlight
@@ -57,7 +48,8 @@ ModularCard {
                     anchors.leftMargin: parent.radius
                     anchors.rightMargin: parent.radius
                     height: 1
-                    color: Qt.rgba(255, 255, 255, 0.35)
+                    color: Glass.ice
+                    opacity: 0.35
                 }
 
                 CachingImage {
@@ -72,7 +64,7 @@ ModularCard {
                     active: pfp.status !== Image.Ready
                     sourceComponent: MaterialIcon {
                         text: "person"
-                        color: "#FFFFFF"
+                        color: Glass.ice
                         fontStyle: Tokens.font.icon.medium
                     }
                 }
@@ -82,27 +74,18 @@ ModularCard {
             Rectangle {
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
-                implicitWidth: 16
-                implicitHeight: 16
-                radius: 8
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: "#444852"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: "#31343b"
-                    }
-                }
+                implicitWidth: 18
+                implicitHeight: 18
+                radius: 9
+                color: Glass.frostHigh
                 border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.25)
+                border.color: Glass.rim
                 visible: avatarHover.hovered
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "edit"
-                    color: "#FFFFFF"
+                    color: Glass.ice
                     fontStyle: Tokens.font.icon.small
                 }
             }
@@ -130,37 +113,18 @@ ModularCard {
                 StyledText {
                     text: SysInfo.user || "User"
                     font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                    color: "#FFFFFF"
+                    color: Glass.ice
                     elide: Text.ElideRight
                 }
 
-                // Tactile Inset "Active" Pill Badge
+                // Tactile Glass Inset "Active" Pill Badge
                 Rectangle {
                     implicitWidth: onlineDot.implicitWidth + 12
                     implicitHeight: 20
-                    radius: 9999
-                    gradient: Gradient {
-                        GradientStop {
-                            position: 0.0
-                            color: "#1b1c20"
-                        }
-                        GradientStop {
-                            position: 1.0
-                            color: "#24262b"
-                        }
-                    }
+                    radius: Tokens.rounding.full
+                    color: Glass.well
                     border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.08)
-
-                    Rectangle {
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.leftMargin: 6
-                        anchors.rightMargin: 6
-                        height: 1
-                        color: Qt.rgba(0, 0, 0, 0.50)
-                    }
+                    border.color: Glass.rim
 
                     Row {
                         id: onlineDot
@@ -172,14 +136,14 @@ ModularCard {
                             width: 6
                             height: 6
                             radius: 3
-                            color: "#FFFFFF"
+                            color: Glass.ice
                         }
 
                         StyledText {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "Active"
                             font: Tokens.font.label.small
-                            color: "#E5E7EB"
+                            color: Glass.ice
                         }
                     }
                 }
@@ -188,30 +152,21 @@ ModularCard {
             StyledText {
                 text: `@${SysInfo.hostname || "pop-os"}`
                 font: Tokens.font.label.small
-                color: "#9CA3AF"
+                color: Glass.haze
                 elide: Text.ElideRight
             }
 
             RowLayout {
                 spacing: 8
 
-                // OS Chip in Tactile Inset Pill
+                // OS Chip in Tactile Glass Inset Pill
                 Rectangle {
                     implicitWidth: osRow.implicitWidth + 12
                     implicitHeight: 22
-                    radius: 9999
-                    gradient: Gradient {
-                        GradientStop {
-                            position: 0.0
-                            color: "#1b1c20"
-                        }
-                        GradientStop {
-                            position: 1.0
-                            color: "#24262b"
-                        }
-                    }
+                    radius: Tokens.rounding.full
+                    color: Glass.well
                     border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.08)
+                    border.color: Glass.rim
 
                     Row {
                         id: osRow
@@ -221,7 +176,7 @@ ModularCard {
                         MaterialIcon {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "laptop_chromebook"
-                            color: "#9CA3AF"
+                            color: Glass.haze
                             fontStyle: Tokens.font.icon.small
                         }
 
@@ -229,28 +184,19 @@ ModularCard {
                             anchors.verticalCenter: parent.verticalCenter
                             text: SysInfo.osPrettyName || "Pop!_OS 24.04"
                             font: Tokens.font.label.small
-                            color: "#E5E7EB"
+                            color: Glass.ice
                         }
                     }
                 }
 
-                // Uptime Chip in Tactile Inset Pill
+                // Uptime Chip in Tactile Glass Inset Pill
                 Rectangle {
                     implicitWidth: upRow.implicitWidth + 12
                     implicitHeight: 22
-                    radius: 9999
-                    gradient: Gradient {
-                        GradientStop {
-                            position: 0.0
-                            color: "#1b1c20"
-                        }
-                        GradientStop {
-                            position: 1.0
-                            color: "#24262b"
-                        }
-                    }
+                    radius: Tokens.rounding.full
+                    color: Glass.well
                     border.width: 1
-                    border.color: Qt.rgba(255, 255, 255, 0.08)
+                    border.color: Glass.rim
 
                     Row {
                         id: upRow
@@ -260,7 +206,7 @@ ModularCard {
                         MaterialIcon {
                             anchors.verticalCenter: parent.verticalCenter
                             text: "schedule"
-                            color: "#9CA3AF"
+                            color: Glass.haze
                             fontStyle: Tokens.font.icon.small
                         }
 
@@ -268,7 +214,7 @@ ModularCard {
                             anchors.verticalCenter: parent.verticalCenter
                             text: `Up ${SysInfo.uptimeShort || "1h"}`
                             font: Tokens.font.label.small
-                            color: "#E5E7EB"
+                            color: Glass.ice
                         }
                     }
                 }

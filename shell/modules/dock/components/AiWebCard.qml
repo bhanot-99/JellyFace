@@ -44,7 +44,7 @@ ModularCard {
         dock: root.dock
         title: Tr.tr("AI & Web")
         categoryIcon: "psychology"
-        accentColor: "#FFFFFF"
+        accentColor: Glass.ice
         appsList: root.appsList
     }
 }

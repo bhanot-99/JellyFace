@@ -44,7 +44,7 @@ ModularCard {
         dock: root.dock
         title: Tr.tr("Media & Tools")
         categoryIcon: "apps"
-        accentColor: "#FFFFFF"
+        accentColor: Glass.ice
         appsList: root.appsList
     }
 }

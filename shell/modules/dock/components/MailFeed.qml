@@ -30,21 +30,12 @@ ModularCard {
             spacing: 8
 
             Rectangle {
-                implicitWidth: 24
-                implicitHeight: 24
-                radius: 8
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: "#444852"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: "#31343b"
-                    }
-                }
+                implicitWidth: 26
+                implicitHeight: 26
+                radius: Tokens.rounding.small
+                color: Glass.frost
                 border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.12)
+                border.color: Glass.rim
 
                 Rectangle {
                     anchors.top: parent.top
@@ -53,13 +44,14 @@ ModularCard {
                     anchors.leftMargin: parent.radius
                     anchors.rightMargin: parent.radius
                     height: 1
-                    color: Qt.rgba(255, 255, 255, 0.25)
+                    color: Glass.ice
+                    opacity: 0.35
                 }
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "mail"
-                    color: "#FFFFFF"
+                    color: Glass.ice
                     fontStyle: Tokens.font.icon.small
                 }
             }
@@ -67,59 +59,48 @@ ModularCard {
             StyledText {
                 text: Tr.tr("Primary Mails")
                 font: Tokens.font.body.builders.medium.weight(Font.DemiBold).build()
-                color: "#FFFFFF"
+                color: Glass.ice
                 Layout.fillWidth: true
             }
 
-            // Tactile Unread Pill Badge (Pure White Glow)
+            // Tactile Unread Pill Badge (Glass.frost + Glass.ice Glow)
             Rectangle {
                 implicitWidth: unreadText.implicitWidth + 12
                 implicitHeight: 20
-                radius: 9999
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: MailService.unreadCount > 0 ? "#444852" : "#1b1c20"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: MailService.unreadCount > 0 ? "#31343b" : "#24262b"
-                    }
-                }
+                radius: Tokens.rounding.full
+                color: MailService.unreadCount > 0 ? Glass.frostHigh : Glass.well
                 border.width: 1
-                border.color: MailService.unreadCount > 0 ? Qt.rgba(255, 255, 255, 0.25) : Qt.rgba(255, 255, 255, 0.08)
+                border.color: MailService.unreadCount > 0 ? Glass.ice : Glass.rim
 
                 StyledText {
                     id: unreadText
                     anchors.centerIn: parent
                     text: `${MailService.unreadCount} unread`
                     font: Tokens.font.label.small
-                    color: MailService.unreadCount > 0 ? "#FFFFFF" : "#9CA3AF"
+                    color: MailService.unreadCount > 0 ? Glass.ice : Glass.haze
                 }
             }
 
             // Tactile Refresh Button
             Rectangle {
-                implicitWidth: 24
-                implicitHeight: 24
-                radius: 8
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: refreshHover.hovered ? "#4f5460" : "#373a42"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: refreshHover.hovered ? "#383b44" : "#26282e"
+                implicitWidth: 26
+                implicitHeight: 26
+                radius: Tokens.rounding.small
+                color: refreshMouse.pressed ? Glass.frostHigh : (refreshHover.hovered ? Glass.frostHigh : Glass.frost)
+                border.width: 1
+                border.color: Glass.rim
+                scale: refreshMouse.pressed ? 0.94 : 1.0
+
+                Behavior on scale {
+                    Anim {
+                        type: Anim.FastSpatial
                     }
                 }
-                border.width: 1
-                border.color: Qt.rgba(255, 255, 255, 0.12)
 
                 MaterialIcon {
                     anchors.centerIn: parent
                     text: "refresh"
-                    color: "#E5E7EB"
+                    color: Glass.ice
                     fontStyle: Tokens.font.icon.small
                 }
 
@@ -128,6 +109,7 @@ ModularCard {
                 }
 
                 MouseArea {
+                    id: refreshMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: MailService.refresh()
@@ -154,19 +136,10 @@ ModularCard {
 
                     width: ListView.view.width
                     implicitHeight: 48
-                    radius: 12
-                    gradient: Gradient {
-                        GradientStop {
-                            position: 0.0
-                            color: mailHover.hovered ? "#4a4e58" : (mailItem.m?.unread ? "#3d4047" : "#2e3137")
-                        }
-                        GradientStop {
-                            position: 1.0
-                            color: mailHover.hovered ? "#353840" : (mailItem.m?.unread ? "#2a2c32" : "#222428")
-                        }
-                    }
+                    radius: Tokens.rounding.medium
+                    color: mailHover.hovered ? Glass.frostHigh : (mailItem.m?.unread ? Glass.frost : Glass.mistHigh)
                     border.width: 1
-                    border.color: mailHover.hovered ? Qt.rgba(255, 255, 255, 0.22) : (mailItem.m?.unread ? Qt.rgba(255, 255, 255, 0.12) : Qt.rgba(255, 255, 255, 0.05))
+                    border.color: mailHover.hovered ? Glass.ice : (mailItem.m?.unread ? Qt.rgba(1, 1, 1, 0.30) : Glass.rim)
 
                     // Top-lit bevel specular hairline
                     Rectangle {
@@ -176,7 +149,8 @@ ModularCard {
                         anchors.leftMargin: parent.radius
                         anchors.rightMargin: parent.radius
                         height: 1
-                        color: Qt.rgba(255, 255, 255, 0.20)
+                        color: Glass.ice
+                        opacity: 0.35
                     }
 
                     HoverHandler {
@@ -200,27 +174,18 @@ ModularCard {
 
                         // Recessed Avatar Well
                         Rectangle {
-                            implicitWidth: 30
-                            implicitHeight: 30
-                            radius: 8
-                            gradient: Gradient {
-                                GradientStop {
-                                    position: 0.0
-                                    color: mailItem.m?.unread ? "#444852" : "#1b1c20"
-                                }
-                                GradientStop {
-                                    position: 1.0
-                                    color: mailItem.m?.unread ? "#31343b" : "#24262b"
-                                }
-                            }
+                            implicitWidth: 32
+                            implicitHeight: 32
+                            radius: Tokens.rounding.small
+                            color: mailItem.m?.unread ? Glass.frost : Glass.well
                             border.width: 1
-                            border.color: Qt.rgba(255, 255, 255, 0.08)
+                            border.color: Glass.rim
 
                             StyledText {
                                 anchors.centerIn: parent
                                 text: (mailItem.m?.sender ?? "M").charAt(0).toUpperCase()
                                 font: Tokens.font.label.small
-                                color: "#FFFFFF"
+                                color: Glass.ice
                             }
                         }
 
@@ -235,7 +200,7 @@ ModularCard {
                                 StyledText {
                                     text: mailItem.m?.sender || "Sender"
                                     font: mailItem.m?.unread ? Tokens.font.body.builders.small.weight(Font.DemiBold).build() : Tokens.font.label.small
-                                    color: "#FFFFFF"
+                                    color: Glass.ice
                                     elide: Text.ElideRight
                                     Layout.fillWidth: true
                                 }
@@ -243,7 +208,7 @@ ModularCard {
                                 StyledText {
                                     text: mailItem.m?.time || ""
                                     font: Tokens.font.label.small
-                                    color: "#6B7280"
+                                    color: Glass.haze
                                 }
                             }
 
@@ -251,17 +216,17 @@ ModularCard {
                                 Layout.fillWidth: true
                                 text: mailItem.m?.subject || ""
                                 font: Tokens.font.label.small
-                                color: mailItem.m?.unread ? "#E5E7EB" : "#9CA3AF"
+                                color: mailItem.m?.unread ? Glass.ice : Glass.haze
                                 elide: Text.ElideRight
                             }
                         }
 
-                        // Pure White Glowing Unread Dot
+                        // Glowing Unread Dot
                         Rectangle {
                             implicitWidth: 6
                             implicitHeight: 6
                             radius: 3
-                            color: "#FFFFFF"
+                            color: Glass.ice
                             visible: mailItem.m?.unread ?? false
                         }
                     }
@@ -269,7 +234,7 @@ ModularCard {
             }
         }
 
-        // Fixed Footer Action Launchers: Tactile Pill Bevels (Matching Image 2 footer)
+        // Fixed Footer Action Launchers: Tactile Pill Bevels (Glass.frost + scale 0.96)
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 32
@@ -280,19 +245,17 @@ ModularCard {
                 id: gmailBtn
                 Layout.fillWidth: true
                 implicitHeight: 32
-                radius: 9999
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: gmailHover.hovered ? "#4f5460" : "#444852"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: gmailHover.hovered ? "#383b44" : "#31343b"
+                radius: Tokens.rounding.full
+                color: gmailMouse.pressed ? Glass.frostHigh : (gmailHover.hovered ? Glass.frostHigh : Glass.frost)
+                border.width: 1
+                border.color: Glass.rim
+                scale: gmailMouse.pressed ? 0.96 : 1.0
+
+                Behavior on scale {
+                    Anim {
+                        type: Anim.FastSpatial
                     }
                 }
-                border.width: 1
-                border.color: gmailHover.hovered ? Qt.rgba(255, 255, 255, 0.30) : Qt.rgba(255, 255, 255, 0.14)
 
                 // Top-lit bevel specular hairline
                 Rectangle {
@@ -302,18 +265,8 @@ ModularCard {
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
                     height: 1
-                    color: Qt.rgba(255, 255, 255, 0.28)
-                }
-
-                // Bottom recessed shadow hairline
-                Rectangle {
-                    anchors.bottom: parent.bottom
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    height: 1
-                    color: Qt.rgba(0, 0, 0, 0.40)
+                    color: Glass.ice
+                    opacity: 0.35
                 }
 
                 Row {
@@ -323,7 +276,7 @@ ModularCard {
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "open_in_browser"
-                        color: "#FFFFFF"
+                        color: Glass.ice
                         fontStyle: Tokens.font.icon.small
                     }
 
@@ -331,7 +284,7 @@ ModularCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Gmail"
                         font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                        color: "#FFFFFF"
+                        color: Glass.ice
                     }
                 }
 
@@ -340,6 +293,7 @@ ModularCard {
                 }
 
                 MouseArea {
+                    id: gmailMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: MailService.openGmail()
@@ -351,19 +305,17 @@ ModularCard {
                 id: tbBtn
                 Layout.fillWidth: true
                 implicitHeight: 32
-                radius: 9999
-                gradient: Gradient {
-                    GradientStop {
-                        position: 0.0
-                        color: tbHover.hovered ? "#4f5460" : "#444852"
-                    }
-                    GradientStop {
-                        position: 1.0
-                        color: tbHover.hovered ? "#383b44" : "#31343b"
+                radius: Tokens.rounding.full
+                color: tbMouse.pressed ? Glass.frostHigh : (tbHover.hovered ? Glass.frostHigh : Glass.frost)
+                border.width: 1
+                border.color: Glass.rim
+                scale: tbMouse.pressed ? 0.96 : 1.0
+
+                Behavior on scale {
+                    Anim {
+                        type: Anim.FastSpatial
                     }
                 }
-                border.width: 1
-                border.color: tbHover.hovered ? Qt.rgba(255, 255, 255, 0.30) : Qt.rgba(255, 255, 255, 0.14)
 
                 // Top-lit bevel specular hairline
                 Rectangle {
@@ -373,18 +325,8 @@ ModularCard {
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
                     height: 1
-                    color: Qt.rgba(255, 255, 255, 0.28)
-                }
-
-                // Bottom recessed shadow hairline
-                Rectangle {
-                    anchors.bottom: parent.bottom
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.leftMargin: 12
-                    anchors.rightMargin: 12
-                    height: 1
-                    color: Qt.rgba(0, 0, 0, 0.40)
+                    color: Glass.ice
+                    opacity: 0.35
                 }
 
                 Row {
@@ -394,7 +336,7 @@ ModularCard {
                     MaterialIcon {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "mail"
-                        color: "#FFFFFF"
+                        color: Glass.ice
                         fontStyle: Tokens.font.icon.small
                     }
 
@@ -402,7 +344,7 @@ ModularCard {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Thunderbird"
                         font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                        color: "#FFFFFF"
+                        color: Glass.ice
                     }
                 }
 
@@ -411,6 +353,7 @@ ModularCard {
                 }
 
                 MouseArea {
+                    id: tbMouse
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: MailService.openClient("thunderbird")
