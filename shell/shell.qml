@@ -9,6 +9,7 @@ import "modules/drawers"
 import "modules/dock"
 import "modules/clipboard"
 import "modules/jellypanel"
+import "modules/island"
 import "modules/agenda"
 import "modules/areapicker"
 import "modules/lock"
@@ -34,6 +35,7 @@ ShellRoot {
 
     Dock {}
     JellyPanelWindow {}
+    DynamicIsland {}
     Drawers {}
     AreaPicker {}
     ClipboardPopup {}
