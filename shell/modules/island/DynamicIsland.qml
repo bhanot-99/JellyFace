@@ -20,10 +20,52 @@ import qs.utils
 Scope {
     id: root
 
+    // --- Tunables ---
+    readonly property real compactWidthIdle: 130
+    readonly property real compactHeightIdle: 32
+    readonly property real compactWidthMedia: 210
+    readonly property real compactHeightMedia: 36
+    readonly property real expandedWidth: 370
+    readonly property real expandedHeight: 166
+    readonly property real expandedRadius: 36
+
+    readonly property real windowSlack: 24
+    readonly property real topMargin: 8
+
+    readonly property int animDurationExpand: 420
+    readonly property int animDurationCollapse: 300
+    readonly property real animOvershoot: 0.7
+
+    readonly property int autoCollapseDelay: 2500
+    readonly property int positionPollInterval: 500
+
+    // --- Color Palette (D10) ---
+    readonly property color colBg: "#000000"
+    readonly property color colTextPrimary: "#FFFFFF"
+    readonly property color colTextSecondary: "#98989D"
+    readonly property color colTextTertiary: "#8E8E93"
+    readonly property color colEqGreen: "#30D158"
+    readonly property color colAccentPink: "#FA586A"
+    readonly property color colScrubTrack: "#38383A"
+    readonly property color colArtBg: "#1C1C1E"
+    readonly property color colBorderLight: Qt.rgba(1, 1, 1, 0.15)
+
+    // --- State & Media Bindings (A9, B7, C5) ---
     readonly property MprisPlayer player: Players.active
-    readonly property bool isPlaying: player && (player.isPlaying || player.playbackState === MprisPlaybackState.Playing)
-    readonly property bool hasMedia: player && (isPlaying || player.playbackState === MprisPlaybackState.Paused || (player.trackTitle && player.trackTitle.length > 0))
+    readonly property bool isPlaying: !!player && player.playbackState === MprisPlaybackState.Playing
+    readonly property bool hasMedia: !!player && (isPlaying || player.playbackState === MprisPlaybackState.Paused || (player.trackTitle && player.trackTitle.length > 0))
     readonly property bool wanted: !CosmicWindows.fullscreen
+    readonly property string artUrl: player ? Players.getArtUrl(player) : ""
+    readonly property bool hasUnknownLength: !player || !player.length || player.length <= 0 || player.length > 2147483647
+    readonly property real trackLength: hasUnknownLength ? 0 : player.length
+    readonly property bool canSeek: (player?.canSeek ?? false) && trackLength > 0 && !hasUnknownLength
+
+    // Morph progress (0 = compact, 1 = expanded) driving content cross-fade (B9, D2)
+    readonly property real morph: {
+        const hMin = hasMedia ? compactHeightMedia : compactHeightIdle;
+        const hMax = expandedHeight;
+        return Math.max(0, Math.min(1, (islandCapsule.height - hMin) / (hMax - hMin)));
+    }
 
     function lengthStr(length: real): string {
         if (!length || isNaN(length) || length < 0)
@@ -36,19 +78,36 @@ Scope {
         return `${mins}:${secs}`;
     }
 
+    onHasMediaChanged: {
+        if (!hasMedia)
+            islandCapsule.expanded = false;
+    }
+
+    // A2: Ticking system clock for idle pill, active only when idle & visible
+    SystemClock {
+        id: sysClock
+
+        precision: SystemClock.Minutes
+        enabled: win.visible && !root.hasMedia
+    }
+
+    // B6: Position polling only while expanded & actively playing
     Timer {
         id: positionTimer
 
-        interval: 500
-        running: root.isPlaying && !CosmicWindows.fullscreen
+        interval: root.positionPollInterval
+        running: root.isPlaying && islandCapsule.expanded && win.visible
         repeat: true
+        triggeredOnStart: true
         onTriggered: root.player?.positionChanged()
     }
 
+    // B1: Fixed-size layer-shell window anchored to top edge only (prevents Wayland surface resize churn)
     StyledWindow {
         id: win
 
-        screen: Quickshell.screens[0]
+        // C1: Screen binding guarded against undefined on monitor hot-plug/unplug
+        screen: ShellState.forActive()?.modelData ?? Quickshell.screens[0] ?? null
         name: "dynamic-island"
         visible: root.wanted
         WlrLayershell.layer: WlrLayer.Overlay
@@ -56,86 +115,96 @@ Scope {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
         anchors.top: true
-        anchors.left: true
-        anchors.right: true
-        implicitHeight: islandCapsule.height + 24
+        margins.top: root.topMargin
+
+        implicitWidth: root.expandedWidth + root.windowSlack
+        implicitHeight: root.expandedHeight + root.windowSlack
 
         mask: Region {
             item: islandCapsule
         }
 
-        BackgroundEffect.blurRegion: blurRegion
-
-        Region {
-            id: blurRegion
-
-            item: islandCapsule
+        onVisibleChanged: {
+            if (!visible)
+                islandCapsule.expanded = false;
         }
 
-        StyledRect {
+        // B10: Plain Rectangle instead of StyledRect (no extra loaders/colors)
+        Rectangle {
             id: islandCapsule
 
             property bool expanded: false
+            readonly property real radius: Math.min(height / 2, root.expandedRadius)
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
-            anchors.topMargin: 8
 
-            width: expanded ? 370 : (root.isPlaying ? 210 : (root.hasMedia ? 190 : 130))
-            height: expanded ? 166 : (root.hasMedia ? 36 : 32)
-            radius: expanded ? 36 : height / 2
-            color: "#000000"
-            border.color: Qt.rgba(255, 255, 255, 0.14)
-            border.width: 1
+            width: expanded ? root.expandedWidth : (root.hasMedia ? root.compactWidthMedia : root.compactWidthIdle)
+            height: expanded ? root.expandedHeight : (root.hasMedia ? root.compactHeightMedia : root.compactHeightIdle)
+            color: root.colBg
             clip: true
 
+            // D1: Asymmetric animation curves (Overshoot expand, clean cubic collapse)
             Behavior on width {
                 NumberAnimation {
-                    duration: 320
-                    easing.type: Easing.OutQuart
+                    duration: islandCapsule.expanded ? root.animDurationExpand : root.animDurationCollapse
+                    easing.type: islandCapsule.expanded ? Easing.OutBack : Easing.OutCubic
+                    easing.overshoot: root.animOvershoot
                 }
             }
 
             Behavior on height {
                 NumberAnimation {
-                    duration: 320
-                    easing.type: Easing.OutQuart
+                    duration: islandCapsule.expanded ? root.animDurationExpand : root.animDurationCollapse
+                    easing.type: islandCapsule.expanded ? Easing.OutBack : Easing.OutCubic
+                    easing.overshoot: root.animOvershoot
                 }
             }
 
-            Behavior on radius {
-                NumberAnimation {
-                    duration: 320
-                    easing.type: Easing.OutQuart
-                }
-            }
-
+            // B11: Single chrome rim via GlassBevel (no redundant Rectangle border)
             GlassBevel {
                 radius: islandCapsule.radius
+            }
+
+            // A7: HoverHandler keeps card open while hovered; auto-collapse starts on leave
+            HoverHandler {
+                id: cardHover
             }
 
             Timer {
                 id: collapseTimer
 
-                interval: 6000
-                onTriggered: islandCapsule.expanded = false
+                interval: root.autoCollapseDelay
+                running: false
+                onTriggered: {
+                    if (!cardHover.hovered)
+                        islandCapsule.expanded = false;
+                }
             }
 
-            // Compact Pill View
+            Connections {
+                function onHoveredChanged(): void {
+                    if (cardHover.hovered)
+                        collapseTimer.stop();
+                    else if (islandCapsule.expanded)
+                        collapseTimer.restart();
+                }
+
+                target: cardHover
+            }
+
+            // Compact Pill View (Fades out in first 25% of morph)
             Item {
                 id: compactView
 
-                anchors.fill: parent
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                width: islandCapsule.width
+                height: islandCapsule.height
+                opacity: root.morph < 0.25 ? Math.max(0, 1 - root.morph / 0.25) : 0
                 visible: opacity > 0
-                opacity: islandCapsule.expanded ? 0 : 1
 
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 150
-                    }
-                }
-
-                // 1. Idle View (When no media is playing)
+                // 1. Idle Pill
                 Item {
                     id: idlePill
 
@@ -147,7 +216,7 @@ Scope {
                         anchors.leftMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
                         text: "music_note"
-                        color: Colours.palette.m3primary
+                        color: root.colAccentPink
                         font.pointSize: 13
                     }
 
@@ -155,38 +224,41 @@ Scope {
                         anchors.right: parent.right
                         anchors.rightMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
-                        text: Qt.formatTime(new Date(), "hh:mm")
+                        text: Qt.formatTime(sysClock.date, "hh:mm")
                         font.pixelSize: 12
                         font.weight: Font.DemiBold
-                        color: "#FFFFFF"
+                        color: root.colTextPrimary
                     }
                 }
 
-                // 2. Active Media View (Album Art on Left + Apple Soundwave Bars on Right)
+                // 2. Active Media Pill
                 Item {
                     id: mediaPill
 
                     anchors.fill: parent
                     visible: root.hasMedia
 
-                    // Mini Album Artwork or Music Icon
+                    // Compact Album Artwork (A3, B7, C6)
                     Rectangle {
-                        id: miniArt
+                        id: compactArtBox
 
                         width: 24
                         height: 24
                         radius: 6
-                        color: "#1C1C1E"
+                        color: root.colArtBg
                         clip: true
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         anchors.verticalCenter: parent.verticalCenter
-                        border.color: Qt.rgba(255, 255, 255, 0.15)
+                        border.color: root.colBorderLight
                         border.width: 1
 
                         Image {
+                            id: compactArtImg
+
                             anchors.fill: parent
-                            source: root.player ? Players.getArtUrl(root.player) : ""
+                            source: root.artUrl
+                            sourceSize: Qt.size(104, 104)
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
                         }
@@ -194,91 +266,167 @@ Scope {
                         MaterialIcon {
                             anchors.centerIn: parent
                             text: "music_note"
-                            color: "#FA586A"
+                            color: root.colAccentPink
                             font.pointSize: 13
-                            visible: !parent.children[0].source
+                            visible: compactArtImg.status !== Image.Ready
                         }
                     }
 
-                    // Apple Signature Equalizer Waveform Bars
-                    Row {
+                    // B4, C2, D11: Fixed-size Equalizer box with looping SequentialAnimations (no JS per tick)
+                    Item {
                         id: eqBars
 
-                        property real tick: 0
+                        readonly property bool animRunning: root.isPlaying && !islandCapsule.expanded && win.visible
 
+                        onAnimRunningChanged: {
+                            if (!animRunning) {
+                                bar0.height = 3.5;
+                                bar1.height = 3.5;
+                                bar2.height = 3.5;
+                                bar3.height = 3.5;
+                            }
+                        }
+
+                        width: 18
+                        height: 14
                         anchors.right: parent.right
                         anchors.rightMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
-                        spacing: 2.5
 
-                        Timer {
-                            interval: 80
-                            running: root.isPlaying && !islandCapsule.expanded
-                            repeat: true
-                            onTriggered: eqBars.tick = (eqBars.tick + 1) % 1000
+                        Rectangle {
+                            id: bar0
+
+                            x: 0
+                            width: 3
+                            radius: 1.5
+                            color: root.colEqGreen
+                            anchors.bottom: parent.bottom
+                            height: 3.5
+
+                            SequentialAnimation on height {
+                                running: eqBars.animRunning
+                                loops: Animation.Infinite
+
+                                NumberAnimation {
+                                    to: 13
+                                    duration: 340
+                                    easing.type: Easing.InOutSine
+                                }
+                                NumberAnimation {
+                                    to: 4
+                                    duration: 380
+                                    easing.type: Easing.InOutSine
+                                }
+                            }
                         }
 
-                        Repeater {
-                            model: 4
+                        Rectangle {
+                            id: bar1
 
-                            Rectangle {
-                                id: eqBar
+                            x: 5
+                            width: 3
+                            radius: 1.5
+                            color: root.colEqGreen
+                            anchors.bottom: parent.bottom
+                            height: 3.5
 
-                                required property int index
+                            SequentialAnimation on height {
+                                running: eqBars.animRunning
+                                loops: Animation.Infinite
 
-                                width: 3.2
-                                radius: 1.6
-                                color: "#30D158"
-                                anchors.bottom: parent.bottom
-                                height: {
-                                    if (!root.isPlaying)
-                                        return 3.5;
-                                    const t = eqBars.tick;
-                                    if (index === 0)
-                                        return 4 + Math.abs(Math.sin(t * 0.35)) * 12;
-                                    if (index === 1)
-                                        return 5 + Math.abs(Math.sin(t * 0.48 + 1.2)) * 14;
-                                    if (index === 2)
-                                        return 4 + Math.abs(Math.sin(t * 0.30 + 2.5)) * 13;
-                                    return 3.5 + Math.abs(Math.sin(t * 0.55 + 0.8)) * 11;
+                                NumberAnimation {
+                                    to: 15
+                                    duration: 440
+                                    easing.type: Easing.InOutSine
                                 }
+                                NumberAnimation {
+                                    to: 5
+                                    duration: 410
+                                    easing.type: Easing.InOutSine
+                                }
+                            }
+                        }
 
-                                Behavior on height {
-                                    NumberAnimation {
-                                        duration: 75
-                                    }
+                        Rectangle {
+                            id: bar2
+
+                            x: 10
+                            width: 3
+                            radius: 1.5
+                            color: root.colEqGreen
+                            anchors.bottom: parent.bottom
+                            height: 3.5
+
+                            SequentialAnimation on height {
+                                running: eqBars.animRunning
+                                loops: Animation.Infinite
+
+                                NumberAnimation {
+                                    to: 12
+                                    duration: 310
+                                    easing.type: Easing.InOutSine
+                                }
+                                NumberAnimation {
+                                    to: 3.5
+                                    duration: 350
+                                    easing.type: Easing.InOutSine
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            id: bar3
+
+                            x: 15
+                            width: 3
+                            radius: 1.5
+                            color: root.colEqGreen
+                            anchors.bottom: parent.bottom
+                            height: 3.5
+
+                            SequentialAnimation on height {
+                                running: eqBars.animRunning
+                                loops: Animation.Infinite
+
+                                NumberAnimation {
+                                    to: 14
+                                    duration: 480
+                                    easing.type: Easing.InOutSine
+                                }
+                                NumberAnimation {
+                                    to: 4
+                                    duration: 450
+                                    easing.type: Easing.InOutSine
                                 }
                             }
                         }
                     }
                 }
 
-                // Compact Pill tap area to expand
+                // A4: Compact tap area expands card only when media exists
                 MouseArea {
                     anchors.fill: parent
-                    enabled: !islandCapsule.expanded
-                    cursorShape: Qt.PointingHandCursor
+                    enabled: !islandCapsule.expanded && root.hasMedia
+                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                     onClicked: {
                         islandCapsule.expanded = true;
-                        collapseTimer.restart();
+                        if (!cardHover.hovered)
+                            collapseTimer.restart();
                     }
                 }
             }
 
-            // Expanded Bento Card View
+            // B3, D3: Fixed-size Expanded Bento Card (pinned top-center; clip reveals it without layout reflow)
             Item {
                 id: expandedView
 
-                anchors.fill: parent
-                anchors.margins: 14
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: 14
+                width: root.expandedWidth - 28
+                height: root.expandedHeight - 28
+                opacity: root.morph > 0.45 ? Math.min(1, (root.morph - 0.45) / 0.55) : 0
                 visible: opacity > 0
-                opacity: islandCapsule.expanded ? 1 : 0
-
-                Behavior on opacity {
-                    NumberAnimation {
-                        duration: 180
-                    }
-                }
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -289,21 +437,24 @@ Scope {
                         Layout.fillWidth: true
                         spacing: 12
 
-                        // Large Album Artwork
+                        // Large Album Artwork (A3, B7, C6)
                         Rectangle {
-                            id: largeArt
+                            id: largeArtBox
 
                             width: 52
                             height: 52
                             radius: 12
-                            color: "#1C1C1E"
+                            color: root.colArtBg
                             clip: true
-                            border.color: Qt.rgba(255, 255, 255, 0.15)
+                            border.color: root.colBorderLight
                             border.width: 1
 
                             Image {
+                                id: expandedArtImg
+
                                 anchors.fill: parent
-                                source: root.player ? Players.getArtUrl(root.player) : ""
+                                source: root.artUrl
+                                sourceSize: Qt.size(104, 104)
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                             }
@@ -311,13 +462,13 @@ Scope {
                             MaterialIcon {
                                 anchors.centerIn: parent
                                 text: "album"
-                                color: Qt.rgba(255, 255, 255, 0.4)
+                                color: Qt.rgba(1, 1, 1, 0.4)
                                 font.pointSize: 26
-                                visible: !parent.children[0].source
+                                visible: expandedArtImg.status !== Image.Ready
                             }
                         }
 
-                        // Track Title & Artist
+                        // Track Title & Artist (D9: animate for smooth track fade)
                         ColumnLayout {
                             Layout.fillWidth: true
                             Layout.alignment: Qt.AlignVCenter
@@ -328,157 +479,205 @@ Scope {
                                 text: root.player?.trackTitle || Tr.tr("Ready to Play")
                                 font.pixelSize: 15
                                 font.weight: Font.DemiBold
-                                color: "#FFFFFF"
+                                color: root.colTextPrimary
                                 elide: Text.ElideRight
+                                animate: true
                             }
 
                             StyledText {
                                 Layout.fillWidth: true
                                 text: root.player?.trackArtist || root.player?.identity || Tr.tr("JellyFace Island")
                                 font.pixelSize: 12
-                                color: "#98989D"
+                                color: root.colTextSecondary
                                 elide: Text.ElideRight
+                                animate: true
                             }
                         }
 
-                        // Route badge
+                        // A8: Non-interactive audio route indicator badge
                         Rectangle {
-                            width: 30
-                            height: 30
-                            radius: 15
-                            color: Qt.rgba(255, 255, 255, 0.12)
+                            width: 28
+                            height: 28
+                            radius: 14
+                            color: Qt.rgba(1, 1, 1, 0.10)
                             Layout.alignment: Qt.AlignVCenter
 
                             MaterialIcon {
                                 anchors.centerIn: parent
                                 text: "airplay"
-                                color: "#30D158"
-                                font.pointSize: 15
+                                color: root.colEqGreen
+                                font.pointSize: 14
                             }
                         }
                     }
 
-                    // Tier 2: Timeline Scrubber
+                    // Tier 2: Timeline Scrubber (A5, A6, C5, D6, D7)
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 8
+                        spacing: 6
 
                         StyledText {
-                            text: root.lengthStr(root.player?.position ?? 0)
+                            text: root.lengthStr(scrubBar.dragging ? scrubBar.dragProgress * root.trackLength : (root.player?.position ?? 0))
                             font.pixelSize: 11
-                            color: "#8E8E93"
-                            Layout.preferredWidth: 32
+                            color: root.colTextTertiary
+                            Layout.preferredWidth: 44
                             horizontalAlignment: Text.AlignRight
                         }
 
                         Item {
                             id: scrubBar
 
-                            readonly property real progress: {
-                                if (!root.player || !root.player.length || root.player.length <= 0)
+                            property bool dragging: false
+                            property real dragProgress: 0
+                            property bool holdRelease: false
+
+                            readonly property real currentProgress: {
+                                if (root.trackLength <= 0)
                                     return 0;
-                                return Math.max(0, Math.min(1, root.player.position / root.player.length));
+                                if (dragging || holdRelease)
+                                    return dragProgress;
+                                return Math.max(0, Math.min(1, (root.player?.position ?? 0) / root.trackLength));
                             }
 
                             Layout.fillWidth: true
-                            height: 16
+                            implicitHeight: 20
 
+                            Timer {
+                                id: scrubHoldTimer
+
+                                interval: 350
+                                onTriggered: scrubBar.holdRelease = false
+                            }
+
+                            // Interactive Scrubber Track (thickens 4 -> 8 px on hover/press when seekable)
                             Rectangle {
+                                id: trackBg
+
                                 anchors.centerIn: parent
                                 width: parent.width
-                                height: 4
-                                radius: 2
-                                color: "#38383A"
+                                height: (root.canSeek && (scrubArea.containsMouse || scrubBar.dragging)) ? 8 : 4
+                                radius: height / 2
+                                color: root.colScrubTrack
+
+                                Behavior on height {
+                                    NumberAnimation {
+                                        duration: 120
+                                        easing.type: Easing.OutQuad
+                                    }
+                                }
 
                                 Rectangle {
                                     height: parent.height
-                                    radius: 2
-                                    color: "#FFFFFF"
-                                    width: parent.width * scrubBar.progress
+                                    radius: parent.radius
+                                    color: root.colTextPrimary
+                                    width: Math.max(0, Math.min(parent.width, parent.width * scrubBar.currentProgress))
+
+                                    Rectangle {
+                                        anchors.right: parent.right
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        anchors.horizontalCenter: parent.right
+                                        width: 10
+                                        height: 10
+                                        radius: 5
+                                        color: root.colTextPrimary
+                                        visible: root.canSeek && (scrubArea.containsMouse || scrubBar.dragging)
+                                    }
                                 }
                             }
 
                             MouseArea {
+                                id: scrubArea
+
                                 anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
+                                enabled: root.canSeek
                                 hoverEnabled: true
-                                onClicked: mouse => {
-                                    if (!root.player || !root.player.length || root.player.length <= 0)
-                                        return;
-                                    const ratio = Math.max(0, Math.min(1, mouse.x / width));
-                                    root.player.position = ratio * root.player.length;
-                                    collapseTimer.restart();
+                                cursorShape: root.canSeek ? Qt.PointingHandCursor : Qt.ArrowCursor
+
+                                onPressed: mouse => {
+                                    scrubBar.dragging = true;
+                                    scrubBar.holdRelease = false;
+                                    scrubHoldTimer.stop();
+                                    scrubBar.dragProgress = Math.max(0, Math.min(1, mouse.x / width));
                                 }
+
                                 onPositionChanged: mouse => {
-                                    if (pressed && root.player && root.player.length > 0) {
-                                        const ratio = Math.max(0, Math.min(1, mouse.x / width));
-                                        root.player.position = ratio * root.player.length;
-                                        collapseTimer.restart();
+                                    if (scrubBar.dragging)
+                                        scrubBar.dragProgress = Math.max(0, Math.min(1, mouse.x / width));
+                                }
+
+                                onReleased: mouse => {
+                                    if (scrubBar.dragging) {
+                                        scrubBar.dragProgress = Math.max(0, Math.min(1, mouse.x / width));
+                                        scrubBar.dragging = false;
+                                        if (root.player && root.trackLength > 0) {
+                                            root.player.position = scrubBar.dragProgress * root.trackLength;
+                                            scrubBar.holdRelease = true;
+                                            scrubHoldTimer.restart();
+                                        }
                                     }
+                                }
+
+                                onCanceled: {
+                                    scrubBar.dragging = false;
+                                    scrubBar.holdRelease = false;
                                 }
                             }
                         }
 
                         StyledText {
-                            text: {
-                                const len = root.player?.length ?? 0;
-                                const pos = root.player?.position ?? 0;
-                                if (len <= 0)
-                                    return "--:--";
-                                return "-" + root.lengthStr(Math.max(0, len - pos));
-                            }
+                            text: root.trackLength > 0 ? ("-" + root.lengthStr(Math.max(0, root.trackLength - (scrubBar.dragging ? scrubBar.dragProgress * root.trackLength : (root.player?.position ?? 0))))) : "--:--"
                             font.pixelSize: 11
-                            color: "#8E8E93"
-                            Layout.preferredWidth: 36
+                            color: root.colTextTertiary
+                            Layout.preferredWidth: 44
+                            horizontalAlignment: Text.AlignLeft
                         }
                     }
 
-                    // Tier 3: Controls
-                    RowLayout {
+                    // Tier 3: Controls Row (D4, D5: Centered transport group, pinned chevron)
+                    Item {
                         Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignHCenter
+                        implicitHeight: 44
 
-                        Item {
-                            Layout.fillWidth: true
-                        }
-
-                        Row {
+                        RowLayout {
+                            anchors.centerIn: parent
                             spacing: 24
-                            Layout.alignment: Qt.AlignVCenter
 
-                            MaterialIcon {
-                                id: prevIcon
-
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "skip_previous"
-                                color: prevArea.containsMouse ? "#FFFFFF" : Qt.rgba(255, 255, 255, 0.8)
-                                font.pointSize: 22
-
-                                MouseArea {
-                                    id: prevArea
-
-                                    anchors.fill: parent
-                                    anchors.margins: -8
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        root.player?.previous();
-                                        collapseTimer.restart();
-                                    }
-                                }
+                            PressableIcon {
+                                icon: "skip_previous"
+                                pointSize: 22
+                                enabled: root.player?.canGoPrevious ?? false
+                                onClicked: root.player?.previous()
                             }
 
+                            // Prominent Apple Play/Pause Button (A1, A5, D8)
                             Rectangle {
-                                anchors.verticalCenter: parent.verticalCenter
+                                id: playBtn
+
                                 width: 44
                                 height: 44
                                 radius: 22
-                                color: playArea.containsMouse ? "#FFFFFF" : Qt.rgba(255, 255, 255, 0.92)
+                                color: root.colTextPrimary
+                                enabled: root.player?.canTogglePlaying ?? false
+                                opacity: enabled ? (playArea.containsMouse ? 1.0 : 0.92) : 0.35
+                                scale: playArea.pressed && enabled ? 0.94 : 1.0
+
+                                Behavior on scale {
+                                    NumberAnimation {
+                                        duration: 90
+                                        easing.type: Easing.OutQuad
+                                    }
+                                }
+
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 90
+                                    }
+                                }
 
                                 MaterialIcon {
                                     anchors.centerIn: parent
                                     text: root.isPlaying ? "pause" : "play_arrow"
-                                    color: "#000000"
+                                    color: root.colBg
                                     font.pointSize: 24
                                 }
 
@@ -487,72 +686,78 @@ Scope {
 
                                     anchors.fill: parent
                                     hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        root.player?.playPause();
-                                        collapseTimer.restart();
-                                    }
+                                    cursorShape: playBtn.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                    onClicked: if (playBtn.enabled) root.player?.togglePlaying()
                                 }
                             }
 
-                            MaterialIcon {
-                                id: nextIcon
-
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "skip_next"
-                                color: nextArea.containsMouse ? "#FFFFFF" : Qt.rgba(255, 255, 255, 0.8)
-                                font.pointSize: 22
-
-                                MouseArea {
-                                    id: nextArea
-
-                                    anchors.fill: parent
-                                    anchors.margins: -8
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        root.player?.next();
-                                        collapseTimer.restart();
-                                    }
-                                }
+                            PressableIcon {
+                                icon: "skip_next"
+                                pointSize: 22
+                                enabled: root.player?.canGoNext ?? false
+                                onClicked: root.player?.next()
                             }
                         }
 
-                        Item {
-                            Layout.fillWidth: true
-                        }
-
-                        MaterialIcon {
-                            Layout.alignment: Qt.AlignVCenter
-                            text: "expand_less"
-                            color: collapseArea.containsMouse ? "#FFFFFF" : "#8E8E93"
-                            font.pointSize: 18
-
-                            MouseArea {
-                                id: collapseArea
-
-                                anchors.fill: parent
-                                anchors.margins: -6
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: islandCapsule.expanded = false
-                            }
+                        PressableIcon {
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            icon: "expand_less"
+                            pointSize: 18
+                            color: root.colTextTertiary
+                            activeColor: root.colTextPrimary
+                            onClicked: islandCapsule.expanded = false
                         }
                     }
                 }
             }
+        }
+    }
 
-            // Expanded hover watcher to keep island open during active mouse presence
-            MouseArea {
-                anchors.fill: parent
-                z: -1
-                hoverEnabled: true
-                enabled: islandCapsule.expanded
-                onPositionChanged: {
-                    if (islandCapsule.expanded)
-                        collapseTimer.restart();
-                }
+    // B13: Reusable pressable icon component with scale & opacity feedback
+    component PressableIcon: Item {
+        id: btn
+
+        property string icon: ""
+        property int pointSize: 20
+        property color color: root.colTextPrimary
+        property color activeColor: "#FFFFFF"
+        property bool enabled: true
+
+        signal clicked()
+
+        implicitWidth: pointSize + 14
+        implicitHeight: pointSize + 14
+        opacity: enabled ? (mArea.containsMouse ? 1.0 : 0.85) : 0.35
+        scale: mArea.pressed && enabled ? 0.88 : 1.0
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: 90
+                easing.type: Easing.OutQuad
             }
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 90
+            }
+        }
+
+        MaterialIcon {
+            anchors.centerIn: parent
+            text: btn.icon
+            font.pointSize: btn.pointSize
+            color: mArea.containsMouse ? btn.activeColor : btn.color
+        }
+
+        MouseArea {
+            id: mArea
+
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: btn.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: if (btn.enabled) btn.clicked()
         }
     }
 }
