@@ -15,8 +15,14 @@ Slider {
     orientation: Qt.Vertical
 
     background: StyledRect {
-        color: Colours.layer(Colours.palette.m3surfaceContainer, 2)
+        id: bgRect
+
+        color: Glass.enabled ? Glass.sheet : Colours.layer(Colours.palette.m3surfaceContainer, 2)
         radius: Tokens.rounding.full
+
+        GlassBevel {
+            radius: bgRect.radius
+        }
 
         StyledRect {
             anchors.left: parent.left

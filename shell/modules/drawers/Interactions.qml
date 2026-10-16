@@ -174,6 +174,10 @@ CustomMouseArea {
         updateOverPanel(event.x, event.y);
         // the bottom edge under the dock calls an auto-hidden dock back (modules/dock)
         DockReveal.edge = event.y >= root.height - borderThickness - 2 && event.x >= DockReveal.left && event.x <= DockReveal.right;
+
+        // Hot corner: flick into top-right corner opens notifications & agenda sidebar
+        if (event.x >= root.width - borderThickness - 4 && event.y <= borderThickness + 4 && !screenState.sidebar && !fullscreen)
+            screenState.sidebar = true;
         if (popouts.isDetached)
             return;
 
