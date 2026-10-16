@@ -69,10 +69,10 @@ Item {
         // Translucent liquid glass card base over compositor blur
         color: Glass.enabled ? Glass.standalone(Glass.glassCardBase) : Colours.tPalette.m3surfaceContainer
 
-        border.width: 1
+        border.width: !DashboardState.isLocked ? 1 : 0
         border.color: !DashboardState.isLocked
-            ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? Glass.glassBorderHover : (Glass.enabled ? Qt.rgba(1.0, 1.0, 1.0, 0.32) : Colours.palette.m3outlineVariant))
-            : Glass.glassBorder
+            ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? Colours.palette.m3primary : Colours.palette.m3outlineVariant)
+            : "transparent"
 
         Behavior on border.color {
             CAnim {

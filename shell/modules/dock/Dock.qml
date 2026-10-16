@@ -635,7 +635,10 @@ Scope {
             id: cardMasks
 
             Region { item: dashboard.commandBarCard?.visible ? dashboard.commandBarCard.surface : null }
-            Region { item: dashboard.systemMonitorCard?.visible ? dashboard.systemMonitorCard.surface : null }
+            Region { item: dashboard.cpuCard?.visible ? dashboard.cpuCard.surface : null }
+            Region { item: dashboard.memoryCard?.visible ? dashboard.memoryCard.surface : null }
+            Region { item: dashboard.diskCard?.visible ? dashboard.diskCard.surface : null }
+            Region { item: dashboard.networkCard?.visible ? dashboard.networkCard.surface : null }
             Region { item: dashboard.notifCard?.visible ? dashboard.notifCard.surface : null }
             Region { item: dashboard.mailCard?.visible ? dashboard.mailCard.surface : null }
         }
@@ -646,7 +649,10 @@ Scope {
             id: cardBlur
 
             GlassRegion { pane: dashboard.commandBarCard?.visible ? dashboard.commandBarCard.surface : null }
-            GlassRegion { pane: dashboard.systemMonitorCard?.visible ? dashboard.systemMonitorCard.surface : null }
+            GlassRegion { pane: dashboard.cpuCard?.visible ? dashboard.cpuCard.surface : null }
+            GlassRegion { pane: dashboard.memoryCard?.visible ? dashboard.memoryCard.surface : null }
+            GlassRegion { pane: dashboard.diskCard?.visible ? dashboard.diskCard.surface : null }
+            GlassRegion { pane: dashboard.networkCard?.visible ? dashboard.networkCard.surface : null }
             GlassRegion { pane: dashboard.notifCard?.visible ? dashboard.notifCard.surface : null }
             GlassRegion { pane: dashboard.mailCard?.visible ? dashboard.mailCard.surface : null }
         }

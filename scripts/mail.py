@@ -209,17 +209,26 @@ def fetch_gmail_emails(cfg):
         if status != "OK":
             return None, f"Failed to select folder {folder}"
 
-        # Search for messages
-        status, data = mail.search(None, "ALL")
-        if status != "OK" or not data or not data[0]:
-            mail.close()
-            mail.logout()
-            return [], "ok"
+        # Search for messages: fetch all unseen messages plus recent messages
+        status_unseen, data_unseen = mail.search(None, "UNSEEN")
+        unseen_ids = [int(x) for x in data_unseen[0].split()] if (status_unseen == "OK" and data_unseen and data_unseen[0]) else []
 
-        msg_ids = data[0].split()
-        # Take the most recent 'limit' messages
-        recent_ids = msg_ids[-limit:]
-        recent_ids.reverse()  # Newest first
+        status_all, data_all = mail.search(None, "ALL")
+        all_ids = [int(x) for x in data_all[0].split()] if (status_all == "OK" and data_all and data_all[0]) else []
+
+        # Target IDs: prioritize latest unseen messages (up to max_fetch), then backfill with recent messages
+        max_fetch = max(limit, 10)
+        recent_unseen = unseen_ids[-max_fetch:] if len(unseen_ids) > max_fetch else unseen_ids
+        target_ids = list(recent_unseen)
+        target_set = set(target_ids)
+        for mid in reversed(all_ids):
+            if mid not in target_set:
+                target_ids.append(mid)
+                target_set.add(mid)
+            if len(target_ids) >= max_fetch:
+                break
+        target_ids.sort(reverse=True)
+        recent_ids = [str(x).encode() for x in target_ids]
 
         emails_list = []
         for msg_id in recent_ids:
@@ -296,7 +305,7 @@ def fetch_gmail_emails(cfg):
         except Exception:
             pass
 
-        return emails_list, "ok"
+        return emails_list, "ok", len(unseen_ids)
 
     except imaplib.IMAP4.error as e:
         err_str = str(e)
@@ -305,14 +314,14 @@ def fetch_gmail_emails(cfg):
                 mail.logout()
             except Exception:
                 pass
-        return None, f"auth_error: {err_str}"
+        return None, f"auth_error: {err_str}", 0
     except Exception as e:
         if mail:
             try:
                 mail.logout()
             except Exception:
                 pass
-        return None, f"network_error: {e}"
+        return None, f"network_error: {e}", 0
 
 
 def get_setup_card(account):
@@ -353,12 +362,13 @@ def refresh():
     cfg = load_config()
     account = cfg.get("email", DEFAULT_EMAIL)
 
-    emails, status = fetch_gmail_emails(cfg)
+    emails, status, total_unseen = fetch_gmail_emails(cfg)
 
     if status == "no_password":
         state = {
             "account": account,
             "emails": get_setup_card(account),
+            "unreadCount": 0,
             "status": "needs_password",
             "lastError": "No App Password configured"
         }
@@ -370,6 +380,7 @@ def refresh():
         state = {
             "account": account,
             "emails": get_error_card(account, status.replace("auth_error: ", "")),
+            "unreadCount": 0,
             "status": "auth_error",
             "lastError": status
         }
@@ -391,12 +402,12 @@ def refresh():
     state = {
         "account": account,
         "emails": emails,
+        "unreadCount": total_unseen,
         "status": "synced",
         "lastError": ""
     }
     save_state(state)
-    unread_count = sum(1 for m in emails if m.get("unread"))
-    print(f"[mail] Successfully synced {len(emails)} emails ({unread_count} unread) from {account}")
+    print(f"[mail] Successfully synced {len(emails)} emails ({total_unseen} total unread) from {account}")
     print("__JELLYFACE_MAIL_JSON__" + json.dumps(state, ensure_ascii=False))
 
 

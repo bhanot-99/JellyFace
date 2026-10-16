@@ -40,8 +40,7 @@ ModularCard {
                 implicitHeight: 34
                 radius: Tokens.rounding.medium
                 color: Glass.glassElevatedTile
-                border.width: 1
-                border.color: Glass.glassBorder
+                border.width: 0
 
                 MaterialIcon {
                     anchors.centerIn: parent
@@ -62,7 +61,7 @@ ModularCard {
                 }
 
                 StyledText {
-                    text: SysInfo.osPrettyName || "Pop!_OS 24.04"
+                    text: "Jelly Linux"
                     font: Tokens.font.label.small
                     color: Glass.textSecondary
                 }
@@ -82,8 +81,8 @@ ModularCard {
             Layout.preferredHeight: 38
             radius: Tokens.rounding.full
             color: searchField.activeFocus ? (Glass.enabled ? Qt.rgba(0.05, 0.07, 0.10, 0.88) : Colours.palette.m3surfaceDim) : Glass.glassRecessedWell
-            border.width: 1
-            border.color: searchField.activeFocus ? Glass.glassActivePill : (searchBoxMouse.containsMouse ? Glass.glassBorderHover : Glass.glassBorder)
+            border.width: searchField.activeFocus ? 1 : 0
+            border.color: searchField.activeFocus ? Glass.glassActivePill : "transparent"
 
             Behavior on border.color {
                 CAnim {
@@ -237,8 +236,7 @@ ModularCard {
                     implicitHeight: 26
                     radius: Tokens.rounding.full
                     color: braveMouse.pressed ? Glass.glassActivePill : (braveMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
-                    border.width: 1
-                    border.color: braveMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
+                    border.width: 0
                     scale: braveMouse.pressed ? 0.94 : (braveMouse.containsMouse ? 1.03 : 1.0)
 
                     Behavior on scale {
@@ -294,42 +292,6 @@ ModularCard {
             spacing: 8
             Layout.alignment: Qt.AlignVCenter
 
-            // Notification Center Toggle Bell (Glass.glassElevatedTile Squircle)
-            Rectangle {
-                id: notifBell
-
-                readonly property bool notifVis: DashboardState.isCardVisible("notifications", true)
-
-                implicitWidth: 34
-                implicitHeight: 34
-                radius: Tokens.rounding.medium
-                color: notifBellMouse.pressed ? Glass.glassActivePill : (notifBellMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
-                border.width: 1
-                border.color: notifVis || notifBellMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
-                scale: notifBellMouse.pressed ? 0.94 : (notifBellMouse.containsMouse ? 1.05 : 1.0)
-
-                Behavior on scale {
-                    Anim {
-                        type: Anim.FastSpatial
-                    }
-                }
-
-                MaterialIcon {
-                    anchors.centerIn: parent
-                    text: Notifs.dnd ? "notifications_off" : "notifications"
-                    color: notifBellMouse.pressed ? Glass.textDark : Glass.textPrimary
-                    fontStyle: Tokens.font.icon.small
-                }
-
-                MouseArea {
-                    id: notifBellMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: DashboardState.setCardVisible("notifications", !notifBell.notifVis)
-                }
-            }
-
             // Global Edit / Lock Mode Toggle Pill Button
             Rectangle {
                 id: lockToggleBtn
@@ -338,8 +300,8 @@ ModularCard {
                 implicitHeight: 34
                 radius: Tokens.rounding.full
                 color: !DashboardState.isLocked ? Glass.glassActivePill : (lockMouse.pressed ? Glass.glassPillHover : (lockMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile))
-                border.width: 1
-                border.color: !DashboardState.isLocked || lockMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
+                border.width: !DashboardState.isLocked ? 1 : 0
+                border.color: !DashboardState.isLocked ? Glass.glassActivePill : "transparent"
                 scale: lockMouse.pressed ? 0.94 : (lockMouse.containsMouse ? 1.04 : 1.0)
 
                 Behavior on scale {
@@ -383,8 +345,7 @@ ModularCard {
                 implicitHeight: 34
                 radius: Tokens.rounding.full
                 color: Glass.glassElevatedTile
-                border.width: 1
-                border.color: Glass.glassBorder
+                border.width: 0
 
                 StyledText {
                     id: clockText

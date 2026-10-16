@@ -87,8 +87,23 @@ Singleton {
             const data = JSON.parse(jsonText);
             if (data.isLocked !== undefined)
                 root.isLocked = data.isLocked;
-            if (data.cards)
+            if (data.cards) {
                 root.layouts = data.cards;
+                // Auto-migrate legacy systemMonitor card to 4 individual autonomous cards
+                if (!root.layouts["cpu"] && root.layouts["systemMonitor"]) {
+                    const sm = root.layouts["systemMonitor"];
+                    const gap = 12;
+                    const topW = Math.round((sm.width - gap * 2) / 3);
+                    const topH = 156;
+                    const netH = Math.max(160, sm.height - topH - gap);
+                    root.layouts["cpu"] = { x: sm.x, y: sm.y, width: topW, height: topH, visible: sm.visible ?? true };
+                    root.layouts["memory"] = { x: sm.x + topW + gap, y: sm.y, width: topW, height: topH, visible: sm.visible ?? true };
+                    root.layouts["disk"] = { x: sm.x + (topW + gap) * 2, y: sm.y, width: sm.width - (topW + gap) * 2, height: topH, visible: sm.visible ?? true };
+                    root.layouts["network"] = { x: sm.x, y: sm.y + topH + gap, width: sm.width, height: netH, visible: sm.visible ?? true };
+                    delete root.layouts["systemMonitor"];
+                    saveTimer.restart();
+                }
+            }
             root.layoutChanged();
         } catch (e) {
             console.warn("DashboardState: error loading layout.json:", e);

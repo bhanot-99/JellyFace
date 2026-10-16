@@ -14,8 +14,11 @@ Singleton {
     readonly property string statePath: `${Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"}/jellyface/mail.json`
 
     property var emails: []
+    property int totalUnread: 0
     property bool isSyncing: false
     readonly property int unreadCount: {
+        if (totalUnread > 0)
+            return totalUnread;
         let count = 0;
         for (let i = 0; i < emails.length; i++) {
             if (emails[i] && emails[i].unread)
@@ -49,6 +52,8 @@ Singleton {
                             const data = JSON.parse(jsonStr);
                             if (data && data.emails) {
                                 root.emails = data.emails;
+                                if (data.unreadCount !== undefined)
+                                    root.totalUnread = data.unreadCount;
                                 console.info(`MailService: Synced ${data.emails.length} emails live`);
                             }
                         } catch (e) {
@@ -121,15 +126,17 @@ Singleton {
             try {
                 const data = JSON.parse(text());
                 root.emails = data.emails || [];
+                if (data.unreadCount !== undefined)
+                    root.totalUnread = data.unreadCount;
             } catch (e) {
                 console.warn("MailService: bad mail.json", e);
             }
         }
     }
 
-    // Auto-sync every 90 minutes (5400000 ms)
+    // Auto-sync constantly every 120 seconds (120000 ms)
     Timer {
-        interval: 5400000
+        interval: 120000
         repeat: true
         running: true
         onTriggered: root.refresh()

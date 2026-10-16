@@ -37,8 +37,7 @@ ModularCard {
                 implicitHeight: 26
                 radius: Tokens.rounding.small
                 color: Glass.glassElevatedTile
-                border.width: 1
-                border.color: Glass.glassBorder
+                border.width: 0
 
                 MaterialIcon {
                     anchors.centerIn: parent
@@ -62,8 +61,7 @@ ModularCard {
                 radius: Tokens.rounding.full
                 visible: root.hasNotifs
                 color: Glass.glassActivePill
-                border.width: 1
-                border.color: Glass.glassActivePill
+                border.width: 0
 
                 StyledText {
                     id: badgeText
@@ -89,8 +87,7 @@ ModularCard {
                 radius: Tokens.rounding.small
                 visible: root.hasNotifs
                 color: clearMouse.pressed ? Glass.glassActivePill : (clearMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
-                border.width: 1
-                border.color: clearMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
+                border.width: 0
                 scale: clearMouse.pressed ? 0.92 : (clearMouse.containsMouse ? 1.05 : 1.0)
 
                 Behavior on scale {
@@ -103,11 +100,7 @@ ModularCard {
                         duration: 150
                     }
                 }
-                Behavior on border.color {
-                    CAnim {
-                        duration: 150
-                    }
-                }
+
 
                 MaterialIcon {
                     anchors.centerIn: parent
@@ -156,15 +149,9 @@ ModularCard {
                     implicitHeight: 48
                     radius: Tokens.rounding.medium
                     color: itemHover.hovered ? Glass.glassPillHover : Glass.glassElevatedTile
-                    border.width: 1
-                    border.color: itemHover.hovered ? Glass.glassBorderHover : Glass.glassBorder
+                    border.width: 0
 
                     Behavior on color {
-                        CAnim {
-                            duration: 150
-                        }
-                    }
-                    Behavior on border.color {
                         CAnim {
                             duration: 150
                         }
@@ -185,8 +172,7 @@ ModularCard {
                             implicitHeight: 32
                             radius: Tokens.rounding.small
                             color: Glass.glassRecessedWell
-                            border.width: 1
-                            border.color: Glass.glassRimBottom
+                            border.width: 0
 
                             Image {
                                 anchors.centerIn: parent
@@ -285,8 +271,7 @@ ModularCard {
             visible: !root.hasNotifs
             radius: Tokens.rounding.medium
             color: Glass.glassRecessedWell
-            border.width: 1
-            border.color: Glass.glassBorder
+            border.width: 0
 
             Row {
                 anchors.centerIn: parent

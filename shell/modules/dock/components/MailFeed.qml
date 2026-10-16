@@ -17,9 +17,11 @@ ModularCard {
     cardId: "mail"
     title: Tr.tr("Mail Feed")
     minW: 320
-    minH: 180
+    minH: 140
     canResize: true
     contentPadding: 14
+
+    readonly property var unreadMails: (MailService.emails || []).filter(e => !!e.unread)
 
     function cleanLine(str: var): string {
         if (!str) return "";
@@ -42,8 +44,7 @@ ModularCard {
                 implicitHeight: 26
                 radius: Tokens.rounding.small
                 color: Glass.glassElevatedTile
-                border.width: 1
-                border.color: Glass.glassBorder
+                border.width: 0
 
                 MaterialIcon {
                     anchors.centerIn: parent
@@ -65,16 +66,15 @@ ModularCard {
                 implicitWidth: unreadText.implicitWidth + 12
                 implicitHeight: 20
                 radius: Tokens.rounding.full
-                color: MailService.unreadCount > 0 ? Glass.glassActivePill : Glass.glassRecessedWell
-                border.width: 1
-                border.color: MailService.unreadCount > 0 ? Glass.glassActivePill : Glass.glassBorder
+                color: root.unreadMails.length > 0 ? Glass.glassActivePill : Glass.glassRecessedWell
+                border.width: 0
 
                 StyledText {
                     id: unreadText
                     anchors.centerIn: parent
-                    text: `${MailService.unreadCount} unread`
+                    text: `${root.unreadMails.length} unread`
                     font: Tokens.font.label.small
-                    color: MailService.unreadCount > 0 ? Glass.textDark : Glass.textMuted
+                    color: root.unreadMails.length > 0 ? Glass.textDark : Glass.textMuted
                 }
             }
 
@@ -88,19 +88,12 @@ ModularCard {
                 z: 20
                 radius: Tokens.rounding.small
                 color: refreshMouse.pressed ? Glass.glassActivePill : (refreshMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
-                border.width: 1
-                border.color: refreshMouse.containsMouse || MailService.isSyncing ? Glass.glassActivePill : Glass.glassBorder
+                border.width: 0
                 scale: refreshMouse.pressed ? 0.92 : (refreshMouse.containsMouse ? 1.05 : 1.0)
 
                 Behavior on scale {
                     Anim {
                         type: Anim.FastSpatial
-                    }
-                }
-
-                Behavior on border.color {
-                    CAnim {
-                        duration: 150
                     }
                 }
 
@@ -167,12 +160,12 @@ ModularCard {
                 }
             }
 
-            model: MailService.emails
+            model: root.unreadMails
 
             // Empty State Placeholder
             Item {
                 anchors.fill: parent
-                visible: MailService.emails.length === 0
+                visible: root.unreadMails.length === 0
 
                 ColumnLayout {
                     anchors.centerIn: parent
@@ -187,7 +180,7 @@ ModularCard {
 
                     StyledText {
                         Layout.alignment: Qt.AlignHCenter
-                        text: Tr.tr("No Recent Emails")
+                        text: Tr.tr("No Unread Emails")
                         font: Tokens.font.label.medium
                         color: Glass.textMuted
                     }
@@ -204,15 +197,9 @@ ModularCard {
                 implicitHeight: Math.max(52, mailContentRow.implicitHeight + 16)
                 radius: Tokens.rounding.medium
                 color: mailMouse.containsMouse ? Glass.glassPillHover : (mailItem.m?.unread ? Glass.glassElevatedTile : (Glass.enabled ? Qt.rgba(1.0, 1.0, 1.0, 0.10) : Colours.palette.m3surfaceContainerLow))
-                border.width: 1
-                border.color: mailMouse.containsMouse ? Glass.glassBorderHover : (mailItem.m?.unread ? Glass.glassBorderHover : Glass.glassBorder)
+                border.width: 0
 
                 Behavior on color {
-                    CAnim {
-                        duration: 150
-                    }
-                }
-                Behavior on border.color {
                     CAnim {
                         duration: 150
                     }
@@ -243,8 +230,7 @@ ModularCard {
                         Layout.alignment: Qt.AlignVCenter
                         radius: Tokens.rounding.small
                         color: mailItem.m?.unread ? Glass.glassElevatedTile : Glass.glassRecessedWell
-                        border.width: 1
-                        border.color: mailItem.m?.unread ? Glass.glassRimTop : Glass.glassRimBottom
+                        border.width: 0
 
                         StyledText {
                             anchors.centerIn: parent
@@ -317,123 +303,6 @@ ModularCard {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.rightMargin: 2
                     }
-                }
-            }
-        }
-
-        // 3. Footer Action Keys (Fixed Height, Stays Pinned to Bottom)
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 38
-            spacing: 10
-
-            // Open in Brave (Gmail) Tactile Pill Button
-            Rectangle {
-                id: gmailBtn
-                Layout.fillWidth: true
-                implicitHeight: 36
-                radius: Tokens.rounding.full
-                color: gmailMouse.pressed ? Glass.glassActivePill : (gmailMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
-                border.width: 1
-                border.color: gmailMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
-                scale: gmailMouse.pressed ? 0.96 : (gmailMouse.containsMouse ? 1.02 : 1.0)
-
-                Behavior on scale {
-                    Anim {
-                        type: Anim.FastSpatial
-                    }
-                }
-                Behavior on border.color {
-                    CAnim {
-                        duration: 150
-                    }
-                }
-                Behavior on color {
-                    CAnim {
-                        duration: 150
-                    }
-                }
-
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 6
-
-                    MaterialIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "open_in_browser"
-                        color: gmailMouse.pressed ? Glass.textDark : (gmailMouse.containsMouse ? Glass.textPrimary : Glass.textSecondary)
-                        fontStyle: Tokens.font.icon.small
-                    }
-
-                    StyledText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Gmail"
-                        font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                        color: gmailMouse.pressed ? Glass.textDark : (gmailMouse.containsMouse ? Glass.textPrimary : Glass.textSecondary)
-                    }
-                }
-
-                MouseArea {
-                    id: gmailMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: MailService.openGmail()
-                }
-            }
-
-            // Launch Thunderbird Tactile Pill Button
-            Rectangle {
-                id: tbBtn
-                Layout.fillWidth: true
-                implicitHeight: 36
-                radius: Tokens.rounding.full
-                color: tbMouse.pressed ? Glass.glassActivePill : (tbMouse.containsMouse ? Glass.glassPillHover : Glass.glassElevatedTile)
-                border.width: 1
-                border.color: tbMouse.containsMouse ? Glass.glassActivePill : Glass.glassBorder
-                scale: tbMouse.pressed ? 0.96 : (tbMouse.containsMouse ? 1.02 : 1.0)
-
-                Behavior on scale {
-                    Anim {
-                        type: Anim.FastSpatial
-                    }
-                }
-                Behavior on border.color {
-                    CAnim {
-                        duration: 150
-                    }
-                }
-                Behavior on color {
-                    CAnim {
-                        duration: 150
-                    }
-                }
-
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 6
-
-                    MaterialIcon {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "mail"
-                        color: tbMouse.pressed ? Glass.textDark : (tbMouse.containsMouse ? Glass.textPrimary : Glass.textSecondary)
-                        fontStyle: Tokens.font.icon.small
-                    }
-
-                    StyledText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Thunderbird"
-                        font: Tokens.font.body.builders.small.weight(Font.DemiBold).build()
-                        color: tbMouse.pressed ? Glass.textDark : (tbMouse.containsMouse ? Glass.textPrimary : Glass.textSecondary)
-                    }
-                }
-
-                MouseArea {
-                    id: tbMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: MailService.openClient("thunderbird")
                 }
             }
         }
