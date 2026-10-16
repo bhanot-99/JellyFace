@@ -68,10 +68,10 @@ Item {
         radius: surface.radius
         z: -1
 
-        color: Glass.enabled ? Qt.rgba(0, 0, 0, root.isDragging ? 0.35 : 0.22) : Qt.rgba(0, 0, 0, root.isDragging ? 0.45 : 0.30)
-        blur: root.isDragging ? 26 : 16
+        color: Glass.enabled ? Qt.rgba(0, 0, 0, root.isDragging ? 0.32 : 0.20) : Qt.rgba(0, 0, 0, root.isDragging ? 0.42 : 0.28)
+        blur: root.isDragging ? 52 : 36
         spread: 0
-        offset.y: root.isDragging ? 8 : 4
+        offset.y: root.isDragging ? 10 : 6
         offset.x: 0
 
         Behavior on offset.y {

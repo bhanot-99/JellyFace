@@ -563,12 +563,12 @@ Scope {
                 layer.enabled: true
                 layer.effect: MultiEffect {
                     shadowEnabled: true
-                    blurMax: 12
+                    blurMax: 32
                     shadowColor: Qt.rgba(0, 0, 0, 0.45)
-                    shadowBlur: 0.35
-                    shadowVerticalOffset: 2.5 + icon.lift * 0.35
+                    shadowBlur: 0.85
+                    shadowVerticalOffset: 3 + icon.lift * 0.4
                     shadowHorizontalOffset: 0
-                    shadowOpacity: 0.8
+                    shadowOpacity: 0.75
                 }
 
                 IconImage {
