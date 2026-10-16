@@ -217,7 +217,7 @@ Scope {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "music_note"
                         color: root.colAccentPink
-                        font.pointSize: 13
+                        fontStyle: Tokens.font.icon.size(13).build()
                     }
 
                     StyledText {
@@ -267,7 +267,7 @@ Scope {
                             anchors.centerIn: parent
                             text: "music_note"
                             color: root.colAccentPink
-                            font.pointSize: 13
+                            fontStyle: Tokens.font.icon.size(13).build()
                             visible: compactArtImg.status !== Image.Ready
                         }
                     }
@@ -403,15 +403,37 @@ Scope {
                     }
                 }
 
-                // A4: Compact tap area expands card only when media exists
+                // A4: Compact tap/hover area expands card only when media exists
+                Timer {
+                    id: expandHoverTimer
+
+                    interval: 200
+                    onTriggered: {
+                        if (root.hasMedia && !islandCapsule.expanded) {
+                            islandCapsule.expanded = true;
+                            if (!cardHover.hovered)
+                                collapseTimer.restart();
+                        }
+                    }
+                }
+
                 MouseArea {
                     anchors.fill: parent
                     enabled: !islandCapsule.expanded && root.hasMedia
+                    hoverEnabled: true
                     cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                     onClicked: {
+                        expandHoverTimer.stop();
                         islandCapsule.expanded = true;
                         if (!cardHover.hovered)
                             collapseTimer.restart();
+                    }
+                    onEntered: {
+                        if (root.hasMedia && !islandCapsule.expanded)
+                            expandHoverTimer.restart();
+                    }
+                    onExited: {
+                        expandHoverTimer.stop();
                     }
                 }
             }
@@ -463,7 +485,7 @@ Scope {
                                 anchors.centerIn: parent
                                 text: "album"
                                 color: Qt.rgba(1, 1, 1, 0.4)
-                                font.pointSize: 26
+                                fontStyle: Tokens.font.icon.size(26).build()
                                 visible: expandedArtImg.status !== Image.Ready
                             }
                         }
@@ -506,7 +528,7 @@ Scope {
                                 anchors.centerIn: parent
                                 text: "airplay"
                                 color: root.colEqGreen
-                                font.pointSize: 14
+                                fontStyle: Tokens.font.icon.size(14).build()
                             }
                         }
                     }
@@ -678,7 +700,7 @@ Scope {
                                     anchors.centerIn: parent
                                     text: root.isPlaying ? "pause" : "play_arrow"
                                     color: root.colBg
-                                    font.pointSize: 24
+                                    fontStyle: Tokens.font.icon.size(24).build()
                                 }
 
                                 MouseArea {
@@ -747,7 +769,7 @@ Scope {
         MaterialIcon {
             anchors.centerIn: parent
             text: btn.icon
-            font.pointSize: btn.pointSize
+            fontStyle: Tokens.font.icon.size(btn.pointSize).build()
             color: mArea.containsMouse ? btn.activeColor : btn.color
         }
 

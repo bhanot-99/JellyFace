@@ -14,11 +14,11 @@ Singleton {
 
     readonly property list<MprisPlayer> list: Mpris.players.values
     readonly property MprisPlayer active: {
-        if (props.manualActive)
-            return props.manualActive;
         const playing = list.find(p => p.playbackState === MprisPlaybackState.Playing);
         if (playing)
             return playing;
+        if (props.manualActive)
+            return props.manualActive;
         const def = list.find(p => getIdentity(p) === GlobalConfig.services.defaultPlayer);
         if (def)
             return def;
