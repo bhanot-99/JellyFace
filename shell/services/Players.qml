@@ -13,7 +13,20 @@ Singleton {
     id: root
 
     readonly property list<MprisPlayer> list: Mpris.players.values
-    readonly property MprisPlayer active: props.manualActive ?? list.find(p => getIdentity(p) === GlobalConfig.services.defaultPlayer) ?? list[0] ?? null
+    readonly property MprisPlayer active: {
+        if (props.manualActive)
+            return props.manualActive;
+        const playing = list.find(p => p.playbackState === MprisPlaybackState.Playing);
+        if (playing)
+            return playing;
+        const def = list.find(p => getIdentity(p) === GlobalConfig.services.defaultPlayer);
+        if (def)
+            return def;
+        const paused = list.find(p => p.playbackState === MprisPlaybackState.Paused);
+        if (paused)
+            return paused;
+        return list[0] ?? null;
+    }
     property alias manualActive: props.manualActive
 
     // Dedup key for progressive metadata (e.g. mpv-mpris/yt-dlp player fills title then artist later).

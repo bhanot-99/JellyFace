@@ -15,39 +15,51 @@ import qs.utils
 
 // Dynamic Island: Contextual floating status capsule at top center of the screen,
 // modeled on the authentic Apple iPhone Dynamic Island UI/UX.
-// Morphs smoothly between an ambient compact pill (artwork, animated equalizer bars)
+// Morphs smoothly between an ambient idle pill, an active media capsule (live equalizer bars),
 // and an expanded interactive media card (scrubber, timestamps, tactile controls).
 Scope {
     id: root
 
     readonly property MprisPlayer player: Players.active
-    readonly property bool isPlaying: player && player.playbackState === MprisPlaybackState.Playing
-    readonly property bool hasMedia: player && (isPlaying || player.playbackState === MprisPlaybackState.Paused)
-    readonly property bool wanted: hasMedia && !CosmicWindows.fullscreen
+    readonly property bool isPlaying: player && (player.isPlaying || player.playbackState === MprisPlaybackState.Playing)
+    readonly property bool hasMedia: player && (isPlaying || player.playbackState === MprisPlaybackState.Paused || (player.trackTitle && player.trackTitle.length > 0))
+    readonly property bool wanted: !CosmicWindows.fullscreen
 
-    function formatTime(s: real): string {
-        if (!s || isNaN(s) || s < 0)
+    function lengthStr(length: real): string {
+        if (!length || isNaN(length) || length < 0)
             return "0:00";
-        const mins = Math.floor(s / 60);
-        const secs = Math.floor(s % 60).toString().padStart(2, "0");
+        const hours = Math.floor(length / 3600);
+        const mins = Math.floor((length % 3600) / 60);
+        const secs = Math.floor(length % 60).toString().padStart(2, "0");
+        if (hours > 0)
+            return `${hours}:${mins.toString().padStart(2, "0")}:${secs}`;
         return `${mins}:${secs}`;
+    }
+
+    Timer {
+        id: positionTimer
+
+        interval: 500
+        running: root.isPlaying && !CosmicWindows.fullscreen
+        repeat: true
+        onTriggered: root.player?.positionChanged()
     }
 
     StyledWindow {
         id: win
 
-        screen: ShellState.forActive()?.modelData ?? Quickshell.screens[0]
+        screen: Quickshell.screens[0]
         name: "dynamic-island"
         visible: root.wanted
-        WlrLayershell.layer: WlrLayer.Top
+        WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
         anchors.top: true
-        margins.top: 8
+        anchors.left: true
+        anchors.right: true
+        implicitHeight: islandCapsule.height + 24
 
-        implicitWidth: islandCapsule.width
-        implicitHeight: islandCapsule.height
         mask: Region {
             item: islandCapsule
         }
@@ -65,8 +77,12 @@ Scope {
 
             property bool expanded: false
 
-            width: expanded ? 370 : (root.isPlaying ? 200 : 180)
-            height: expanded ? 166 : 36
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.top: parent.top
+            anchors.topMargin: 8
+
+            width: expanded ? 370 : (root.isPlaying ? 210 : (root.hasMedia ? 190 : 130))
+            height: expanded ? 166 : (root.hasMedia ? 36 : 32)
             radius: expanded ? 36 : height / 2
             color: "#000000"
             border.color: Qt.rgba(255, 255, 255, 0.14)
@@ -105,7 +121,7 @@ Scope {
                 onTriggered: islandCapsule.expanded = false
             }
 
-            // Compact Pill View (Artwork on Left + Apple Soundwave Bars on Right)
+            // Compact Pill View
             Item {
                 id: compactView
 
@@ -119,83 +135,118 @@ Scope {
                     }
                 }
 
-                // Mini Album Artwork or Music Icon
-                Rectangle {
-                    id: miniArt
+                // 1. Idle View (When no media is playing)
+                Item {
+                    id: idlePill
 
-                    width: 24
-                    height: 24
-                    radius: 6
-                    color: "#1C1C1E"
-                    clip: true
-                    anchors.left: parent.left
-                    anchors.leftMargin: 6
-                    anchors.verticalCenter: parent.verticalCenter
-                    border.color: Qt.rgba(255, 255, 255, 0.15)
-                    border.width: 1
-
-                    Image {
-                        anchors.fill: parent
-                        source: root.player ? Players.getArtUrl(root.player) : ""
-                        fillMode: Image.PreserveAspectCrop
-                        asynchronous: true
-                    }
+                    anchors.fill: parent
+                    visible: !root.hasMedia
 
                     MaterialIcon {
-                        anchors.centerIn: parent
+                        anchors.left: parent.left
+                        anchors.leftMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
                         text: "music_note"
-                        color: "#FA586A"
+                        color: Colours.palette.m3primary
                         font.pointSize: 13
-                        visible: !parent.children[0].source
+                    }
+
+                    StyledText {
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Qt.formatTime(new Date(), "hh:mm")
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        color: "#FFFFFF"
                     }
                 }
 
-                // Apple Signature Equalizer Waveform Bars
-                Row {
-                    id: eqBars
+                // 2. Active Media View (Album Art on Left + Apple Soundwave Bars on Right)
+                Item {
+                    id: mediaPill
 
-                    property real tick: 0
+                    anchors.fill: parent
+                    visible: root.hasMedia
 
-                    anchors.right: parent.right
-                    anchors.rightMargin: 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 2.5
+                    // Mini Album Artwork or Music Icon
+                    Rectangle {
+                        id: miniArt
 
-                    Timer {
-                        interval: 80
-                        running: root.isPlaying && !islandCapsule.expanded
-                        repeat: true
-                        onTriggered: eqBars.tick = (eqBars.tick + 1) % 1000
+                        width: 24
+                        height: 24
+                        radius: 6
+                        color: "#1C1C1E"
+                        clip: true
+                        anchors.left: parent.left
+                        anchors.leftMargin: 6
+                        anchors.verticalCenter: parent.verticalCenter
+                        border.color: Qt.rgba(255, 255, 255, 0.15)
+                        border.width: 1
+
+                        Image {
+                            anchors.fill: parent
+                            source: root.player ? Players.getArtUrl(root.player) : ""
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                        }
+
+                        MaterialIcon {
+                            anchors.centerIn: parent
+                            text: "music_note"
+                            color: "#FA586A"
+                            font.pointSize: 13
+                            visible: !parent.children[0].source
+                        }
                     }
 
-                    Repeater {
-                        model: 4
+                    // Apple Signature Equalizer Waveform Bars
+                    Row {
+                        id: eqBars
 
-                        Rectangle {
-                            id: eqBar
+                        property real tick: 0
 
-                            required property int index
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 2.5
 
-                            width: 3.2
-                            radius: 1.6
-                            color: "#30D158"
-                            anchors.bottom: parent.bottom
-                            height: {
-                                if (!root.isPlaying)
-                                    return 3.5;
-                                const t = eqBars.tick;
-                                if (index === 0)
-                                    return 4 + Math.abs(Math.sin(t * 0.35)) * 12;
-                                if (index === 1)
-                                    return 5 + Math.abs(Math.sin(t * 0.48 + 1.2)) * 14;
-                                if (index === 2)
-                                    return 4 + Math.abs(Math.sin(t * 0.30 + 2.5)) * 13;
-                                return 3.5 + Math.abs(Math.sin(t * 0.55 + 0.8)) * 11;
-                            }
+                        Timer {
+                            interval: 80
+                            running: root.isPlaying && !islandCapsule.expanded
+                            repeat: true
+                            onTriggered: eqBars.tick = (eqBars.tick + 1) % 1000
+                        }
 
-                            Behavior on height {
-                                NumberAnimation {
-                                    duration: 75
+                        Repeater {
+                            model: 4
+
+                            Rectangle {
+                                id: eqBar
+
+                                required property int index
+
+                                width: 3.2
+                                radius: 1.6
+                                color: "#30D158"
+                                anchors.bottom: parent.bottom
+                                height: {
+                                    if (!root.isPlaying)
+                                        return 3.5;
+                                    const t = eqBars.tick;
+                                    if (index === 0)
+                                        return 4 + Math.abs(Math.sin(t * 0.35)) * 12;
+                                    if (index === 1)
+                                        return 5 + Math.abs(Math.sin(t * 0.48 + 1.2)) * 14;
+                                    if (index === 2)
+                                        return 4 + Math.abs(Math.sin(t * 0.30 + 2.5)) * 13;
+                                    return 3.5 + Math.abs(Math.sin(t * 0.55 + 0.8)) * 11;
+                                }
+
+                                Behavior on height {
+                                    NumberAnimation {
+                                        duration: 75
+                                    }
                                 }
                             }
                         }
@@ -274,7 +325,7 @@ Scope {
 
                             StyledText {
                                 Layout.fillWidth: true
-                                text: root.player?.trackTitle || Tr.tr("Nothing Playing")
+                                text: root.player?.trackTitle || Tr.tr("Ready to Play")
                                 font.pixelSize: 15
                                 font.weight: Font.DemiBold
                                 color: "#FFFFFF"
@@ -283,7 +334,7 @@ Scope {
 
                             StyledText {
                                 Layout.fillWidth: true
-                                text: root.player?.trackArtist || root.player?.identity || Tr.tr("Unknown Artist")
+                                text: root.player?.trackArtist || root.player?.identity || Tr.tr("JellyFace Island")
                                 font.pixelSize: 12
                                 color: "#98989D"
                                 elide: Text.ElideRight
@@ -313,7 +364,7 @@ Scope {
                         spacing: 8
 
                         StyledText {
-                            text: root.formatTime(root.player?.position ?? 0)
+                            text: root.lengthStr(root.player?.position ?? 0)
                             font.pixelSize: 11
                             color: "#8E8E93"
                             Layout.preferredWidth: 32
@@ -374,7 +425,7 @@ Scope {
                                 const pos = root.player?.position ?? 0;
                                 if (len <= 0)
                                     return "--:--";
-                                return "-" + root.formatTime(Math.max(0, len - pos));
+                                return "-" + root.lengthStr(Math.max(0, len - pos));
                             }
                             font.pixelSize: 11
                             color: "#8E8E93"
