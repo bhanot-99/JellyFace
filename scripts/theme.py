@@ -256,7 +256,7 @@ def write_glass(**kw):
 
 
 def glass_on():
-    return read_glass().get("enabled", True)
+    return read_glass().get("enabled", False)
 
 
 def update_backdrop():

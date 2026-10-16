@@ -81,7 +81,7 @@ ModularCard {
             Layout.fillWidth: true
             Layout.preferredHeight: 38
             radius: Tokens.rounding.full
-            color: searchField.activeFocus ? Qt.rgba(0.05, 0.07, 0.10, 0.88) : Glass.glassRecessedWell
+            color: searchField.activeFocus ? (Glass.enabled ? Qt.rgba(0.05, 0.07, 0.10, 0.88) : Colours.palette.m3surfaceDim) : Glass.glassRecessedWell
             border.width: 1
             border.color: searchField.activeFocus ? Glass.glassActivePill : (searchBoxMouse.containsMouse ? Glass.glassBorderHover : Glass.glassBorder)
 
@@ -206,13 +206,13 @@ ModularCard {
                     implicitWidth: 20
                     implicitHeight: 20
                     radius: Tokens.rounding.full
-                    color: clearMouse.containsMouse ? Glass.frostHigh : "transparent"
+                    color: clearMouse.containsMouse ? Glass.glassPillHover : "transparent"
                     Layout.alignment: Qt.AlignVCenter
 
                     MaterialIcon {
                         anchors.centerIn: parent
                         text: "close"
-                        color: Glass.haze
+                        color: Glass.textSecondary
                         fontStyle: Tokens.font.icon.small
                     }
 

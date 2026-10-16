@@ -71,7 +71,7 @@ Item {
 
         border.width: 1
         border.color: !DashboardState.isLocked
-            ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? Glass.glassBorderHover : Qt.rgba(1.0, 1.0, 1.0, 0.32))
+            ? (cardDragArea.containsMouse || tagMouse.containsMouse || root.isDragging ? Glass.glassBorderHover : (Glass.enabled ? Qt.rgba(1.0, 1.0, 1.0, 0.32) : Colours.palette.m3outlineVariant))
             : Glass.glassBorder
 
         Behavior on border.color {

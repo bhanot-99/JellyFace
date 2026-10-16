@@ -94,10 +94,10 @@ ModularCard {
                     preferredRendererType: Shape.CurveRenderer
                     asynchronous: true
 
-                    // Recessed Translucent Track Ring
+                    // Recessed Track Ring
                     ShapePath {
                         fillColor: "transparent"
-                        strokeColor: Qt.rgba(1.0, 1.0, 1.0, 0.12)
+                        strokeColor: Glass.enabled ? Qt.rgba(1.0, 1.0, 1.0, 0.12) : Colours.palette.m3surfaceContainerHighest
                         strokeWidth: 8
                         capStyle: ShapePath.RoundCap
 

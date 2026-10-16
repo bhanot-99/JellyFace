@@ -203,7 +203,7 @@ ModularCard {
                 width: ListView.view.width
                 implicitHeight: Math.max(52, mailContentRow.implicitHeight + 16)
                 radius: Tokens.rounding.medium
-                color: mailMouse.containsMouse ? Glass.glassPillHover : (mailItem.m?.unread ? Glass.glassElevatedTile : Qt.rgba(1.0, 1.0, 1.0, 0.10))
+                color: mailMouse.containsMouse ? Glass.glassPillHover : (mailItem.m?.unread ? Glass.glassElevatedTile : (Glass.enabled ? Qt.rgba(1.0, 1.0, 1.0, 0.10) : Colours.palette.m3surfaceContainerLow))
                 border.width: 1
                 border.color: mailMouse.containsMouse ? Glass.glassBorderHover : (mailItem.m?.unread ? Glass.glassBorderHover : Glass.glassBorder)
 
