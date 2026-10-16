@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -557,6 +558,17 @@ Scope {
                         duration: 220
                         easing.type: Easing.OutCubic
                     }
+                }
+
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    blurMax: 12
+                    shadowColor: Qt.rgba(0, 0, 0, 0.45)
+                    shadowBlur: 0.35
+                    shadowVerticalOffset: 2.5 + icon.lift * 0.35
+                    shadowHorizontalOffset: 0
+                    shadowOpacity: 0.8
                 }
 
                 IconImage {

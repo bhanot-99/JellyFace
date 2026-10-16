@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import Jellyface.Config
 import qs.components
 import qs.services
@@ -57,6 +58,39 @@ Item {
         }
 
         target: DashboardState
+    }
+
+    // Tactile 3D Ambient Drop Shadow (gives desktop widgets subtle elevation above wallpaper)
+    RectangularShadow {
+        id: cardShadow
+
+        anchors.fill: surface
+        radius: surface.radius
+        z: -1
+
+        color: Glass.enabled ? Qt.rgba(0, 0, 0, root.isDragging ? 0.35 : 0.22) : Qt.rgba(0, 0, 0, root.isDragging ? 0.45 : 0.30)
+        blur: root.isDragging ? 26 : 16
+        spread: 0
+        offset.y: root.isDragging ? 8 : 4
+        offset.x: 0
+
+        Behavior on offset.y {
+            NumberAnimation {
+                duration: 160
+                easing.type: Easing.OutCubic
+            }
+        }
+        Behavior on blur {
+            NumberAnimation {
+                duration: 160
+                easing.type: Easing.OutCubic
+            }
+        }
+        Behavior on color {
+            CAnim {
+                duration: 160
+            }
+        }
     }
 
     // Main Card Surface: Bound to dynamic Glass.qml engine (Luminous GlassCardBase over backdrop)
