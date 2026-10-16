@@ -28,7 +28,7 @@ import socket
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 CONF_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "jellyface")
 STATE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "jellyface")
@@ -209,18 +209,22 @@ def fetch_gmail_emails(cfg):
         if status != "OK":
             return None, f"Failed to select folder {folder}"
 
-        # Search for messages: fetch all unseen messages plus recent messages
-        status_unseen, data_unseen = mail.search(None, "UNSEEN")
+        # Date window: strictly last 15 days
+        cutoff_dt = datetime.now(timezone.utc) - timedelta(days=15)
+        cutoff_ts = cutoff_dt.timestamp()
+        since_date = cutoff_dt.strftime("%d-%b-%Y")
+
+        # Search for messages within the last 15 days
+        status_unseen, data_unseen = mail.search(None, f'(UNSEEN SINCE "{since_date}")')
         unseen_ids = [int(x) for x in data_unseen[0].split()] if (status_unseen == "OK" and data_unseen and data_unseen[0]) else []
 
-        status_all, data_all = mail.search(None, "ALL")
+        status_all, data_all = mail.search(None, f'(SINCE "{since_date}")')
         all_ids = [int(x) for x in data_all[0].split()] if (status_all == "OK" and data_all and data_all[0]) else []
 
-        # Target IDs: prioritize latest unseen messages (up to max_fetch), then backfill with recent messages
+        # Target IDs: prioritize latest unseen messages (within last 15 days), then backfill with recent messages
         max_fetch = max(limit, 10)
-        recent_unseen = unseen_ids[-max_fetch:] if len(unseen_ids) > max_fetch else unseen_ids
-        target_ids = list(recent_unseen)
-        target_set = set(target_ids)
+        target_set = set(unseen_ids)
+        target_ids = list(unseen_ids)
         for mid in reversed(all_ids):
             if mid not in target_set:
                 target_ids.append(mid)
@@ -254,6 +258,18 @@ def fetch_gmail_emails(cfg):
 
                 msg = email.message_from_bytes(raw_email)
 
+                # Parse Date & verify strictly within 15 days
+                date_header = msg.get("Date", "")
+                time_str = format_email_date(date_header)
+                try:
+                    dt = email.utils.parsedate_to_datetime(date_header)
+                    timestamp = dt.timestamp() if dt else time.time()
+                except Exception:
+                    timestamp = time.time()
+
+                if timestamp < cutoff_ts:
+                    continue
+
                 # Parse Flags
                 is_unread = "\\Seen" not in flags_str
 
@@ -264,15 +280,6 @@ def fetch_gmail_emails(cfg):
                 from_header = decode_mime_header(msg.get("From", ""))
                 real_name, from_email = email.utils.parseaddr(from_header)
                 sender_name = real_name or from_email.split("@")[0] or "Unknown"
-
-                # Parse Date
-                date_header = msg.get("Date", "")
-                time_str = format_email_date(date_header)
-                try:
-                    dt = email.utils.parsedate_to_datetime(date_header)
-                    timestamp = dt.timestamp() if dt else time.time()
-                except Exception:
-                    timestamp = time.time()
 
                 # Parse Preview Snippet
                 preview = get_body_snippet(msg)

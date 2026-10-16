@@ -21,7 +21,14 @@ ModularCard {
     canResize: true
     contentPadding: 14
 
-    readonly property var unreadMails: (MailService.emails || []).filter(e => !!e.unread)
+    property bool filterOnlyUnread: false
+
+    readonly property var displayedMails: {
+        const list = MailService.emails || [];
+        if (root.filterOnlyUnread)
+            return list.filter(e => !!e.unread);
+        return list;
+    }
 
     function cleanLine(str: var): string {
         if (!str) return "";
@@ -61,20 +68,31 @@ ModularCard {
                 Layout.fillWidth: true
             }
 
-            // Tactile Unread Pill Badge
+            // Tactile Unread Pill Badge (Clickable to toggle unread-only filter)
             Rectangle {
-                implicitWidth: unreadText.implicitWidth + 12
+                implicitWidth: unreadText.implicitWidth + 14
                 implicitHeight: 20
                 radius: Tokens.rounding.full
-                color: root.unreadMails.length > 0 ? Glass.glassActivePill : Glass.glassRecessedWell
+                color: root.filterOnlyUnread
+                    ? Glass.glassActivePill
+                    : (MailService.unreadCount > 0 ? Glass.glassElevatedTile : Glass.glassRecessedWell)
                 border.width: 0
 
                 StyledText {
                     id: unreadText
                     anchors.centerIn: parent
-                    text: `${root.unreadMails.length} unread`
+                    text: `${MailService.unreadCount} unread`
                     font: Tokens.font.label.small
-                    color: root.unreadMails.length > 0 ? Glass.textDark : Glass.textMuted
+                    color: root.filterOnlyUnread
+                        ? Glass.textDark
+                        : (MailService.unreadCount > 0 ? Glass.textPrimary : Glass.textMuted)
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: root.filterOnlyUnread = !root.filterOnlyUnread
                 }
             }
 
@@ -160,12 +178,12 @@ ModularCard {
                 }
             }
 
-            model: root.unreadMails
+            model: root.displayedMails
 
             // Empty State Placeholder
             Item {
                 anchors.fill: parent
-                visible: root.unreadMails.length === 0
+                visible: root.displayedMails.length === 0
 
                 ColumnLayout {
                     anchors.centerIn: parent
@@ -180,7 +198,7 @@ ModularCard {
 
                     StyledText {
                         Layout.alignment: Qt.AlignHCenter
-                        text: Tr.tr("No Unread Emails")
+                        text: root.filterOnlyUnread ? Tr.tr("No Unread Emails (Last 15 Days)") : Tr.tr("No Emails in Last 15 Days")
                         font: Tokens.font.label.medium
                         color: Glass.textMuted
                     }
