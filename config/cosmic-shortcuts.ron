@@ -2,5 +2,6 @@
     (modifiers: [Super], key: "l"): Spawn("@JF_ROOT@/bin/jellyface lock"),
     (modifiers: [Super, Shift], key: "f"): Spawn("@JF_ROOT@/bin/jellyface ipc focus toggle"),
     (modifiers: [Super], key: "v"): Spawn("@JF_ROOT@/bin/jellyface ipc clipboard toggle"),
+    (modifiers: [Super], key: "w"): Spawn("@JF_ROOT@/bin/jellyface ipc overview toggle"),
     (modifiers: [Super]): Spawn("@JF_ROOT@/bin/jellyface ipc jellypanel toggle"),
 }

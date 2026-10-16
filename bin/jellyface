@@ -91,10 +91,14 @@ cmd_status() {
     if pgrep -f "$JF_WSD_RE" >/dev/null; then log "workspace helper: running"; else log "workspace helper: stopped"; fi
 }
 cmd_ipc() {
-    # JellyPanel is opened with the Super key, so it skips the container round trip: its own socket (services/JellyPanel.qml)
+    # JellyPanel and Overview (Mission Control) sockets skip container round trip
     local sock="${XDG_RUNTIME_DIR:-/tmp}/jellyface-jellypanel.sock"
     if [ "${1:-}" = jellypanel ] && [[ "${2:-}" =~ ^(toggle|open|close)$ ]] && [ -S "$sock" ] && command -v nc >/dev/null; then
         printf '%s\n' "$2" | nc -NU "$sock" 2>/dev/null && return 0
+    fi
+    local ov_sock="${XDG_RUNTIME_DIR:-/tmp}/jellyface-overview.sock"
+    if [ "${1:-}" = overview ] && [[ "${2:-}" =~ ^(toggle|open|close)$ ]] && [ -S "$ov_sock" ] && command -v nc >/dev/null; then
+        printf '%s\n' "$2" | nc -NU "$ov_sock" 2>/dev/null && return 0
     fi
     in_container 'quickshell ipc -p "$1" call "${@:2}"' "$JF_SHELL" "$@"
 }
@@ -183,6 +187,7 @@ case "${1:-help}" in
     ipc)           shift; cmd_ipc "$@" ;;
     autostart)     shift; cmd_autostart "$@" ;;
     lock)          exec "$0" ipc lock lock ;;
+    overview)      shift; exec "$0" ipc overview toggle ;;
     cosmic-dock)   shift; exec "$JF_ROOT/scripts/cosmic-dock.sh" "$@" ;;
     cosmic-panel)  shift; exec "$JF_ROOT/scripts/cosmic-panel.sh" "$@" ;;
     tiling)        shift; exec "$JF_ROOT/scripts/tiling.sh" "$@" ;;
