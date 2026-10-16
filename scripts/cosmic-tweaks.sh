@@ -73,3 +73,14 @@ open(tmp, "w").write("{\n    " + ",\n    ".join(lines) + ",\n}\n")
 os.replace(tmp, path)
 print("shortcuts added: " + ", ".join(re.search(r"\((modifiers[^)]*)\)", l).group(1) for l in add))
 PY
+
+# Route COSMIC system WorkspaceOverview to JellyFace Mission Control
+SA="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions"
+sys_track "$SA"
+if [ ! -f "$SA" ] && [ -f "/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions" ]; then
+    cp "/usr/share/cosmic/com.system76.CosmicSettings.Shortcuts/v1/system_actions" "$SA"
+fi
+if [ -f "$SA" ]; then
+    sed -i "s|WorkspaceOverview:.*|WorkspaceOverview: \"$JF_ROOT/bin/jellyface ipc overview toggle\",|" "$SA"
+    log "COSMIC WorkspaceOverview routed to JellyFace Mission Control"
+fi

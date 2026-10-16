@@ -11,9 +11,9 @@ import qs.components
 import qs.components.containers
 import qs.components.controls
 import qs.components.effects
-import qs.modules.launcher.services
 import qs.services
 import qs.utils
+import qs.modules.launcher.services
 
 // JellyPanel: every installed app in a full-screen grid over the blurred desktop, in pages of 7 x 5, with a search
 // pill on top and the dock left showing below. Super (or `jellyface ipc jellypanel toggle`) opens and closes it.
@@ -31,6 +31,10 @@ Scope {
     // shows the container's apps) and again each time JellyPanel opens (newly installed apps).
     property var hostIds: null
     property string hostKey
+
+    function onHost(entry: var): bool {
+        return !hostIds || hostIds.has(entry.id) || hostIds.has(entry.id.replace(/\.desktop$/, ""));
+    }
 
     Connections {
         function onOpenChanged(): void {
@@ -60,10 +64,6 @@ Scope {
         }
     }
 
-    function onHost(entry: var): bool {
-        return !hostIds || hostIds.has(entry.id) || hostIds.has(entry.id.replace(/\.desktop$/, ""));
-    }
-
     LazyLoader {
         id: panel
 
@@ -78,17 +78,9 @@ Scope {
             readonly property int pageCount: Math.max(1, Math.ceil(shown.length / root.perPage))
             property int selected: -1 // keyboard selection (-1 = none); Enter opens it
 
-            // Raycast / Spotlight engine: math, unit conversions, and system actions
-            readonly property var calcResult: Calculator.evaluate(search.text)
+            // Raycast / Spotlight action runner: system actions
             readonly property bool isActionQuery: search.text.trim().startsWith(">") || (search.text.trim().length > 1 && Actions.search(">" + search.text.trim()).length > 0 && win.shown.length === 0)
             readonly property var matchedActions: isActionQuery ? Actions.search(search.text.trim().startsWith(">") ? search.text.trim() : ">" + search.text.trim()) : []
-
-            function copyCalc(res: var): void {
-                if (!res)
-                    return;
-                Quickshell.execDetached(["wl-copy", "--", res.copyValue]);
-                JellyPanel.open = false;
-            }
 
             function runAction(action: var): void {
                 if (!action || !action.command || action.command.length === 0)
@@ -177,10 +169,6 @@ Scope {
                         color: veil.bottomColor
                     }
                 }
-
-                GlassGrain {
-                    grainOpacity: 0.025
-                }
             }
 
             // open with a quick macOS-style zoom: the desktop dims and the grid settles in from slightly larger
@@ -252,10 +240,6 @@ Scope {
                             JellyPanel.open = false;
                     }
                     Keys.onReturnPressed: {
-                        if (win.calcResult) {
-                            win.copyCalc(win.calcResult);
-                            return;
-                        }
                         if (win.matchedActions.length > 0) {
                             win.runAction(win.matchedActions[0]);
                             return;
@@ -263,10 +247,6 @@ Scope {
                         win.launch(win.selected >= 0 ? win.shown[win.selected] : null);
                     }
                     Keys.onEnterPressed: {
-                        if (win.calcResult) {
-                            win.copyCalc(win.calcResult);
-                            return;
-                        }
                         if (win.matchedActions.length > 0) {
                             win.runAction(win.matchedActions[0]);
                             return;
@@ -302,62 +282,6 @@ Scope {
                     }
                 }
 
-                // Raycast result card: Math & Unit conversions
-                StyledRect {
-                    id: calcCard
-
-                    anchors.top: search.bottom
-                    anchors.topMargin: Tokens.padding.large
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: 380
-                    height: 56
-                    radius: Tokens.rounding.large
-                    color: Glass.sheet
-                    visible: !!win.calcResult
-                    z: 10
-
-                    GlassBevel {
-                        radius: calcCard.radius
-                    }
-
-                    Row {
-                        anchors.fill: parent
-                        anchors.leftMargin: Tokens.padding.large
-                        anchors.rightMargin: Tokens.padding.large
-                        spacing: Tokens.spacing.medium
-
-                        MaterialIcon {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "calculate"
-                            color: Colours.palette.m3primary
-                            font.pointSize: 22
-                        }
-
-                        Column {
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 1
-
-                            StyledText {
-                                text: win.calcResult?.title ?? ""
-                                font: Tokens.font.title.small
-                                color: Colours.palette.m3onSurface
-                            }
-
-                            StyledText {
-                                text: Tr.tr("Press Enter or click to copy")
-                                font: Tokens.font.body.small
-                                color: Colours.palette.m3onSurfaceVariant
-                            }
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: win.copyCalc(win.calcResult)
-                    }
-                }
-
                 // Raycast action chips: System commands
                 Row {
                     id: actionRow
@@ -366,7 +290,7 @@ Scope {
                     anchors.topMargin: Tokens.padding.large
                     anchors.horizontalCenter: parent.horizontalCenter
                     spacing: Tokens.spacing.small
-                    visible: !win.calcResult && win.matchedActions.length > 0
+                    visible: win.matchedActions.length > 0
                     z: 10
 
                     Repeater {
@@ -422,7 +346,7 @@ Scope {
 
                 StyledText {
                     anchors.centerIn: pages
-                    visible: win.shown.length === 0 && !win.calcResult && win.matchedActions.length === 0
+                    visible: win.shown.length === 0 && win.matchedActions.length === 0
                     text: Tr.tr("No apps match \"%1\"").arg(search.text.trim())
                     color: Colours.palette.m3onSurfaceVariant
                     font: Tokens.font.body.large

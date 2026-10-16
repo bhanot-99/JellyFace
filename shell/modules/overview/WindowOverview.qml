@@ -60,10 +60,6 @@ Scope {
 
             anchors.fill: parent
             color: Colours.light ? Qt.rgba(0.92, 0.93, 0.95, 0.70) : Qt.rgba(0.14, 0.15, 0.17, 0.64)
-
-            GlassGrain {
-                grainOpacity: 0.025
-            }
         }
 
         // Dismiss on empty background click

@@ -18,10 +18,6 @@ StyledRect {
     radius: Tokens.rounding.extraLarge + bleed
     color: Glass.sheet
 
-    GlassGrain {
-        grainOpacity: 0.03
-    }
-
     GlassBevel {
         radius: sheet.radius
     }
