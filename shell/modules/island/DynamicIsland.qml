@@ -54,7 +54,11 @@ Scope {
     readonly property MprisPlayer player: Players.active
     readonly property bool isPlaying: !!player && player.playbackState === MprisPlaybackState.Playing
     readonly property bool hasMedia: !!player && (isPlaying || player.playbackState === MprisPlaybackState.Paused || (player.trackTitle && player.trackTitle.length > 0))
-    readonly property bool wanted: !CosmicWindows.fullscreen
+    readonly property ScreenState activeScreenState: ShellState.forScreen(win.screen) ?? ShellState.forActive()
+    readonly property bool dashboardOpen: activeScreenState?.dashboard ?? false
+    readonly property bool appDrawerOpen: JellyPanel.open
+    readonly property bool suppressed: dashboardOpen || appDrawerOpen
+    readonly property bool wanted: !CosmicWindows.fullscreen && !suppressed
     readonly property string artUrl: player ? Players.getArtUrl(player) : ""
     readonly property bool hasUnknownLength: !player || !player.length || player.length <= 0 || player.length > 2147483647
     readonly property real trackLength: hasUnknownLength ? 0 : player.length
@@ -80,6 +84,11 @@ Scope {
 
     onHasMediaChanged: {
         if (!hasMedia)
+            islandCapsule.expanded = false;
+    }
+
+    onSuppressedChanged: {
+        if (suppressed)
             islandCapsule.expanded = false;
     }
 
@@ -138,7 +147,7 @@ Scope {
         // C1: Screen binding guarded against undefined on monitor hot-plug/unplug
         screen: ShellState.forActive()?.modelData ?? Quickshell.screens[0] ?? null
         name: "dynamic-island"
-        visible: root.wanted
+        visible: !CosmicWindows.fullscreen && (!root.suppressed || islandCapsule.opacity > 0)
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
@@ -171,6 +180,38 @@ Scope {
             radius: Math.min(height / 2, root.expandedRadius)
             color: root.colBg
             clip: true
+            opacity: root.suppressed ? 0 : 1
+            scale: root.suppressed ? 0.85 : 1
+            enabled: !root.suppressed
+
+            transform: Translate {
+                id: tuckTranslate
+
+                y: root.suppressed ? -islandCapsule.height - 16 : 0
+
+                Behavior on y {
+                    NumberAnimation {
+                        duration: root.suppressed ? 220 : 350
+                        easing.type: root.suppressed ? Easing.InCubic : Easing.OutBack
+                        easing.overshoot: 0.6
+                    }
+                }
+            }
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: root.suppressed ? 180 : 250
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            Behavior on scale {
+                NumberAnimation {
+                    duration: root.suppressed ? 220 : 350
+                    easing.type: root.suppressed ? Easing.InQuad : Easing.OutBack
+                    easing.overshoot: 0.6
+                }
+            }
 
             // D1: Asymmetric animation curves (Overshoot expand, clean cubic collapse)
             Behavior on width {

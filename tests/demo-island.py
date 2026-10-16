@@ -459,7 +459,19 @@ def run_tour(player: DemoMprisPlayer, step_delay: float = 3.5):
             lambda: player.set_track(3),
         ),
         (
-            "Scene 8: Auto-Collapse & Media Dismissal",
+            "Scene 8: Dropdown Dashboard Collision Suppression & Tuck-Away",
+            "Opening the top dropdown dashboard panel.\n"
+            "   * Dynamic Island detects dashboard opening and smoothly tucks up behind the bezel (opacity: 0, y: -height).\n"
+            "   * Automatically yields the screen to the Dashboard, eliminating any header collision.\n"
+            "   * When the dashboard closes, the Island springs back into place with Easing.OutBack!",
+            lambda: (
+                subprocess.run([str(JF_ROOT / "bin" / "jellyface"), "ipc", "drawers", "toggle", "dashboard"], capture_output=True),
+                time.sleep(1.8),
+                subprocess.run([str(JF_ROOT / "bin" / "jellyface"), "ipc", "drawers", "toggle", "dashboard"], capture_output=True)
+            ),
+        ),
+        (
+            "Scene 9: Auto-Collapse & Media Dismissal",
             "Collapsing card and stopping playback.\n"
             "   * Island contracts smoothly back into the ambient idle pill.\n"
             "   * All features and animations verified successfully!",
