@@ -113,7 +113,7 @@ Scope {
             anchors.left: true
             anchors.right: true
 
-            BackgroundEffect.blurRegion: Glass.enabled ? wholeScreen : null
+            BackgroundEffect.blurRegion: wholeScreen
 
             Region {
                 id: wholeScreen
@@ -122,13 +122,36 @@ Scope {
                 height: win.height
             }
 
-            // the desktop, blurred by the compositor and dimmed a little so white labels read on any wallpaper
+            // Frosted glass background: neutral translucent tone with subtle lighting depth over compositor blur
             Rectangle {
                 id: veil
 
+                readonly property real backdropLuma: Glass.backdrop ?? 0.3
+                // In dark mode: neutral slate/graphite tone that adapts smoothly to backdrop brightness
+                readonly property real baseLuma: Math.max(0.14, Math.min(0.24, 0.21 - backdropLuma * 0.05))
+                readonly property real baseAlpha: Math.max(0.55, Math.min(0.68, 0.58 + backdropLuma * 0.10))
+                readonly property color topColor: Colours.light
+                    ? Qt.rgba(0.95, 0.96, 0.98, 0.72)
+                    : Qt.rgba(baseLuma + 0.03, (baseLuma + 0.03) * 1.02, (baseLuma + 0.03) * 1.05, baseAlpha - 0.03)
+                readonly property color bottomColor: Colours.light
+                    ? Qt.rgba(0.89, 0.90, 0.93, 0.65)
+                    : Qt.rgba(baseLuma - 0.02, (baseLuma - 0.02) * 1.02, (baseLuma - 0.02) * 1.05, baseAlpha + 0.03)
+
                 anchors.fill: parent
-                // JellyPanel usually opens over app windows, which can be far brighter than the wallpaper: dim at least a third
-                color: Glass.enabled ? Qt.rgba(0, 0, 0, 0.34 + 0.2 * Glass.backdrop) : Qt.alpha(Colours.palette.m3surface, 0.92)
+                color: Colours.light
+                    ? Qt.rgba(0.92, 0.93, 0.95, 0.68)
+                    : Qt.rgba(baseLuma, baseLuma * 1.02, baseLuma * 1.05, baseAlpha)
+
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: veil.topColor
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: veil.bottomColor
+                    }
+                }
             }
 
             // open with a quick macOS-style zoom: the desktop dims and the grid settles in from slightly larger
