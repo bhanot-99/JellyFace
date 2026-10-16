@@ -10,6 +10,7 @@ import Jellyface.I18n
 import qs.components
 import qs.components.containers
 import qs.components.controls
+import qs.components.effects
 import qs.modules.launcher.services
 import qs.services
 import qs.utils
@@ -151,6 +152,10 @@ Scope {
                         position: 1.0
                         color: veil.bottomColor
                     }
+                }
+
+                GlassGrain {
+                    grainOpacity: 0.025
                 }
             }
 
