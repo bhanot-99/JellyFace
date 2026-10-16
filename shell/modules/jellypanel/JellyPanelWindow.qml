@@ -78,6 +78,30 @@ Scope {
             readonly property int pageCount: Math.max(1, Math.ceil(shown.length / root.perPage))
             property int selected: -1 // keyboard selection (-1 = none); Enter opens it
 
+            // Raycast / Spotlight engine: math, unit conversions, and system actions
+            readonly property var calcResult: Calculator.evaluate(search.text)
+            readonly property bool isActionQuery: search.text.trim().startsWith(">") || (search.text.trim().length > 1 && Actions.search(">" + search.text.trim()).length > 0 && win.shown.length === 0)
+            readonly property var matchedActions: isActionQuery ? Actions.search(search.text.trim().startsWith(">") ? search.text.trim() : ">" + search.text.trim()) : []
+
+            function copyCalc(res: var): void {
+                if (!res)
+                    return;
+                Quickshell.execDetached(["wl-copy", "--", res.copyValue]);
+                JellyPanel.open = false;
+            }
+
+            function runAction(action: var): void {
+                if (!action || !action.command || action.command.length === 0)
+                    return;
+                if (action.command[0] === "setMode" && action.command.length > 1) {
+                    Colours.setMode(action.command[1]);
+                } else {
+                    if (!SessionManager.exec(action.command))
+                        Quickshell.execDetached(action.command);
+                }
+                JellyPanel.open = false;
+            }
+
             // each time JellyPanel opens: a fresh search on the first page, and the quick fade-and-settle
             function reset(): void {
                 search.text = "";
@@ -227,8 +251,28 @@ Scope {
                         else
                             JellyPanel.open = false;
                     }
-                    Keys.onReturnPressed: win.launch(win.selected >= 0 ? win.shown[win.selected] : null)
-                    Keys.onEnterPressed: win.launch(win.selected >= 0 ? win.shown[win.selected] : null)
+                    Keys.onReturnPressed: {
+                        if (win.calcResult) {
+                            win.copyCalc(win.calcResult);
+                            return;
+                        }
+                        if (win.matchedActions.length > 0) {
+                            win.runAction(win.matchedActions[0]);
+                            return;
+                        }
+                        win.launch(win.selected >= 0 ? win.shown[win.selected] : null);
+                    }
+                    Keys.onEnterPressed: {
+                        if (win.calcResult) {
+                            win.copyCalc(win.calcResult);
+                            return;
+                        }
+                        if (win.matchedActions.length > 0) {
+                            win.runAction(win.matchedActions[0]);
+                            return;
+                        }
+                        win.launch(win.selected >= 0 ? win.shown[win.selected] : null);
+                    }
                     Keys.onRightPressed: event => {
                         if (win.selected < 0 && cursorPosition < text.length) {
                             event.accepted = false;
@@ -258,9 +302,127 @@ Scope {
                     }
                 }
 
+                // Raycast result card: Math & Unit conversions
+                StyledRect {
+                    id: calcCard
+
+                    anchors.top: search.bottom
+                    anchors.topMargin: Tokens.padding.large
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: 380
+                    height: 56
+                    radius: Tokens.rounding.large
+                    color: Glass.sheet
+                    visible: !!win.calcResult
+                    z: 10
+
+                    GlassBevel {
+                        radius: calcCard.radius
+                    }
+
+                    Row {
+                        anchors.fill: parent
+                        anchors.leftMargin: Tokens.padding.large
+                        anchors.rightMargin: Tokens.padding.large
+                        spacing: Tokens.spacing.medium
+
+                        MaterialIcon {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "calculate"
+                            color: Colours.palette.m3primary
+                            font.pointSize: 22
+                        }
+
+                        Column {
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 1
+
+                            StyledText {
+                                text: win.calcResult?.title ?? ""
+                                font: Tokens.font.title.small
+                                color: Colours.palette.m3onSurface
+                            }
+
+                            StyledText {
+                                text: Tr.tr("Press Enter or click to copy")
+                                font: Tokens.font.body.small
+                                color: Colours.palette.m3onSurfaceVariant
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: win.copyCalc(win.calcResult)
+                    }
+                }
+
+                // Raycast action chips: System commands
+                Row {
+                    id: actionRow
+
+                    anchors.top: search.bottom
+                    anchors.topMargin: Tokens.padding.large
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: Tokens.spacing.small
+                    visible: !win.calcResult && win.matchedActions.length > 0
+                    z: 10
+
+                    Repeater {
+                        model: win.matchedActions.slice(0, 5)
+
+                        StyledRect {
+                            id: actionChip
+
+                            required property var modelData
+                            required property int index
+
+                            implicitWidth: chipRow.implicitWidth + Tokens.padding.large * 2
+                            implicitHeight: 38
+                            radius: Tokens.rounding.full
+                            color: area.containsMouse || index === 0 ? Glass.glassPillHover : Glass.sheet
+
+                            GlassBevel {
+                                radius: actionChip.radius
+                            }
+
+                            Row {
+                                id: chipRow
+
+                                anchors.centerIn: parent
+                                spacing: Tokens.spacing.small
+
+                                MaterialIcon {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: actionChip.modelData.icon ?? "bolt"
+                                    color: Colours.palette.m3primary
+                                    font.pointSize: 16
+                                }
+
+                                StyledText {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: actionChip.modelData.name ?? ""
+                                    font: Tokens.font.label.large
+                                    color: Colours.palette.m3onSurface
+                                }
+                            }
+
+                            MouseArea {
+                                id: area
+
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: win.runAction(actionChip.modelData)
+                            }
+                        }
+                    }
+                }
+
                 StyledText {
                     anchors.centerIn: pages
-                    visible: win.shown.length === 0
+                    visible: win.shown.length === 0 && !win.calcResult && win.matchedActions.length === 0
                     text: Tr.tr("No apps match \"%1\"").arg(search.text.trim())
                     color: Colours.palette.m3onSurfaceVariant
                     font: Tokens.font.body.large
