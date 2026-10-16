@@ -48,7 +48,6 @@ Scope {
     readonly property color colAccentPink: "#FA586A"
     readonly property color colScrubTrack: "#38383A"
     readonly property color colArtBg: "#1C1C1E"
-    readonly property color colBorderLight: Qt.rgba(1, 1, 1, 0.15)
 
     // --- State & Media Bindings (A9, B7, C5) ---
     readonly property MprisPlayer player: Players.active
@@ -134,13 +133,12 @@ Scope {
             id: islandCapsule
 
             property bool expanded: false
-            readonly property real radius: Math.min(height / 2, root.expandedRadius)
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
-
             width: expanded ? root.expandedWidth : (root.hasMedia ? root.compactWidthMedia : root.compactWidthIdle)
             height: expanded ? root.expandedHeight : (root.hasMedia ? root.compactHeightMedia : root.compactHeightIdle)
+            radius: Math.min(height / 2, root.expandedRadius)
             color: root.colBg
             clip: true
 
@@ -159,11 +157,6 @@ Scope {
                     easing.type: islandCapsule.expanded ? Easing.OutBack : Easing.OutCubic
                     easing.overshoot: root.animOvershoot
                 }
-            }
-
-            // B11: Single chrome rim via GlassBevel (no redundant Rectangle border)
-            GlassBevel {
-                radius: islandCapsule.radius
             }
 
             // A7: HoverHandler keeps card open while hovered; auto-collapse starts on leave
@@ -242,16 +235,27 @@ Scope {
                     Rectangle {
                         id: compactArtBox
 
-                        width: 24
-                        height: 24
-                        radius: 6
-                        color: root.colArtBg
-                        clip: true
                         anchors.left: parent.left
                         anchors.leftMargin: 6
                         anchors.verticalCenter: parent.verticalCenter
-                        border.color: root.colBorderLight
-                        border.width: 1
+                        width: 24
+                        height: 24
+                        radius: 12
+                        color: root.colArtBg
+
+                        Item {
+                            id: compactArtMask
+
+                            anchors.fill: parent
+                            layer.enabled: true
+                            visible: false
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: width / 2
+                                color: "white"
+                            }
+                        }
 
                         Image {
                             id: compactArtImg
@@ -261,6 +265,11 @@ Scope {
                             sourceSize: Qt.size(104, 104)
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
+                            visible: status === Image.Ready
+                            layer.enabled: true
+                            layer.effect: Mask {
+                                maskSource: compactArtMask
+                            }
                         }
 
                         MaterialIcon {
@@ -459,17 +468,28 @@ Scope {
                         Layout.fillWidth: true
                         spacing: 12
 
-                        // Large Album Artwork (A3, B7, C6)
+                        // Large Album Artwork (A3, B7, C6) - Perfect Circle
                         Rectangle {
                             id: largeArtBox
 
                             width: 52
                             height: 52
-                            radius: 12
+                            radius: 26
                             color: root.colArtBg
-                            clip: true
-                            border.color: root.colBorderLight
-                            border.width: 1
+
+                            Item {
+                                id: largeArtMask
+
+                                anchors.fill: parent
+                                layer.enabled: true
+                                visible: false
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: width / 2
+                                    color: "white"
+                                }
+                            }
 
                             Image {
                                 id: expandedArtImg
@@ -479,6 +499,11 @@ Scope {
                                 sourceSize: Qt.size(104, 104)
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
+                                visible: status === Image.Ready
+                                layer.enabled: true
+                                layer.effect: Mask {
+                                    maskSource: largeArtMask
+                                }
                             }
 
                             MaterialIcon {
