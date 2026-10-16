@@ -213,7 +213,6 @@ ModularCard {
                     onClicked: {
                         if (mailItem.m?.id)
                             MailService.markRead(mailItem.m.id);
-                        MailService.openGmail();
                     }
                 }
 

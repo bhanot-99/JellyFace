@@ -105,6 +105,8 @@ Singleton {
             updated.push(m);
         }
         emails = updated;
+        if (root.totalUnread > 0)
+            root.totalUnread--;
     }
 
     function openClient(client: string): void {

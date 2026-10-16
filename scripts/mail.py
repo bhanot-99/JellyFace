@@ -422,6 +422,9 @@ def mark_read(mail_id):
             m["unread"] = False
             imap_id = m.get("imap_id")
 
+    if "unreadCount" in state and state["unreadCount"] > 0:
+        state["unreadCount"] -= 1
+
     save_state(state)
     print(f"[mail] Marked {mail_id} as read locally")
 
