@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Mpris
 import Jellyface.Config
@@ -80,6 +81,35 @@ Scope {
     onHasMediaChanged: {
         if (!hasMedia)
             islandCapsule.expanded = false;
+    }
+
+    // IPC Interface for automation, testing, and script control
+    IpcHandler {
+        function expand(): void {
+            if (root.hasMedia)
+                islandCapsule.expanded = true;
+        }
+
+        function forceExpand(): void {
+            islandCapsule.expanded = true;
+        }
+
+        function collapse(): void {
+            islandCapsule.expanded = false;
+        }
+
+        function toggle(): void {
+            if (islandCapsule.expanded)
+                islandCapsule.expanded = false;
+            else if (root.hasMedia)
+                islandCapsule.expanded = true;
+        }
+
+        function isExpanded(): string {
+            return islandCapsule.expanded ? "1" : "0";
+        }
+
+        target: "island"
     }
 
     // A2: Ticking system clock for idle pill, active only when idle & visible
