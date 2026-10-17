@@ -12,7 +12,6 @@ import qs.components
 import qs.components.containers
 import qs.components.effects
 import qs.services
-import qs.utils
 
 // Dynamic Island: Contextual floating status capsule at top center of the screen,
 // modeled on the authentic Apple iPhone Dynamic Island UI/UX.
@@ -58,7 +57,6 @@ Scope {
     readonly property bool dashboardOpen: activeScreenState?.dashboard ?? false
     readonly property bool appDrawerOpen: JellyPanel.open
     readonly property bool suppressed: dashboardOpen || appDrawerOpen
-    readonly property bool wanted: !CosmicWindows.fullscreen && !suppressed
     readonly property string artUrl: player ? Players.getArtUrl(player) : ""
     readonly property bool hasUnknownLength: !player || !player.length || player.length <= 0 || player.length > 2147483647
     readonly property real trackLength: hasUnknownLength ? 0 : player.length

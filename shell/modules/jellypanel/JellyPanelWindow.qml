@@ -79,8 +79,20 @@ Scope {
             property int selected: -1 // keyboard selection (-1 = none); Enter opens it
 
             // Raycast / Spotlight action runner: system actions
-            readonly property bool isActionQuery: search.text.trim().startsWith(">") || (search.text.trim().length > 1 && Actions.search(">" + search.text.trim()).length > 0 && win.shown.length === 0)
-            readonly property var matchedActions: isActionQuery ? Actions.search(search.text.trim().startsWith(">") ? search.text.trim() : ">" + search.text.trim()) : []
+            readonly property bool isActionQuery: {
+                const q = search.text.trim();
+                if (q.startsWith(">"))
+                    return true;
+                if (q.length > 1 && win.shown.length === 0)
+                    return Actions.query(">" + q).length > 0;
+                return false;
+            }
+            readonly property var matchedActions: {
+                if (!isActionQuery)
+                    return [];
+                const q = search.text.trim();
+                return Actions.query(q.startsWith(">") ? q : ">" + q);
+            }
 
             function runAction(action: var): void {
                 if (!action || !action.command || action.command.length === 0)
@@ -321,7 +333,7 @@ Scope {
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: actionChip.modelData.icon ?? "bolt"
                                     color: Colours.palette.m3primary
-                                    font.pointSize: 16
+                                    fontStyle: Tokens.font.icon.size(16).build()
                                 }
 
                                 StyledText {

@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import qs.services
 
 // Directional specular bevel for frosted-glass panes:
 // A top-lit specular edge fading down to a soft ambient refraction rim.
