@@ -134,7 +134,7 @@ Scope {
             name: "jellypanel"
             visible: JellyPanel.open
             WlrLayershell.exclusionMode: ExclusionMode.Ignore
-            WlrLayershell.layer: WlrLayer.Top // above windows and the bar; the dock moves to Overlay meanwhile
+            WlrLayershell.layer: WlrLayer.Top // above windows and the bar
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
             anchors.top: true
@@ -226,8 +226,7 @@ Scope {
                 anchors.leftMargin: parent.width * 0.07
                 anchors.rightMargin: parent.width * 0.07
                 anchors.topMargin: Tokens.padding.extraLarge * 1.5
-                // leave the dock its own strip at the bottom
-                anchors.bottomMargin: 170
+                anchors.bottomMargin: Tokens.padding.extraLarge * 2
 
 
                 SearchBar {

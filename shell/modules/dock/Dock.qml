@@ -204,7 +204,7 @@ Scope {
 
         screen: Quickshell.screens[0]
         name: "dock"
-        WlrLayershell.layer: JellyPanel.open ? WlrLayer.Overlay : WlrLayer.Top
+        WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
 
         anchors.bottom: true
@@ -228,7 +228,7 @@ Scope {
 
         readonly property rect dockRect: Qt.rect(((screen?.width ?? 1920) - panel.fullWidth) / 2, (screen?.height ?? 1080) - margins.bottom - panel.fullHeight, panel.fullWidth, panel.fullHeight)
         readonly property bool covered: CosmicWindows.fullscreen || CosmicWindows.windows.some(w => w.workspace_active && !w.minimized && w.w > 0 && w.x < dockRect.x + dockRect.width && w.x + w.w > dockRect.x && w.y < dockRect.y + dockRect.height && w.y + w.h > dockRect.y)
-        readonly property bool wanted: JellyPanel.open || !covered || hover.hovered || DockReveal.edge || root.popup !== "" || root.dragging
+        readonly property bool wanted: !JellyPanel.open && (!covered || hover.hovered || DockReveal.edge || root.popup !== "" || root.dragging)
         property bool shown: true
 
         Component.onCompleted: if (!wanted) hideTimer.restart()
@@ -236,8 +236,27 @@ Scope {
             if (wanted) {
                 hideTimer.stop();
                 shown = true;
+            } else if (JellyPanel.open) {
+                hideTimer.stop();
+                shown = false;
             } else {
                 hideTimer.restart();
+            }
+        }
+
+        Connections {
+            target: JellyPanel
+
+            function onOpenChanged(): void {
+                if (JellyPanel.open) {
+                    root.popup = "";
+                    root.popupIndex = -1;
+                    hideTimer.stop();
+                    win.shown = false;
+                } else if (win.wanted) {
+                    hideTimer.stop();
+                    win.shown = true;
+                }
             }
         }
 
@@ -333,6 +352,7 @@ Scope {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: win.shown ? 0 : -(fullHeight + win.margins.bottom + 8)
             opacity: win.shown ? 1 : 0
+            enabled: win.shown
 
             Behavior on anchors.bottomMargin {
                 Anim {
