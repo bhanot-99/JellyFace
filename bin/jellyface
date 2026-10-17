@@ -170,6 +170,7 @@ JellyFace -- a desktop shell for COSMIC (Pop!_OS)
   jellyface mail [refresh|status|set-password|set-account]
                                   sync and configure Gmail (bhanot1054@gmail.com) for dashboard
   jellyface demo-island [--auto]  interactive demo showcase for Dynamic Island animations
+  jellyface pop-all [seconds]     pop out all panels and popouts at once for N seconds (default: 5)
   jellyface doctor                check that everything is in place
 USAGE
 }
@@ -202,6 +203,7 @@ case "${1:-help}" in
     cosmic-tweaks) shift; exec "$JF_ROOT/scripts/cosmic-tweaks.sh" "$@" ;;
     greeter)       shift; exec "$JF_ROOT/scripts/greeter.sh" "$@" ;;
     demo-island)   shift; exec python3 "$JF_ROOT/tests/demo-island.py" "$@" ;;
+    pop-all)       shift; exec "$JF_ROOT/scripts/pop-all.sh" "$@" ;;
     doctor)        cmd_doctor ;;
     help|-h|--help) usage ;;
     *) usage; exit 1 ;;

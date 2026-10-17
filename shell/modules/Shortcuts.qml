@@ -108,7 +108,30 @@ Scope {
         }
     }
 
+    Timer {
+        id: popAllTimer
+        interval: 5000
+        repeat: false
+        onTriggered: {
+            drawersHandler.closeAll();
+        }
+    }
+
+    Timer {
+        id: popoutCycleTimer
+        property var cycleItems: ["network", "bluetooth", "battery"]
+        property int cycleIndex: 0
+        interval: 1600
+        repeat: true
+        onTriggered: {
+            cycleIndex = (cycleIndex + 1) % cycleItems.length;
+            drawersHandler.popout(cycleItems[cycleIndex]);
+        }
+    }
+
     IpcHandler {
+        id: drawersHandler
+
         function toggle(drawer: string): void {
             if (list().split("\n").includes(drawer)) {
                 if (root.hasFullscreen && ["launcher", "session", "dashboard"].includes(drawer))
@@ -118,6 +141,83 @@ Scope {
             } else {
                 console.warn(lc, `Drawer "${drawer}" does not exist`);
             }
+        }
+
+        function open(drawer: string): void {
+            if (list().split("\n").includes(drawer)) {
+                if (root.hasFullscreen && ["launcher", "session", "dashboard"].includes(drawer))
+                    return;
+                const screenState = ShellState.forActive();
+                screenState[drawer] = true;
+            } else {
+                console.warn(lc, `Drawer "${drawer}" does not exist`);
+            }
+        }
+
+        function close(drawer: string): void {
+            if (list().split("\n").includes(drawer)) {
+                const screenState = ShellState.forActive();
+                screenState[drawer] = false;
+            } else {
+                console.warn(lc, `Drawer "${drawer}" does not exist`);
+            }
+        }
+
+        function openAll(): void {
+            if (root.hasFullscreen)
+                return;
+            const screenState = ShellState.forActive();
+            if (screenState) {
+                screenState.launcher = true;
+                screenState.dashboard = true;
+                screenState.osd = true;
+                screenState.sidebar = true;
+                screenState.utilities = true;
+            }
+        }
+
+        function closeAll(): void {
+            popAllTimer.stop();
+            popoutCycleTimer.stop();
+            const screenState = ShellState.forActive();
+            if (screenState) {
+                screenState.launcher = false;
+                screenState.dashboard = false;
+                screenState.osd = false;
+                screenState.sidebar = false;
+                screenState.utilities = false;
+            }
+            const comps = ShellState.componentsForActive();
+            if (comps && comps.panels && comps.panels.popouts) {
+                comps.panels.popouts.hasCurrent = false;
+            }
+        }
+
+        function popout(name: string): void {
+            const comps = ShellState.componentsForActive();
+            if (comps && comps.panels && comps.panels.popouts) {
+                if (!name || name === "close") {
+                    comps.panels.popouts.hasCurrent = false;
+                    return;
+                }
+                const popName = (name === "wifi") ? "network" : name;
+                comps.panels.popouts.currentName = popName;
+                comps.panels.popouts.currentCenter = comps.panels.height / 2;
+                comps.panels.popouts.hasCurrent = true;
+            }
+        }
+
+        function popAll(seconds: int): void {
+            if (root.hasFullscreen)
+                return;
+            openAll();
+            popout("network");
+            popoutCycleTimer.cycleIndex = 0;
+            popoutCycleTimer.restart();
+
+            const sec = seconds > 0 ? seconds : 5;
+            popAllTimer.interval = sec * 1000;
+            popAllTimer.restart();
         }
 
         // Open the dashboard on a given tab: 0 Dashboard, 1 Media, 2 Performance, 3 Weather
