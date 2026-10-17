@@ -45,6 +45,10 @@ Singleton {
             root.open = false;
         }
 
+        function isOpen(): bool {
+            return root.open;
+        }
+
         target: "overview"
     }
 }

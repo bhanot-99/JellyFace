@@ -89,6 +89,10 @@ static void emit(void) {
     fprintf(out, "{\"active\":%d,\"fullscreen\":%s,\"windows\":[", active, fullscreen ? "true" : "false");
     for (int i = 0; i < nwins; i++) {
         struct win *w = wins[i];
+        int ws_idx = -1;
+        for (int j = 0; j < nwss; j++) {
+            if (w->nws > 0 && wss[j].h == w->wsh[0]) { ws_idx = j; break; }
+        }
         fprintf(out, "%s{\"id\":%d,\"app_id\":", i ? "," : "", w->id);
         json_str(w->app_id);
         fputs(",\"title\":", out);
@@ -96,7 +100,7 @@ static void emit(void) {
         fprintf(out, ",\"activated\":%s,\"fullscreen\":%s,\"maximized\":%s,\"minimized\":%s,\"workspace_active\":%s",
                (w->state >> 2) & 1 ? "true" : "false", (w->state >> 3) & 1 ? "true" : "false",
                (w->state >> 0) & 1 ? "true" : "false", (w->state >> 1) & 1 ? "true" : "false", on_current_ws(w) ? "true" : "false");
-        fprintf(out, ",\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}", w->x, w->y, w->w, w->h);
+        fprintf(out, ",\"workspace\":%d,\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}", ws_idx, w->x, w->y, w->w, w->h);
     }
     fputs("]}\n", out);
     fclose(out);
