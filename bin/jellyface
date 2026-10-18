@@ -17,8 +17,9 @@ supervisor_pid() {
 }
 is_running()     { supervisor_pid >/dev/null; }
 
-rotate_log() {   # keep the log from growing without bound: current + one previous generation
-    [ -f "$LOG" ] && [ "$(stat -c %s "$LOG")" -gt "$LOG_MAX" ] && mv -f "$LOG" "$LOG.1" || true
+rotate_log() {   # keep the logs from growing without bound: current + one previous generation (also while running: run.sh)
+    jf_rotate "$LOG" "$LOG_MAX"
+    jf_rotate "$JF_ROOT/logs/theme.log" 1048576
 }
 
 # With the systemd user service enabled, start/stop/restart from a terminal go through systemd. Otherwise `restart`

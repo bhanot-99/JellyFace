@@ -40,6 +40,14 @@ backup() {
     log "backed up $src -> $dest"
 }
 
+# jf_rotate FILE [MAX_BYTES]: keep one previous generation, rotating by copy-and-truncate so a process that still has the
+# file open for appending (the shell's stdout) keeps writing into the live file.
+jf_rotate() {
+    local f="$1" max="${2:-5242880}"
+    [ -f "$f" ] && [ "$(stat -c %s "$f" 2>/dev/null || echo 0)" -gt "$max" ] && cp -f "$f" "$f.1" && : > "$f"
+    return 0
+}
+
 # Quote a path for an Exec= line: systemd (ExecStart=) and the desktop-entry spec (Exec=) both split on spaces.
 systemd_quote() { local s="$1"; s="${s//\\/\\\\}"; s="${s//\"/\\\"}"; s="${s//%/%%}"; s="${s//\$/\$\$}"; printf '"%s"' "$s"; }
 desktop_quote() { local s="$1"; s="${s//\\/\\\\\\\\}"; s="${s//\"/\\\\\"}"; s="${s//\`/\\\\\`}"; s="${s//\$/\\\\\$}"; printf '"%s"' "$s"; }

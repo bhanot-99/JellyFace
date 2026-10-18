@@ -106,6 +106,8 @@ notif_guard() {
 }
 
 mkdir -p "$JF_ROOT/logs"
+# the logs used to be rotated only when the shell started: a session that runs for weeks grew them without limit
+( while sleep 600; do jf_rotate "$JF_ROOT/logs/jellyface.log"; jf_rotate "$JF_ROOT/logs/theme.log" 1048576; done ) 9>&- >/dev/null 2>&1 &
 watcher=0
 notif_guard 9>&- >/dev/null 2>&1 &
 guard=$!
