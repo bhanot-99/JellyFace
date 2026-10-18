@@ -31,6 +31,8 @@ Scope {
     readonly property bool idleVisible: true
     // Desktop affordance on top of iPhone's long-press: hovering a compact activity expands it
     readonly property bool hoverExpand: true
+    // Pause this long over a bubble before the card opens, so a quick tap or swipe still reaches the bubble
+    readonly property int hoverDwellMs: 450
     readonly property bool showNotifications: true
     readonly property real compactWidthIdle: 126
     readonly property real compactHeightIdle: 37
@@ -118,7 +120,7 @@ Scope {
     // --- Activity routing: up to two activities, media always takes the left bubble when paired ---
     readonly property string otherKind: hasHud ? "hud" : hasNotif ? "notif" : timerActive ? "timer" : ""
     readonly property bool split: mediaActive && otherKind !== ""
-    readonly property string primaryKind: split ? "media" : mediaActive ? "media" : otherKind
+    readonly property string primaryKind: mediaActive ? "media" : otherKind
     readonly property string secondKind: split ? otherKind : ""
     readonly property bool compactActive: primaryKind !== ""
     property string secondKindShown: "hud"
@@ -195,6 +197,8 @@ Scope {
         if (kind === "media" && !hasMedia)
             return;
         if (kind !== "media" && kind !== "timer" && kind !== "notif")
+            return;
+        if ((kind === "timer" && !timerActive) || (kind === "notif" && !hasNotif))
             return;
         if (islandCapsule.expanded && expandedKind === kind)
             return;
@@ -574,9 +578,12 @@ Scope {
                     notifTimer.stop();
                     hudTimer.stop();
                     root.hud = "";
-                } else {
+                } else if (root.hasNotif) {
+                    // Expanding stopped the notification timer: dismiss it if it was the open card, else resume it
                     if (root.expandedKind === "notif")
                         root.hasNotif = false;
+                    else
+                        notifTimer.restart();
                 }
             }
 
@@ -656,6 +663,8 @@ Scope {
                 enabled: islandCapsule.expanded
                 target: null
                 xAxis.enabled: false
+                // Do not steal presses from the scrubber and buttons
+                grabPermissions: PointerHandler.CanTakeOverFromHandlersOfDifferentType | PointerHandler.ApprovesTakeOverByAnything
                 onTranslationChanged: dragY = Math.min(0, translation.y)
                 onActiveChanged: {
                     if (!active) {
@@ -1157,6 +1166,7 @@ Scope {
                         StyledText {
                             Layout.fillWidth: true
                             text: root.notifData.appName
+                            textFormat: Text.PlainText
                             visible: text !== ""
                             font.pixelSize: 11
                             color: root.colTextTertiary
@@ -1166,6 +1176,7 @@ Scope {
                         StyledText {
                             Layout.fillWidth: true
                             text: root.notifData.summary
+                            textFormat: Text.PlainText
                             font.pixelSize: 15
                             font.weight: Font.DemiBold
                             color: root.colTextPrimary
@@ -1175,6 +1186,7 @@ Scope {
                         StyledText {
                             Layout.fillWidth: true
                             text: root.notifData.body
+                            textFormat: Text.PlainText
                             visible: text !== ""
                             font.pixelSize: 12
                             color: root.colTextSecondary
@@ -1210,6 +1222,7 @@ Scope {
         signal swipedUp
 
         anchors.fill: parent
+        onEnabledChanged: if (!enabled) dwellTimer.stop()
 
         HoverHandler {
             cursorShape: Qt.PointingHandCursor
@@ -1224,7 +1237,7 @@ Scope {
         Timer {
             id: dwellTimer
 
-            interval: 200
+            interval: root.hoverDwellMs
             onTriggered: g.hoverDwell()
         }
 
@@ -1552,6 +1565,7 @@ Scope {
                 anchors.rightMargin: 12
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.notifData.summary
+                textFormat: Text.PlainText
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 color: root.colTextPrimary

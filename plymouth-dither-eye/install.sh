@@ -3,6 +3,7 @@
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 dest=/usr/share/plymouth/themes/dither-eye
+sudo rm -rf "$dest"
 sudo mkdir -p "$dest"
 sudo cp -r "$here/dither-eye.plymouth" "$here/dither-eye.script" "$here/frames" "$dest/"
 sudo update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth "$dest/dither-eye.plymouth" 150

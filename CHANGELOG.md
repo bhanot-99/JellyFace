@@ -6,6 +6,9 @@
 - Dynamic Island: iPhone-style rework — spring morph, empty idle pill, split dual-activity bubbles, timer / notification / mute / volume / charging activities, artwork-tinted cava equaliser and glow, blur+scale transitions, tap / long-press / swipe-up gestures. The idle clock is gone.
 
 ### Fixes
+- Dynamic Island: a notification no longer sticks forever after the card was expanded during a media + notification split; the card's swipe-to-collapse no longer steals presses from the scrubber and buttons; notification text is shown as plain text; `expandKind timer` / `notif` do nothing when there is no timer or notification; hover opens the card after a 450 ms pause (was 200 ms) so taps and swipes on the pill still work.
+- Dock: README now describes the real rule (hides while any window is open on the active workspace).
+- `plymouth-dither-eye/install.sh` clears the old theme folder before copying.
 - `jellyface mail`: no longer crashes when no password or account is set; uses IMAP UIDs (marking a message read could hit
   the wrong one after a deletion), opens the mailbox read-only (it used to expunge messages flagged for deletion), reads
   only the start of each message instead of downloading whole attachments, and no longer depends on the locale's month

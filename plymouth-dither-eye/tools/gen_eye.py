@@ -27,7 +27,7 @@ def frame(i):
     gx = 14 * math.sin(t) + 5 * math.sin(3 * t)
     gy = 8 * math.sin(2 * t + 1)
     b = (i - 78) / 6.0
-    lid = 1 - math.exp(-b * b) if 0 <= i else 1          # 0 = shut, 1 = open
+    lid = 1 - math.exp(-b * b)          # 0 = shut, 1 = open
     open_h = 0.15 + 0.85 * lid
 
     # eyeball: wide ellipse, shaded toward edges
@@ -51,7 +51,7 @@ def frame(i):
     lum = np.where(hl & (ir < 27), 1.0, lum)
 
     # background: dim noisy texture, brighter near eye
-    bg = 0.10 + 0.18 * noise * smooth(110, 30, np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2) * 0 + np.abs(xx - cx)) \
+    bg = 0.10 + 0.18 * noise * smooth(110, 30, np.abs(xx - cx)) \
         + 0.06 * np.sin(yy * 0.35 + t * 3)
     lum = np.where(ball, lum, bg)
     # dark lid rim
