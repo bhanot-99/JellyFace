@@ -1,13 +1,17 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Effects
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Mpris
+import Quickshell.Services.UPower
 import Jellyface.Config
 import Jellyface.I18n
+import Jellyface.Images
+import Jellyface.Services
 import qs.components
 import qs.components.containers
 import qs.components.effects
@@ -15,26 +19,40 @@ import qs.services
 
 // Dynamic Island: Contextual floating status capsule at top center of the screen,
 // modeled on the authentic Apple iPhone Dynamic Island UI/UX.
-// Morphs smoothly between an ambient idle pill, an active media capsule (live equalizer bars),
-// and an expanded interactive media card (scrubber, timestamps, tactile controls).
+//  - Empty black idle pill, springs between sizes, blur/scale content transitions
+//  - Live activities: media (cava-driven, artwork-tinted equaliser), timer, notification, mute/volume/charging
+//  - Two activities at once split into two bubbles joined by a gooey neck
+//  - Gestures: tap (open source app / expand), long-press or hover (expand), swipe up (dismiss / collapse)
 Scope {
     id: root
 
     // --- Tunables ---
-    readonly property real compactWidthIdle: 130
-    readonly property real compactHeightIdle: 32
-    readonly property real compactWidthMedia: 210
-    readonly property real compactHeightMedia: 36
+    // Idle matches the iPhone 14 Pro cutout: an empty black pill (set false to hide it entirely)
+    readonly property bool idleVisible: true
+    // Desktop affordance on top of iPhone's long-press: hovering a compact activity expands it
+    readonly property bool hoverExpand: true
+    readonly property bool showNotifications: true
+    readonly property real compactWidthIdle: 126
+    readonly property real compactHeightIdle: 37
+    readonly property real compactWidthActive: 210
+    readonly property real compactHeightActive: 36
+    readonly property real splitPrimaryWidth: 164
+    readonly property real splitSecondWidth: 116
+    readonly property real splitGap: 8
     readonly property real expandedWidth: 370
-    readonly property real expandedHeight: 166
+    readonly property real expandedHeightMax: 166
     readonly property real expandedRadius: 36
 
     readonly property real windowSlack: 24
     readonly property real topMargin: 8
 
-    readonly property int animDurationExpand: 420
-    readonly property int animDurationCollapse: 300
-    readonly property real animOvershoot: 0.7
+    // Spring physics for the morph: lower damping = more bounce
+    readonly property real springStiffness: 4.2
+    readonly property real springDamping: 0.3
+    readonly property real springDampingCollapse: 0.42
+    readonly property int hudDuration: 1800
+    readonly property int notifDuration: 4500
+    readonly property real swipeThreshold: 14
 
     readonly property int autoCollapseDelay: 2500
     readonly property int positionPollInterval: 500
@@ -46,25 +64,78 @@ Scope {
     readonly property color colTextTertiary: "#8E8E93"
     readonly property color colEqGreen: "#30D158"
     readonly property color colAccentPink: "#FA586A"
+    readonly property color colTimer: "#FF9F0A"
+    readonly property color colDanger: "#FF453A"
     readonly property color colScrubTrack: "#38383A"
     readonly property color colArtBg: "#1C1C1E"
 
-    // --- State & Media Bindings (A9, B7, C5) ---
+    // --- Media ---
     readonly property MprisPlayer player: Players.active
     readonly property bool isPlaying: !!player && player.playbackState === MprisPlaybackState.Playing
     readonly property bool hasMedia: !!player && (isPlaying || player.playbackState === MprisPlaybackState.Paused || (player.trackTitle && player.trackTitle.length > 0))
-    readonly property ScreenState activeScreenState: ShellState.forScreen(win.screen) ?? ShellState.forActive()
-    readonly property bool dashboardOpen: activeScreenState?.dashboard ?? false
-    readonly property bool appDrawerOpen: JellyPanel.open
-    readonly property bool suppressed: dashboardOpen || appDrawerOpen
+    property bool mediaDismissed: false
+    readonly property bool mediaActive: hasMedia && !mediaDismissed
     readonly property string artUrl: player ? Players.getArtUrl(player) : ""
     readonly property bool hasUnknownLength: !player || !player.length || player.length <= 0 || player.length > 2147483647
     readonly property real trackLength: hasUnknownLength ? 0 : player.length
     readonly property bool canSeek: (player?.canSeek ?? false) && trackLength > 0 && !hasUnknownLength
 
+    // --- Shell state ---
+    readonly property ScreenState activeScreenState: ShellState.forScreen(win.screen) ?? ShellState.forActive()
+    readonly property bool dashboardOpen: activeScreenState?.dashboard ?? false
+    readonly property bool appDrawerOpen: JellyPanel.open
+    readonly property bool suppressed: dashboardOpen || appDrawerOpen
+
+    // --- Transient system activity ("mute" | "volume" | "charge" | "") like iPhone's silent-mode / charging pills ---
+    property string hud: ""
+    property bool hudReady: false
+    readonly property bool hasHud: hud !== ""
+    readonly property real batteryPct: Math.round((UPower.displayDevice?.percentage ?? 0) * 100)
+    readonly property string hudIcon: hud === "mute" ? (Audio.muted ? "volume_off" : "volume_up") : hud === "volume" ? (Audio.volume > 0.5 ? "volume_up" : "volume_down") : hud === "charge" ? "bolt" : ""
+    readonly property string hudText: hud === "mute" ? (Audio.muted ? Tr.tr("Muted") : Tr.tr("Unmuted")) : hud === "volume" ? Math.round(Audio.volume * 100) + "%" : hud === "charge" ? batteryPct + "%" : ""
+    readonly property color hudColor: hud === "charge" ? colEqGreen : (hud === "mute" && Audio.muted) ? colAccentPink : colTextPrimary
+
+    // --- Notification activity (snapshot so the pill outlives the NotifData) ---
+    property bool hasNotif: false
+    property var notifData: ({
+            summary: "",
+            body: "",
+            appName: "",
+            icon: ""
+        })
+
+    // --- Timer activity (started over IPC: qs ipc call island startTimer 300) ---
+    property real timerEnd: 0
+    property int timerTotal: 0
+    property int timerLeft: 0
+    property bool timerRunning: false
+    property bool timerDone: false
+    property bool timerHidden: false
+    readonly property bool timerActive: (timerRunning || timerDone) && !timerHidden
+    readonly property string timerText: timerDone ? Tr.tr("Done") : lengthStr(timerLeft)
+    readonly property real timerProgress: timerTotal > 0 ? Math.max(0, Math.min(1, timerLeft / timerTotal)) : 0
+
+    // --- Activity routing: up to two activities, media always takes the left bubble when paired ---
+    readonly property string otherKind: hasHud ? "hud" : hasNotif ? "notif" : timerActive ? "timer" : ""
+    readonly property bool split: mediaActive && otherKind !== ""
+    readonly property string primaryKind: split ? "media" : mediaActive ? "media" : otherKind
+    readonly property string secondKind: split ? otherKind : ""
+    readonly property bool compactActive: primaryKind !== ""
+    property string secondKindShown: "hud"
+    onSecondKindChanged: {
+        if (secondKind !== "")
+            secondKindShown = secondKind;
+    }
+
+    // Kind currently shown by the expanded card
+    property string expandedKind: "media"
+    readonly property real expandedHeight: expandedKind === "media" ? 166 : expandedKind === "timer" ? 118 : 112
+    readonly property color artTint: primaryPill.tint
+    readonly property color glowColor: expandedKind === "timer" ? colTimer : expandedKind === "media" ? artTint : "transparent"
+
     // Morph progress (0 = compact, 1 = expanded) driving content cross-fade (B9, D2)
     readonly property real morph: {
-        const hMin = hasMedia ? compactHeightMedia : compactHeightIdle;
+        const hMin = compactActive ? compactHeightActive : compactHeightIdle;
         const hMax = expandedHeight;
         return Math.max(0, Math.min(1, (islandCapsule.height - hMin) / (hMax - hMin)));
     }
@@ -80,25 +151,127 @@ Scope {
         return `${mins}:${secs}`;
     }
 
-    onHasMediaChanged: {
-        if (!hasMedia)
+    function showHud(kind: string): void {
+        if (!hudReady || suppressed || islandCapsule.expanded)
+            return;
+        hud = kind;
+        hudTimer.restart();
+    }
+
+    function showNotif(n: var): void {
+        if (!showNotifications || suppressed || islandCapsule.expanded)
+            return;
+        notifData = {
+            summary: n.summary ?? "",
+            body: n.body ?? "",
+            appName: n.appName ?? "",
+            icon: n.image || (n.appIcon ? Quickshell.iconPath(n.appIcon, true) : "")
+        };
+        hasNotif = true;
+        notifTimer.restart();
+    }
+
+    function startTimer(seconds: int): void {
+        if (seconds <= 0)
+            return;
+        timerTotal = seconds;
+        timerLeft = seconds;
+        timerEnd = Date.now() + seconds * 1000;
+        timerRunning = true;
+        timerDone = false;
+        timerHidden = false;
+        timerDoneTimer.stop();
+    }
+
+    function cancelTimer(): void {
+        timerRunning = false;
+        timerDone = false;
+        timerDoneTimer.stop();
+        if (islandCapsule.expanded && expandedKind === "timer")
             islandCapsule.expanded = false;
     }
 
+    function expandFor(kind: string): void {
+        if (kind === "media" && !hasMedia)
+            return;
+        if (kind !== "media" && kind !== "timer" && kind !== "notif")
+            return;
+        if (islandCapsule.expanded && expandedKind === kind)
+            return;
+        expandedKind = kind;
+        islandCapsule.expanded = true;
+        if (!cardHover.hovered)
+            collapseTimer.restart();
+    }
+
+    // iPhone: tapping a compact activity opens its source app
+    function activate(kind: string): void {
+        if (kind === "media") {
+            const entry = player?.desktopEntry ?? "";
+            if (entry !== "")
+                Quickshell.execDetached(["distrobox-host-exec", "gtk-launch", entry]);
+            else
+                expandFor("media");
+        } else {
+            expandFor(kind);
+        }
+    }
+
+    // Swipe up on a compact activity tucks it away until it changes
+    function dismiss(kind: string): void {
+        if (kind === "media")
+            mediaDismissed = true;
+        else if (kind === "hud")
+            hud = "";
+        else if (kind === "notif")
+            hasNotif = false;
+        else if (kind === "timer")
+            timerHidden = true;
+    }
+
+    onHasMediaChanged: {
+        if (!hasMedia) {
+            mediaDismissed = false;
+            if (islandCapsule.expanded && expandedKind === "media")
+                islandCapsule.expanded = false;
+        }
+    }
+
     onSuppressedChanged: {
-        if (suppressed)
+        if (suppressed) {
             islandCapsule.expanded = false;
+            hud = "";
+            hasNotif = false;
+        }
+    }
+
+    // A new track or resuming playback brings a dismissed media activity back
+    Connections {
+        function onTrackTitleChanged(): void {
+            root.mediaDismissed = false;
+        }
+
+        function onPlaybackStateChanged(): void {
+            if (root.isPlaying)
+                root.mediaDismissed = false;
+        }
+
+        target: root.player
+        ignoreUnknownSignals: true
     }
 
     // IPC Interface for automation, testing, and script control
     IpcHandler {
         function expand(): void {
-            if (root.hasMedia)
-                islandCapsule.expanded = true;
+            root.expandFor("media");
         }
 
         function forceExpand(): void {
             islandCapsule.expanded = true;
+        }
+
+        function expandKind(kind: string): void {
+            root.expandFor(kind);
         }
 
         function collapse(): void {
@@ -108,31 +281,126 @@ Scope {
         function toggle(): void {
             if (islandCapsule.expanded)
                 islandCapsule.expanded = false;
-            else if (root.hasMedia)
-                islandCapsule.expanded = true;
+            else
+                root.expandFor("media");
         }
 
         function isExpanded(): string {
             return islandCapsule.expanded ? "1" : "0";
         }
 
+        function startTimer(seconds: int): void {
+            root.startTimer(seconds);
+        }
+
+        function cancelTimer(): void {
+            root.cancelTimer();
+        }
+
+        function notify(summary: string, body: string): void {
+            root.showNotif({
+                summary: summary,
+                body: body,
+                appName: "",
+                appIcon: ""
+            });
+        }
+
         target: "island"
     }
 
-    // A2: Ticking system clock for idle pill, active only when idle & visible
-    SystemClock {
-        id: sysClock
+    Timer {
+        id: hudTimer
 
-        precision: SystemClock.Minutes
-        enabled: win.visible && !root.hasMedia
+        interval: root.hudDuration
+        onTriggered: root.hud = ""
     }
+
+    Timer {
+        id: notifTimer
+
+        interval: root.notifDuration
+        onTriggered: root.hasNotif = false
+    }
+
+    Timer {
+        id: timerTick
+
+        interval: 250
+        running: root.timerRunning
+        repeat: true
+        onTriggered: {
+            const left = Math.ceil((root.timerEnd - Date.now()) / 1000);
+            if (left <= 0) {
+                root.timerLeft = 0;
+                root.timerRunning = false;
+                root.timerDone = true;
+                timerDoneTimer.restart();
+            } else {
+                root.timerLeft = left;
+            }
+        }
+    }
+
+    Timer {
+        id: timerDoneTimer
+
+        interval: 6000
+        onTriggered: root.timerDone = false
+    }
+
+    // Skip the initial property settle at startup so the HUD only reacts to real changes
+    Timer {
+        interval: 1500
+        running: true
+        onTriggered: root.hudReady = true
+    }
+
+    Connections {
+        function onMutedChanged(): void {
+            root.showHud("mute");
+        }
+
+        function onVolumeChanged(): void {
+            if (!Audio.muted)
+                root.showHud("volume");
+        }
+
+        target: Audio
+    }
+
+    Connections {
+        function onOnBatteryChanged(): void {
+            if (UPower.displayDevice.ready && !UPower.onBattery)
+                root.showHud("charge");
+        }
+
+        target: UPower
+    }
+
+    Connections {
+        function onListChanged(): void {
+            if (!root.hudReady)
+                return;
+            const n = Notifs.list[0];
+            if (n && n !== root.lastNotif) {
+                root.lastNotif = n;
+                if (n.popup && Date.now() - n.time.getTime() < 3000)
+                    root.showNotif(n);
+            }
+        }
+
+        target: Notifs
+    }
+
+    property var lastNotif: null
 
     // B6: Position polling only while expanded & actively playing
     Timer {
         id: positionTimer
 
         interval: root.positionPollInterval
-        running: root.isPlaying && islandCapsule.expanded && win.visible
+        running: root.isPlaying && islandCapsule.expanded && root.expandedKind === "media" && win.visible
         repeat: true
         triggeredOnStart: true
         onTriggered: root.player?.positionChanged()
@@ -154,15 +422,106 @@ Scope {
         margins.top: root.topMargin
 
         implicitWidth: root.expandedWidth + root.windowSlack
-        implicitHeight: root.expandedHeight + root.windowSlack
+        implicitHeight: root.expandedHeightMax + root.windowSlack
 
         mask: Region {
             item: islandCapsule
+
+            Region {
+                item: secondCapsule
+            }
         }
 
         onVisibleChanged: {
             if (!visible)
                 islandCapsule.expanded = false;
+        }
+
+        // Gooey neck joining the two bubbles: full height while they overlap, pinching off as the gap opens
+        Rectangle {
+            id: bridge
+
+            readonly property real gap: secondCapsule.x - (islandCapsule.x + islandCapsule.width)
+            readonly property real neck: Math.max(0, Math.min(1, (root.splitGap - 1 - gap) / 10))
+
+            visible: secondCapsule.width > 2 && !islandCapsule.expanded && neck > 0.01
+            x: islandCapsule.x + islandCapsule.width - 12
+            width: Math.max(0, gap + 24)
+            height: Math.max(0, Math.min(islandCapsule.height, secondCapsule.height) * neck)
+            y: (islandCapsule.height - height) / 2
+            radius: height / 2
+            color: root.colBg
+            opacity: islandCapsule.opacity
+        }
+
+        // Secondary bubble: appears when a second activity runs next to media
+        Rectangle {
+            id: secondCapsule
+
+            readonly property bool shown: root.split && !islandCapsule.expanded
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenterOffset: shown ? (root.splitPrimaryWidth + root.splitGap) / 2 : 0
+            anchors.top: parent.top
+            width: shown ? root.splitSecondWidth : 0
+            height: root.compactHeightActive
+            radius: height / 2
+            color: root.colBg
+            clip: true
+            visible: width > 1
+            opacity: root.suppressed ? 0 : 1
+            enabled: shown
+
+            Behavior on anchors.horizontalCenterOffset {
+                SpringAnimation {
+                    spring: root.springStiffness
+                    damping: secondCapsule.shown ? root.springDamping : root.springDampingCollapse
+                    epsilon: 0.25
+                }
+            }
+
+            Behavior on width {
+                SpringAnimation {
+                    spring: root.springStiffness
+                    damping: secondCapsule.shown ? root.springDamping : root.springDampingCollapse
+                    epsilon: 0.25
+                }
+            }
+
+            transform: Translate {
+                y: gSecond.dragY * 0.6
+
+                Behavior on y {
+                    enabled: !gSecond.dragging
+                    NumberAnimation {
+                        duration: 220
+                        easing.type: Easing.OutBack
+                    }
+                }
+            }
+
+            Item {
+                id: secondView
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: root.splitSecondWidth
+                height: parent.height
+                opacity: Math.min(1, secondCapsule.width / root.splitSecondWidth)
+
+                Pill {
+                    anchors.fill: parent
+                    kind: root.secondKindShown
+                }
+
+                Gestures {
+                    id: gSecond
+
+                    onTapped: root.activate(root.secondKindShown)
+                    onHeld: root.expandFor(root.secondKindShown)
+                    onHoverDwell: if (root.hoverExpand) root.expandFor(root.secondKindShown)
+                    onSwipedUp: root.dismiss(root.secondKindShown)
+                }
+            }
         }
 
         // B10: Plain Rectangle instead of StyledRect (no extra loaders/colors)
@@ -172,27 +531,52 @@ Scope {
             property bool expanded: false
 
             anchors.horizontalCenter: parent.horizontalCenter
+            anchors.horizontalCenterOffset: secondCapsule.shown ? -(root.splitGap + root.splitSecondWidth) / 2 : 0
             anchors.top: parent.top
-            width: expanded ? root.expandedWidth : (root.hasMedia ? root.compactWidthMedia : root.compactWidthIdle)
-            height: expanded ? root.expandedHeight : (root.hasMedia ? root.compactHeightMedia : root.compactHeightIdle)
+            width: expanded ? root.expandedWidth : root.split ? root.splitPrimaryWidth : (root.compactActive ? root.compactWidthActive : root.compactWidthIdle)
+            height: expanded ? root.expandedHeight : (root.compactActive ? root.compactHeightActive : root.compactHeightIdle)
             radius: Math.min(height / 2, root.expandedRadius)
             color: root.colBg
             clip: true
-            opacity: root.suppressed ? 0 : 1
+            opacity: root.suppressed || (!root.idleVisible && !root.compactActive && !expanded) ? 0 : 1
             scale: root.suppressed ? 0.85 : 1
             enabled: !root.suppressed
 
-            transform: Translate {
-                id: tuckTranslate
+            transform: [
+                Translate {
+                    id: tuckTranslate
 
-                y: root.suppressed ? -islandCapsule.height - 16 : 0
+                    y: root.suppressed ? -islandCapsule.height - 16 : 0
 
-                Behavior on y {
-                    NumberAnimation {
-                        duration: root.suppressed ? 220 : 350
-                        easing.type: root.suppressed ? Easing.InCubic : Easing.OutBack
-                        easing.overshoot: 0.6
+                    Behavior on y {
+                        NumberAnimation {
+                            duration: root.suppressed ? 220 : 350
+                            easing.type: root.suppressed ? Easing.InCubic : Easing.OutBack
+                            easing.overshoot: 0.6
+                        }
                     }
+                },
+                Translate {
+                    y: Math.min(0, gPrimary.dragY, swipeCollapse.dragY) * 0.6
+
+                    Behavior on y {
+                        enabled: !gPrimary.dragging && !swipeCollapse.active
+                        NumberAnimation {
+                            duration: 220
+                            easing.type: Easing.OutBack
+                        }
+                    }
+                }
+            ]
+
+            onExpandedChanged: {
+                if (expanded) {
+                    notifTimer.stop();
+                    hudTimer.stop();
+                    root.hud = "";
+                } else {
+                    if (root.expandedKind === "notif")
+                        root.hasNotif = false;
                 }
             }
 
@@ -211,20 +595,28 @@ Scope {
                 }
             }
 
-            // D1: Asymmetric animation curves (Overshoot expand, clean cubic collapse)
+            Behavior on anchors.horizontalCenterOffset {
+                SpringAnimation {
+                    spring: root.springStiffness
+                    damping: secondCapsule.shown ? root.springDamping : root.springDampingCollapse
+                    epsilon: 0.25
+                }
+            }
+
+            // D1: Spring physics (bouncy on expand, tighter on collapse)
             Behavior on width {
-                NumberAnimation {
-                    duration: islandCapsule.expanded ? root.animDurationExpand : root.animDurationCollapse
-                    easing.type: islandCapsule.expanded ? Easing.OutBack : Easing.OutCubic
-                    easing.overshoot: root.animOvershoot
+                SpringAnimation {
+                    spring: root.springStiffness
+                    damping: islandCapsule.expanded ? root.springDamping : root.springDampingCollapse
+                    epsilon: 0.25
                 }
             }
 
             Behavior on height {
-                NumberAnimation {
-                    duration: islandCapsule.expanded ? root.animDurationExpand : root.animDurationCollapse
-                    easing.type: islandCapsule.expanded ? Easing.OutBack : Easing.OutCubic
-                    easing.overshoot: root.animOvershoot
+                SpringAnimation {
+                    spring: root.springStiffness
+                    damping: islandCapsule.expanded ? root.springDamping : root.springDampingCollapse
+                    epsilon: 0.25
                 }
             }
 
@@ -255,278 +647,106 @@ Scope {
                 target: cardHover
             }
 
-            // Compact Pill View (Fades out in first 25% of morph)
+            // Swipe up on the expanded card collapses it (child controls grab their own presses)
+            DragHandler {
+                id: swipeCollapse
+
+                property real dragY: 0
+
+                enabled: islandCapsule.expanded
+                target: null
+                xAxis.enabled: false
+                onTranslationChanged: dragY = Math.min(0, translation.y)
+                onActiveChanged: {
+                    if (!active) {
+                        if (dragY < -root.swipeThreshold)
+                            islandCapsule.expanded = false;
+                        dragY = 0;
+                    }
+                }
+            }
+
+            // Artwork / timer tinted glow behind the expanded card
+            Rectangle {
+                anchors.fill: parent
+                radius: islandCapsule.radius
+                opacity: root.morph * 0.85
+                visible: opacity > 0.01 && root.expandedKind !== "notif"
+
+                gradient: Gradient {
+                    GradientStop {
+                        position: 0.0
+                        color: Qt.rgba(root.glowColor.r, root.glowColor.g, root.glowColor.b, 0.5)
+                    }
+                    GradientStop {
+                        position: 1.0
+                        color: Qt.rgba(root.glowColor.r, root.glowColor.g, root.glowColor.b, 0.0)
+                    }
+                }
+            }
+
+            // Compact Pill View (blurs/scales out in first 25% of morph)
             Item {
                 id: compactView
+
+                readonly property real blurAmt: root.morph < 0.25 ? Math.min(1, root.morph / 0.25) : 0
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 width: islandCapsule.width
                 height: islandCapsule.height
                 opacity: root.morph < 0.25 ? Math.max(0, 1 - root.morph / 0.25) : 0
+                scale: 1 - 0.18 * blurAmt
+                transformOrigin: Item.Top
                 visible: opacity > 0
-
-                // 1. Idle Pill
-                Item {
-                    id: idlePill
-
-                    anchors.fill: parent
-                    visible: !root.hasMedia
-
-                    MaterialIcon {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 10
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "music_note"
-                        color: root.colAccentPink
-                        fontStyle: Tokens.font.icon.size(13).build()
-                    }
-
-                    StyledText {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 12
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: Qt.formatTime(sysClock.date, "hh:mm")
-                        font.pixelSize: 12
-                        font.weight: Font.DemiBold
-                        color: root.colTextPrimary
-                    }
+                layer.enabled: blurAmt > 0.02
+                layer.effect: MultiEffect {
+                    blurEnabled: true
+                    blurMax: 24
+                    blur: compactView.blurAmt
                 }
 
-                // 2. Active Media Pill
-                Item {
-                    id: mediaPill
+                Pill {
+                    id: primaryPill
 
                     anchors.fill: parent
-                    visible: root.hasMedia
-
-                    // Compact Album Artwork (A3, B7, C6)
-                    Rectangle {
-                        id: compactArtBox
-
-                        anchors.left: parent.left
-                        anchors.leftMargin: 6
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: 24
-                        height: 24
-                        radius: 12
-                        color: root.colArtBg
-
-                        Item {
-                            id: compactArtMask
-
-                            anchors.fill: parent
-                            layer.enabled: true
-                            visible: false
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: width / 2
-                                color: "white"
-                            }
-                        }
-
-                        Image {
-                            id: compactArtImg
-
-                            anchors.fill: parent
-                            source: root.artUrl
-                            sourceSize: Qt.size(104, 104)
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            visible: status === Image.Ready
-                            layer.enabled: true
-                            layer.effect: Mask {
-                                maskSource: compactArtMask
-                            }
-                        }
-
-                        MaterialIcon {
-                            anchors.centerIn: parent
-                            text: "music_note"
-                            color: root.colAccentPink
-                            fontStyle: Tokens.font.icon.size(13).build()
-                            visible: compactArtImg.status !== Image.Ready
-                        }
-                    }
-
-                    // B4, C2, D11: Fixed-size Equalizer box with looping SequentialAnimations (no JS per tick)
-                    Item {
-                        id: eqBars
-
-                        readonly property bool animRunning: root.isPlaying && !islandCapsule.expanded && win.visible
-
-                        onAnimRunningChanged: {
-                            if (!animRunning) {
-                                bar0.height = 3.5;
-                                bar1.height = 3.5;
-                                bar2.height = 3.5;
-                                bar3.height = 3.5;
-                            }
-                        }
-
-                        width: 18
-                        height: 14
-                        anchors.right: parent.right
-                        anchors.rightMargin: 10
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        Rectangle {
-                            id: bar0
-
-                            x: 0
-                            width: 3
-                            radius: 1.5
-                            color: root.colEqGreen
-                            anchors.bottom: parent.bottom
-                            height: 3.5
-
-                            SequentialAnimation on height {
-                                running: eqBars.animRunning
-                                loops: Animation.Infinite
-
-                                NumberAnimation {
-                                    to: 13
-                                    duration: 340
-                                    easing.type: Easing.InOutSine
-                                }
-                                NumberAnimation {
-                                    to: 4
-                                    duration: 380
-                                    easing.type: Easing.InOutSine
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            id: bar1
-
-                            x: 5
-                            width: 3
-                            radius: 1.5
-                            color: root.colEqGreen
-                            anchors.bottom: parent.bottom
-                            height: 3.5
-
-                            SequentialAnimation on height {
-                                running: eqBars.animRunning
-                                loops: Animation.Infinite
-
-                                NumberAnimation {
-                                    to: 15
-                                    duration: 440
-                                    easing.type: Easing.InOutSine
-                                }
-                                NumberAnimation {
-                                    to: 5
-                                    duration: 410
-                                    easing.type: Easing.InOutSine
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            id: bar2
-
-                            x: 10
-                            width: 3
-                            radius: 1.5
-                            color: root.colEqGreen
-                            anchors.bottom: parent.bottom
-                            height: 3.5
-
-                            SequentialAnimation on height {
-                                running: eqBars.animRunning
-                                loops: Animation.Infinite
-
-                                NumberAnimation {
-                                    to: 12
-                                    duration: 310
-                                    easing.type: Easing.InOutSine
-                                }
-                                NumberAnimation {
-                                    to: 3.5
-                                    duration: 350
-                                    easing.type: Easing.InOutSine
-                                }
-                            }
-                        }
-
-                        Rectangle {
-                            id: bar3
-
-                            x: 15
-                            width: 3
-                            radius: 1.5
-                            color: root.colEqGreen
-                            anchors.bottom: parent.bottom
-                            height: 3.5
-
-                            SequentialAnimation on height {
-                                running: eqBars.animRunning
-                                loops: Animation.Infinite
-
-                                NumberAnimation {
-                                    to: 14
-                                    duration: 480
-                                    easing.type: Easing.InOutSine
-                                }
-                                NumberAnimation {
-                                    to: 4
-                                    duration: 450
-                                    easing.type: Easing.InOutSine
-                                }
-                            }
-                        }
-                    }
+                    kind: root.primaryKind
+                    tracksArt: true
                 }
 
-                // A4: Compact tap/hover area expands card only when media exists
-                Timer {
-                    id: expandHoverTimer
+                Gestures {
+                    id: gPrimary
 
-                    interval: 200
-                    onTriggered: {
-                        if (root.hasMedia && !islandCapsule.expanded) {
-                            islandCapsule.expanded = true;
-                            if (!cardHover.hovered)
-                                collapseTimer.restart();
-                        }
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: !islandCapsule.expanded && root.hasMedia
-                    hoverEnabled: true
-                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: {
-                        expandHoverTimer.stop();
-                        islandCapsule.expanded = true;
-                        if (!cardHover.hovered)
-                            collapseTimer.restart();
-                    }
-                    onEntered: {
-                        if (root.hasMedia && !islandCapsule.expanded)
-                            expandHoverTimer.restart();
-                    }
-                    onExited: {
-                        expandHoverTimer.stop();
-                    }
+                    enabled: !islandCapsule.expanded
+                    onTapped: root.activate(root.primaryKind)
+                    onHeld: root.expandFor(root.primaryKind)
+                    onHoverDwell: if (root.hoverExpand) root.expandFor(root.primaryKind)
+                    onSwipedUp: root.dismiss(root.primaryKind)
                 }
             }
 
-            // B3, D3: Fixed-size Expanded Bento Card (pinned top-center; clip reveals it without layout reflow)
+            // B3, D3: Fixed-size Expanded Cards (pinned top-center; clip reveals them without layout reflow)
+            // --- Media card ---
             Item {
                 id: expandedView
+
+                readonly property real blurAmt: root.morph < 1 ? Math.min(0.7, (1 - root.morph) * 1.2) : 0
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 anchors.topMargin: 14
                 width: root.expandedWidth - 28
-                height: root.expandedHeight - 28
-                opacity: root.morph > 0.45 ? Math.min(1, (root.morph - 0.45) / 0.55) : 0
+                height: 166 - 28
+                opacity: root.expandedKind === "media" && root.morph > 0.45 ? Math.min(1, (root.morph - 0.45) / 0.55) : 0
+                scale: 0.88 + 0.12 * Math.min(1, root.morph)
+                transformOrigin: Item.Top
                 visible: opacity > 0
+                layer.enabled: visible && blurAmt > 0.02
+                layer.effect: MultiEffect {
+                    blurEnabled: true
+                    blurMax: 24
+                    blur: expandedView.blurAmt
+                }
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -537,51 +757,14 @@ Scope {
                         Layout.fillWidth: true
                         spacing: 12
 
-                        // Large Album Artwork (A3, B7, C6) - Perfect Circle
-                        Rectangle {
-                            id: largeArtBox
-
-                            width: 52
-                            height: 52
-                            radius: 26
-                            color: root.colArtBg
-
-                            Item {
-                                id: largeArtMask
-
-                                anchors.fill: parent
-                                layer.enabled: true
-                                visible: false
-
-                                Rectangle {
-                                    anchors.fill: parent
-                                    radius: width / 2
-                                    color: "white"
-                                }
-                            }
-
-                            Image {
-                                id: expandedArtImg
-
-                                anchors.fill: parent
-                                source: root.artUrl
-                                sourceSize: Qt.size(104, 104)
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                visible: status === Image.Ready
-                                layer.enabled: true
-                                layer.effect: Mask {
-                                    maskSource: largeArtMask
-                                }
-                            }
-
-                            MaterialIcon {
-                                anchors.centerIn: parent
-                                text: "album"
-                                color: Qt.rgba(1, 1, 1, 0.4)
-                                fontStyle: Tokens.font.icon.size(26).build()
-                                visible: expandedArtImg.status !== Image.Ready
-                            }
+                        // Large Album Artwork - Perfect Circle
+                        RoundImage {
+                            Layout.preferredWidth: 52
+                            Layout.preferredHeight: 52
+                            source: root.artUrl
+                            fallback: "album"
+                            fallbackColor: Qt.rgba(1, 1, 1, 0.4)
+                            fallbackSize: 26
                         }
 
                         // Track Title & Artist (D9: animate for smooth track fade)
@@ -621,7 +804,7 @@ Scope {
                             MaterialIcon {
                                 anchors.centerIn: parent
                                 text: "airplay"
-                                color: root.colEqGreen
+                                color: root.artTint
                                 fontStyle: Tokens.font.icon.size(14).build()
                             }
                         }
@@ -827,6 +1010,553 @@ Scope {
                     }
                 }
             }
+
+            // --- Timer card ---
+            Item {
+                id: timerCard
+
+                readonly property real blurAmt: root.morph < 1 ? Math.min(0.7, (1 - root.morph) * 1.2) : 0
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: 14
+                width: root.expandedWidth - 28
+                height: 118 - 28
+                opacity: root.expandedKind === "timer" && root.morph > 0.45 ? Math.min(1, (root.morph - 0.45) / 0.55) : 0
+                scale: 0.88 + 0.12 * Math.min(1, root.morph)
+                transformOrigin: Item.Top
+                visible: opacity > 0
+                layer.enabled: visible && blurAmt > 0.02
+                layer.effect: MultiEffect {
+                    blurEnabled: true
+                    blurMax: 24
+                    blur: timerCard.blurAmt
+                }
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 10
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 12
+
+                        ColumnLayout {
+                            spacing: 0
+
+                            RowLayout {
+                                spacing: 6
+
+                                MaterialIcon {
+                                    text: "timer"
+                                    color: root.colTimer
+                                    fontStyle: Tokens.font.icon.size(16).build()
+                                }
+
+                                StyledText {
+                                    text: Tr.tr("Timer")
+                                    font.pixelSize: 13
+                                    font.weight: Font.DemiBold
+                                    color: root.colTimer
+                                }
+                            }
+
+                            StyledText {
+                                text: root.timerText
+                                font.pixelSize: 34
+                                font.weight: Font.DemiBold
+                                color: root.colTextPrimary
+                            }
+                        }
+
+                        Item {
+                            Layout.fillWidth: true
+                        }
+
+                        // Cancel
+                        Rectangle {
+                            Layout.preferredWidth: 44
+                            Layout.preferredHeight: 44
+                            radius: 22
+                            color: Qt.rgba(1, 0.27, 0.23, cancelArea.pressed ? 0.45 : 0.28)
+
+                            MaterialIcon {
+                                anchors.centerIn: parent
+                                text: "close"
+                                color: root.colDanger
+                                fontStyle: Tokens.font.icon.size(22).build()
+                            }
+
+                            MouseArea {
+                                id: cancelArea
+
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.cancelTimer()
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 4
+                        radius: 2
+                        color: root.colScrubTrack
+
+                        Rectangle {
+                            height: parent.height
+                            radius: 2
+                            color: root.colTimer
+                            width: parent.width * root.timerProgress
+                        }
+                    }
+                }
+            }
+
+            // --- Notification card ---
+            Item {
+                id: notifCard
+
+                readonly property real blurAmt: root.morph < 1 ? Math.min(0.7, (1 - root.morph) * 1.2) : 0
+
+                anchors.horizontalCenter: parent.horizontalCenter
+                anchors.top: parent.top
+                anchors.topMargin: 14
+                width: root.expandedWidth - 28
+                height: 112 - 28
+                opacity: root.expandedKind === "notif" && root.morph > 0.45 ? Math.min(1, (root.morph - 0.45) / 0.55) : 0
+                scale: 0.88 + 0.12 * Math.min(1, root.morph)
+                transformOrigin: Item.Top
+                visible: opacity > 0
+                layer.enabled: visible && blurAmt > 0.02
+                layer.effect: MultiEffect {
+                    blurEnabled: true
+                    blurMax: 24
+                    blur: notifCard.blurAmt
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: 12
+
+                    RoundImage {
+                        Layout.preferredWidth: 44
+                        Layout.preferredHeight: 44
+                        Layout.alignment: Qt.AlignTop
+                        source: root.notifData.icon
+                        fallback: "notifications"
+                        fallbackColor: Qt.rgba(1, 1, 1, 0.6)
+                        fallbackSize: 22
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignTop
+                        spacing: 2
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: root.notifData.appName
+                            visible: text !== ""
+                            font.pixelSize: 11
+                            color: root.colTextTertiary
+                            elide: Text.ElideRight
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: root.notifData.summary
+                            font.pixelSize: 15
+                            font.weight: Font.DemiBold
+                            color: root.colTextPrimary
+                            elide: Text.ElideRight
+                        }
+
+                        StyledText {
+                            Layout.fillWidth: true
+                            text: root.notifData.body
+                            visible: text !== ""
+                            font.pixelSize: 12
+                            color: root.colTextSecondary
+                            wrapMode: Text.Wrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    PressableIcon {
+                        Layout.alignment: Qt.AlignTop
+                        icon: "close"
+                        pointSize: 16
+                        color: root.colTextTertiary
+                        activeColor: root.colTextPrimary
+                        onClicked: islandCapsule.expanded = false
+                    }
+                }
+            }
+        }
+    }
+
+    // Tap / long-press / hover-dwell / swipe-up recogniser for a compact bubble
+    component Gestures: Item {
+        id: g
+
+        property real dragY: 0
+        readonly property bool dragging: dragH.active
+
+        signal tapped
+        signal held
+        signal hoverDwell
+        signal swipedUp
+
+        anchors.fill: parent
+
+        HoverHandler {
+            cursorShape: Qt.PointingHandCursor
+            onHoveredChanged: {
+                if (hovered)
+                    dwellTimer.restart();
+                else
+                    dwellTimer.stop();
+            }
+        }
+
+        Timer {
+            id: dwellTimer
+
+            interval: 200
+            onTriggered: g.hoverDwell()
+        }
+
+        TapHandler {
+            longPressThreshold: 0.45
+            onTapped: g.tapped()
+            onLongPressed: g.held()
+        }
+
+        DragHandler {
+            id: dragH
+
+            target: null
+            xAxis.enabled: false
+            onTranslationChanged: g.dragY = Math.min(0, translation.y)
+            onActiveChanged: {
+                if (!active) {
+                    if (g.dragY < -root.swipeThreshold)
+                        g.swipedUp();
+                    g.dragY = 0;
+                }
+            }
+        }
+    }
+
+    // Circular image with a glyph fallback
+    component RoundImage: Item {
+        id: ri
+
+        property alias source: img.source
+        property string fallback: "music_note"
+        property color fallbackColor: root.colAccentPink
+        property int fallbackSize: 13
+        property alias image: img
+
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            color: root.colArtBg
+        }
+
+        Item {
+            id: maskItem
+
+            anchors.fill: parent
+            layer.enabled: true
+            visible: false
+
+            Rectangle {
+                anchors.fill: parent
+                radius: width / 2
+                color: "white"
+            }
+        }
+
+        Image {
+            id: img
+
+            anchors.fill: parent
+            sourceSize: Qt.size(104, 104)
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            visible: status === Image.Ready
+            layer.enabled: true
+            layer.effect: Mask {
+                maskSource: maskItem
+            }
+        }
+
+        MaterialIcon {
+            anchors.centerIn: parent
+            text: ri.fallback
+            color: ri.fallbackColor
+            fontStyle: Tokens.font.icon.size(ri.fallbackSize).build()
+            visible: img.status !== Image.Ready
+        }
+    }
+
+    // One equaliser bar: driven by cava when it has signal, otherwise a looping fake animation
+    component EqBar: Rectangle {
+        id: bar
+
+        property int idx: 0
+        property real peak: 13
+        property int durUp: 340
+        property int durDown: 380
+        property real anim: 3.5
+        property real level: 0
+        property bool live: false
+        property bool running: false
+
+        anchors.bottom: parent.bottom
+        width: 3
+        radius: 1.5
+        x: idx * 5
+        height: running ? (live ? 3.5 + level * (parent.height - 3.5) : anim) : 3.5
+
+        Behavior on height {
+            enabled: bar.live
+            NumberAnimation {
+                duration: 70
+            }
+        }
+
+        SequentialAnimation on anim {
+            running: bar.running && !bar.live
+            loops: Animation.Infinite
+
+            NumberAnimation {
+                to: bar.peak
+                duration: bar.durUp
+                easing.type: Easing.InOutSine
+            }
+            NumberAnimation {
+                to: 4
+                duration: bar.durDown
+                easing.type: Easing.InOutSine
+            }
+        }
+    }
+
+    // Compact content for any activity kind ("media" | "hud" | "timer" | "notif" | "")
+    component Pill: Item {
+        id: pill
+
+        required property string kind
+        property bool tracksArt: false
+
+        readonly property bool eqRunning: kind === "media" && root.isPlaying && !islandCapsule.expanded && win.visible
+        readonly property var cavaValues: Audio.cava.values
+        readonly property bool cavaLive: {
+            const v = cavaValues;
+            if (!v || v.length === 0)
+                return false;
+            let s = 0;
+            for (let i = 0; i < v.length; i++)
+                s += v[i];
+            return s > 0.02;
+        }
+        readonly property color tint: {
+            const c = analyser.dominantColour;
+            if (c.r + c.g + c.b < 0.03)
+                return root.colEqGreen;
+            return c.hslLightness < 0.55 ? Qt.hsla(Math.max(0, c.hslHue), Math.max(c.hslSaturation, 0.55), 0.62, 1) : c;
+        }
+
+        function level(i: int): real {
+            const v = cavaValues;
+            const n = v ? v.length : 0;
+            if (n === 0)
+                return 0;
+            const per = Math.max(1, Math.floor(n / 4));
+            let s = 0;
+            let c = 0;
+            for (let k = i * per; k < Math.min(n, (i + 1) * per); k++) {
+                s += v[k];
+                c++;
+            }
+            return c > 0 ? Math.min(1, s / c * 1.4) : 0;
+        }
+
+        ImageAnalyser {
+            id: analyser
+
+            sourceItem: pill.tracksArt && pill.kind === "media" ? mediaArt.image : null
+            rescaleSize: 32
+        }
+
+        Connections {
+            function onStatusChanged(): void {
+                if (mediaArt.image.status === Image.Ready)
+                    analyser.requestUpdate();
+            }
+
+            target: mediaArt.image
+        }
+
+        Loader {
+            active: pill.eqRunning
+
+            sourceComponent: ServiceRef {
+                service: Audio.cava
+            }
+        }
+
+        // Media: artwork left, live equaliser right
+        Item {
+            anchors.fill: parent
+            visible: pill.kind === "media"
+
+            RoundImage {
+                id: mediaArt
+
+                anchors.left: parent.left
+                anchors.leftMargin: 6
+                anchors.verticalCenter: parent.verticalCenter
+                width: 24
+                height: 24
+                source: root.artUrl
+            }
+
+            Item {
+                width: 18
+                height: 14
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                anchors.verticalCenter: parent.verticalCenter
+
+                EqBar {
+                    idx: 0
+                    color: pill.tint
+                    peak: 13
+                    durUp: 340
+                    durDown: 380
+                    level: pill.level(0)
+                    live: pill.cavaLive
+                    running: pill.eqRunning
+                }
+                EqBar {
+                    idx: 1
+                    color: pill.tint
+                    peak: 15
+                    durUp: 440
+                    durDown: 410
+                    level: pill.level(1)
+                    live: pill.cavaLive
+                    running: pill.eqRunning
+                }
+                EqBar {
+                    idx: 2
+                    color: pill.tint
+                    peak: 12
+                    durUp: 390
+                    durDown: 430
+                    level: pill.level(2)
+                    live: pill.cavaLive
+                    running: pill.eqRunning
+                }
+                EqBar {
+                    idx: 3
+                    color: pill.tint
+                    peak: 14
+                    durUp: 480
+                    durDown: 450
+                    level: pill.level(3)
+                    live: pill.cavaLive
+                    running: pill.eqRunning
+                }
+            }
+        }
+
+        // System activity (mute / volume / charging)
+        Item {
+            anchors.fill: parent
+            visible: pill.kind === "hud"
+
+            MaterialIcon {
+                anchors.left: parent.left
+                anchors.leftMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.hudIcon
+                color: root.hudColor
+                fontStyle: Tokens.font.icon.size(16).build()
+            }
+
+            StyledText {
+                anchors.right: parent.right
+                anchors.rightMargin: 14
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.hudText
+                font.pixelSize: 13
+                font.weight: Font.DemiBold
+                color: root.hudColor
+            }
+        }
+
+        // Timer
+        Item {
+            anchors.fill: parent
+            visible: pill.kind === "timer"
+
+            MaterialIcon {
+                anchors.left: parent.left
+                anchors.leftMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                text: "timer"
+                color: root.colTimer
+                fontStyle: Tokens.font.icon.size(16).build()
+            }
+
+            StyledText {
+                anchors.right: parent.right
+                anchors.rightMargin: 14
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.timerText
+                font.pixelSize: 13
+                font.weight: Font.DemiBold
+                color: root.colTimer
+            }
+        }
+
+        // Notification
+        Item {
+            anchors.fill: parent
+            visible: pill.kind === "notif"
+
+            RoundImage {
+                id: notifIcon
+
+                anchors.left: parent.left
+                anchors.leftMargin: 7
+                anchors.verticalCenter: parent.verticalCenter
+                width: 22
+                height: 22
+                source: root.notifData.icon
+                fallback: "notifications"
+                fallbackColor: Qt.rgba(1, 1, 1, 0.6)
+                fallbackSize: 13
+            }
+
+            StyledText {
+                anchors.left: notifIcon.right
+                anchors.leftMargin: 8
+                anchors.right: parent.right
+                anchors.rightMargin: 12
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.notifData.summary
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+                color: root.colTextPrimary
+                elide: Text.ElideRight
+            }
         }
     }
 
@@ -839,7 +1569,7 @@ Scope {
         property color color: root.colTextPrimary
         property color activeColor: "#FFFFFF"
 
-        signal clicked()
+        signal clicked
 
         implicitWidth: pointSize + 14
         implicitHeight: pointSize + 14

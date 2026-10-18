@@ -174,7 +174,7 @@ class DemoMprisPlayer(PropertiesInterface):
         <method name='Quit'/>
       </interface>
       <interface name='org.mpris.MediaPlayer2.Player'>
-        <property name='PlaybackState' type='s' access='read'/>
+        <property name='PlaybackStatus' type='s' access='read'/>
         <property name='LoopStatus' type='s' access='readwrite'/>
         <property name='Rate' type='d' access='readwrite'/>
         <property name='Shuffle' type='b' access='readwrite'/>
@@ -234,7 +234,7 @@ class DemoMprisPlayer(PropertiesInterface):
 
     # --- org.mpris.MediaPlayer2.Player ---
     @property
-    def PlaybackState(self) -> str:
+    def PlaybackStatus(self) -> str:
         return self.state
 
     @property
@@ -282,7 +282,7 @@ class DemoMprisPlayer(PropertiesInterface):
     def CanControl(self) -> bool: return True
 
     def _notify_all(self):
-        self.report_changed_property("PlaybackState")
+        self.report_changed_property("PlaybackStatus")
         self.report_changed_property("Metadata")
         self.report_changed_property("Position")
         self.flush_changes()

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Features
+- Dynamic Island: iPhone-style rework — spring morph, empty idle pill, split dual-activity bubbles, timer / notification / mute / volume / charging activities, artwork-tinted cava equaliser and glow, blur+scale transitions, tap / long-press / swipe-up gestures. The idle clock is gone.
+
 ### Fixes
 - `jellyface mail`: no longer crashes when no password or account is set; uses IMAP UIDs (marking a message read could hit
   the wrong one after a deletion), opens the mailbox read-only (it used to expunge messages flagged for deletion), reads
