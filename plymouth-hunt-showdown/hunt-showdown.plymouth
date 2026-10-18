@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Hunt Showdown
+Description=Hunt: Showdown skull animation, preloaded for a steady frame rate
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/hunt-showdown
+ScriptFile=/usr/share/plymouth/themes/hunt-showdown/hunt-showdown.script
