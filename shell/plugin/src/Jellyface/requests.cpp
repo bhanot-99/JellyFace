@@ -23,6 +23,11 @@ using Qt::StringLiterals::operator""_ba;
 
 namespace {
 
+// A request that never answers must not hang a caller forever (the weather lookup waited on one), and nothing the shell
+// fetches (weather, lyrics, IP lookup) comes anywhere near this size.
+constexpr int kTransferTimeoutMs = 15000;
+constexpr qint64 kMaxResponseBytes = 8 * 1024 * 1024;
+
 QVariantMap responseMetadata(const QNetworkReply* reply) {
     QVariantMap headers;
 
@@ -54,6 +59,7 @@ void Requests::get(const QUrl& url, const QJSValue& onSuccess, const QJSValue& o
     request.setRawHeader("Cache-Control"_ba, "no-cache, no-store"_ba);
     request.setRawHeader("Pragma"_ba, "no-cache"_ba);
     request.setRawHeader("Connection"_ba, "close"_ba);
+    request.setTransferTimeout(kTransferTimeoutMs);
 
     if (headers.isObject()) {
         QJSValueIterator it(headers);
@@ -65,17 +71,33 @@ void Requests::get(const QUrl& url, const QJSValue& onSuccess, const QJSValue& o
 
     auto* reply = m_manager->get(request);
 
+    // Three layers, because on a fast link the whole body can arrive before any progress signal is handled:
+    // refuse by the announced length, stop reading once the buffer limit is reached, and re-check when it finishes.
+    reply->setReadBufferSize(kMaxResponseBytes + 1);
+    QObject::connect(reply, &QNetworkReply::metaDataChanged, reply, [reply] {
+        if (reply->header(QNetworkRequest::ContentLengthHeader).toLongLong() > kMaxResponseBytes) {
+            reply->abort();
+        }
+    });
+    QObject::connect(reply, &QNetworkReply::downloadProgress, reply, [reply](qint64 received, qint64) {
+        if (received > kMaxResponseBytes) {
+            reply->abort(); // finishes with an error, so the caller's onError runs
+        }
+    });
+
     QObject::connect(reply, &QNetworkReply::finished, this, [this, reply, onSuccess, onError] {
-        const QString body = QString::fromUtf8(reply->readAll());
+        const QByteArray raw = reply->readAll();
+        const bool tooLarge = raw.size() > kMaxResponseBytes;
+        const QString body = tooLarge ? QString() : QString::fromUtf8(raw);
 
         QJSValue metadata;
         if (auto* engine = qmlEngine(this))
             metadata = engine->toScriptValue(responseMetadata(reply));
 
-        if (reply->error() == QNetworkReply::NoError) {
+        if (reply->error() == QNetworkReply::NoError && !tooLarge) {
             onSuccess.call({ body, metadata });
         } else if (onError.isCallable()) {
-            onError.call({ reply->errorString(), metadata });
+            onError.call({ tooLarge ? u"response too large"_s : reply->errorString(), metadata });
         } else {
             qCWarning(lcRequests) << "get: request failed with error" << reply->errorString();
         }

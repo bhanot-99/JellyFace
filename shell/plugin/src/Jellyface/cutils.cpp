@@ -20,6 +20,8 @@ Q_LOGGING_CATEGORY(lcCUtils, "jellyface.cutils", QtInfoMsg)
 
 namespace jellyface {
 
+using Qt::StringLiterals::operator""_s;
+
 void CUtils::saveItem(QQuickItem* target, const QUrl& path, const QJSValue& onSaved, const QJSValue& onFailed) {
     this->saveItem(target, path, QRect(), onSaved, onFailed);
 }
@@ -83,12 +85,31 @@ bool CUtils::copyFile(const QUrl& source, const QUrl& target, bool overwrite) {
         return false;
     }
 
-    if (overwrite && QFile::exists(target.toLocalFile()) && !QFile::remove(target.toLocalFile())) {
-        qCWarning(lcCUtils) << "copyFile: overwrite was specified but failed to remove" << target.toLocalFile();
-        return false;
+    const auto src = source.toLocalFile();
+    const auto dst = target.toLocalFile();
+
+    // copying a file onto itself used to delete it (the overwrite removed the target, which was the source)
+    if (QFileInfo::exists(dst) && QFileInfo(src).canonicalFilePath() == QFileInfo(dst).canonicalFilePath()) {
+        return true;
     }
 
-    return QFile::copy(source.toLocalFile(), target.toLocalFile());
+    if (!overwrite || !QFile::exists(dst)) {
+        return QFile::copy(src, dst);
+    }
+
+    // overwrite: finish the copy next to the target first, so a failed copy never costs the existing file
+    const auto tmp = dst + u".jellyface-tmp"_s;
+    QFile::remove(tmp);
+    if (!QFile::copy(src, tmp)) {
+        qCWarning(lcCUtils) << "copyFile: failed to copy" << src << "to" << tmp;
+        return false;
+    }
+    if (!QFile::remove(dst) || !QFile::rename(tmp, dst)) {
+        qCWarning(lcCUtils) << "copyFile: overwrite was specified but failed to replace" << dst;
+        QFile::remove(tmp);
+        return false;
+    }
+    return true;
 }
 
 bool CUtils::deleteFile(const QUrl& path) {

@@ -129,7 +129,7 @@ cmd_doctor() {
     for f in "$JF_CONFIG_DIR/shell.json" "$JF_CONFIG_DIR/shell-tokens.json" "$JF_STATE_DIR/scheme.json"; do
         chk "valid JSON: ${f/#$HOME/~}" "python3 -I -c 'import json,sys;json.load(open(sys.argv[1]))' $(printf %q "$f")" "fix or restore from config/"
     done
-    chk "lock screen rejects a wrong password" '! printf "wrong-password\0" | PAM_USER="$USER" "$JF_ROOT/scripts/pam-host-check.sh"' "the lock screen would accept anything; do not rely on it"
+    chk "lock screen rejects a wrong password" 'd=$(mktemp -d); ! printf "wrong-password\0" | XDG_RUNTIME_DIR="$d" PAM_USER="$USER" "$JF_ROOT/scripts/pam-host-check.sh"; rc=$?; rm -rf "$d"; [ $rc -eq 0 ]' "the lock screen would accept anything; do not rely on it"
     chk "lock screen PAM stack is the host-checking one" 'grep -q pam-host-check.sh "$JF_SHELL/assets/pam.d/passwd" && ! grep -q nullok "$JF_SHELL/assets/pam.d/passwd"' "run: jellyface restart (regenerates it)"
     chk "Qt/Quickshell pinned in the container" 'in_container "pacman-conf IgnorePkg" | grep -qx quickshell-git' "re-run: jellyface install (a container upgrade could otherwise break the shell plugin)"
     chk "COSMIC lock screen available as fallback" 'pgrep -x cosmic-greeter' "COSMIC's locker is not running; if JellyFace ever stopped while locked, nothing would take over"

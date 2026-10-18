@@ -990,10 +990,16 @@ QString Lyrics::findLocalLrcRecursive(const QString& dir, const QString& artist,
         return {};
     }
 
-    QDirIterator it(dir, QStringList{ u"*.lrc"_s }, QDir::Files | QDir::NoDotAndDotDot,
-        QDirIterator::Subdirectories | QDirIterator::FollowSymlinks);
+    // This runs on the UI thread at every track change: no symlink loops, and a hard stop on a huge tree
+    constexpr int kMaxScanned = 20000;
+    int scanned = 0;
+    QDirIterator it(dir, QStringList{ u"*.lrc"_s }, QDir::Files | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
 
     while (it.hasNext()) {
+        if (++scanned > kMaxScanned) {
+            qCWarning(lcLyrics) << "findLocalLrcRecursive: stopped after" << kMaxScanned << "files in" << dir;
+            break;
+        }
         const QString path = it.next();
         const QString name = it.fileName();
         if ((artist.isEmpty() || containsCi(name, artist)) && (title.isEmpty() || containsCi(name, title))) {
