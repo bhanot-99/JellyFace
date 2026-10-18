@@ -9,7 +9,7 @@
 History lives in ~/.local/state/jellyface/clipboard/history.json (newest first); images are saved next to it as PNG.
 Content that a password manager marks as sensitive is never stored.
 """
-import fcntl, hashlib, json, os, subprocess, sys, time
+import fcntl, glob, hashlib, json, os, subprocess, sys, threading, time
 
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "jellyface", "clipboard")
 HIST = os.path.join(STATE, "history.json")
@@ -18,18 +18,33 @@ MAX_TEXT = 200_000        # characters; longer text is not stored
 MAX_IMAGE = 8_000_000     # bytes
 
 
-def run(*cmd):
+def run(*cmd, limit=None):
+    """stdout of cmd. With a limit, reading stops one byte past it (the caller sees len > limit and skips the entry), so a
+    huge clipboard is never pulled into memory just to be thrown away. Killed after 5 s."""
     try:
-        return subprocess.run(cmd, capture_output=True, timeout=5).stdout
-    except Exception:
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    except OSError:
         return b""
+    timer = threading.Timer(5, p.kill)
+    timer.start()
+    try:
+        data = p.stdout.read(limit + 1) if limit else p.stdout.read()
+    except Exception:
+        data = b""
+    finally:
+        timer.cancel()
+        p.kill()
+        p.wait()
+        p.stdout.close()
+    return data
 
 
 def load():
     try:
         with open(HIST) as f:
             data = json.load(f)
-        return data if isinstance(data, list) else []
+        # a damaged or hand-edited entry must not make every later copy fail
+        return [e for e in data if isinstance(e, dict) and isinstance(e.get("id"), str)] if isinstance(data, list) else []
     except Exception:
         return []
 
@@ -73,13 +88,14 @@ def add(entries):
         return entries
     entry = None
     if any(t.startswith("text/plain") or t in ("UTF8_STRING", "STRING") for t in types):
-        text = run("wl-paste", "--no-newline", "--type", "text/plain").decode(errors="replace")
+        raw = run("wl-paste", "--no-newline", "--type", "text/plain", limit=MAX_TEXT * 4)   # up to 4 bytes per character
+        text = raw.decode(errors="replace")
         if not text.strip() or len(text) > MAX_TEXT:
             return entries
         key = hashlib.sha1(text.encode()).hexdigest()[:16]
         entry = {"id": key, "kind": "text", "text": text}
     elif "image/png" in types:
-        data = run("wl-paste", "--type", "image/png")
+        data = run("wl-paste", "--type", "image/png", limit=MAX_IMAGE)
         if not data or len(data) > MAX_IMAGE:
             return entries
         key = hashlib.sha1(data).hexdigest()[:16]
@@ -94,6 +110,17 @@ def add(entries):
     entry["time"] = int(time.time())
     entries = [e for e in entries if e["id"] != entry["id"]]
     return trim([entry] + entries)
+
+
+def prune_orphans(entries):
+    """Delete image files nothing refers to any more (history lost or reset, an interrupted copy)."""
+    used = {e.get("file") for e in entries}
+    for path in glob.glob(os.path.join(STATE, "img-*.png")):
+        if path not in used:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
 
 
 def main():
@@ -124,6 +151,7 @@ def main():
             entries = [e for e in entries if e.get("pinned")]
         else:
             sys.exit("usage: clipboard-store.py add|pin ID|delete ID|clear")
+        prune_orphans(entries)
         save(entries)
 
 

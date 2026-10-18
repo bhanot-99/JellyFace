@@ -44,7 +44,7 @@ def read_source(src):
     if re.match(r"https?://", src):
         req = urllib.request.Request(src, headers={"User-Agent": "JellyFace-agenda"})
         with urllib.request.urlopen(req, timeout=20) as r:
-            return r.read().decode("utf-8", "replace")
+            return r.read(20_000_000).decode("utf-8", "replace")   # a calendar is kilobytes; never read an endless reply
     with open(os.path.expanduser(src), encoding="utf-8", errors="replace") as f:
         return f.read()
 
@@ -81,6 +81,23 @@ def parse_dt(value, params):
     return dt, False
 
 
+def event_zone(value, params):
+    """The zone a start time is written in (None for all-day and floating times): recurrences repeat at the same WALL-CLOCK
+    time in that zone, so they move by an hour in local time when daylight saving changes there."""
+    value = value.strip()
+    if "VALUE=DATE" in params.upper() or re.fullmatch(r"\d{8}", value):
+        return None
+    if value.endswith("Z"):
+        return timezone.utc
+    m = re.search(r"TZID=([^;:]+)", params)
+    if m and ZoneInfo:
+        try:
+            return ZoneInfo(m.group(1))
+        except Exception:
+            return None
+    return None
+
+
 def parse_events(text):
     events, cur = [], None
     for line in unfold(text):
@@ -97,6 +114,14 @@ def parse_events(text):
             try:
                 if name == "DTSTART":
                     cur["start"], cur["allday"] = parse_dt(value, params)
+                    cur["tz"] = event_zone(value, params)
+                    if cur["tz"] is not None:   # the same moment as the zone's wall clock reads it
+                        wall = datetime.strptime(value.strip().rstrip("Z")[:15], "%Y%m%dT%H%M%S")
+                        cur["wall"] = wall
+                elif name == "UID":
+                    cur["uid"] = value.strip()
+                elif name == "RECURRENCE-ID":
+                    cur["recid"] = parse_dt(value, params)[0]
                 elif name == "DTEND":
                     cur["end"], _ = parse_dt(value, params)
                 elif name == "SUMMARY":
@@ -112,6 +137,16 @@ def parse_events(text):
                     cur["cancelled"] = True
             except Exception:
                 pass
+    # a changed or cancelled single occurrence of a repeating event is its own VEVENT (RECURRENCE-ID): the repeat must
+    # skip that date, or the old occurrence shows up next to the moved one
+    masters = {}
+    for ev in events:
+        if "rrule" in ev and "uid" in ev:
+            masters.setdefault(ev["uid"], []).append(ev)
+    for ev in events:
+        if "recid" in ev:
+            for m in masters.get(ev.get("uid"), []):
+                m["exdates"].append(ev["recid"])
     return events
 
 
@@ -124,6 +159,14 @@ def occurrences(ev, lo, hi):
     if not rule:
         yield start, start + length
         return
+    tz = ev.get("tz")
+    wall_start = ev.get("wall", start)   # the repeat runs on the event's own wall clock (see event_zone)
+
+    def local(wall):
+        if tz is None:
+            return wall
+        return wall.replace(tzinfo=tz).astimezone().replace(tzinfo=None)
+
     freq, step = rule.get("FREQ"), int(rule.get("INTERVAL", "1"))
     count = int(rule["COUNT"]) if "COUNT" in rule else None
     until = None
@@ -133,32 +176,32 @@ def occurrences(ev, lo, hi):
         except Exception:
             pass
     byday = [DAYS[d[-2:]] for d in rule.get("BYDAY", "").split(",") if d[-2:] in DAYS]
-    n, day = 0, start.replace(hour=0, minute=0, second=0)
-    tod = start - day
+    n, day = 0, wall_start.replace(hour=0, minute=0, second=0)
+    tod = wall_start - day
     guard = 0
     cur = day
     if count is None:
         # no COUNT: occurrences only depend on the distance from the start, so skip straight to the window (a birthday
         # that started 20 years ago would otherwise run out of loop iterations before reaching today)
-        cur = max(day, (lo - length).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1))
-    while cur <= hi + timedelta(days=1) and guard < 5000:
+        cur = max(day, (lo - length).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=2))
+    while cur <= hi + timedelta(days=2) and guard < 5000:
         guard += 1
         ok = False
         if freq == "DAILY":
             ok = (cur - day).days % step == 0
         elif freq == "WEEKLY":
             wk = ((cur - day).days + day.weekday()) // 7
-            ok = wk % step == 0 and cur.weekday() in (byday or [start.weekday()])
+            ok = wk % step == 0 and cur.weekday() in (byday or [wall_start.weekday()])
         elif freq == "MONTHLY":
             months = (cur.year - day.year) * 12 + cur.month - day.month
-            ok = months % step == 0 and cur.day == start.day
+            ok = months % step == 0 and cur.day == wall_start.day
         elif freq == "YEARLY":
-            ok = (cur.year - day.year) % step == 0 and (cur.month, cur.day) == (start.month, start.day)
+            ok = (cur.year - day.year) % step == 0 and (cur.month, cur.day) == (wall_start.month, wall_start.day)
         if ok and cur >= day:
             n += 1
             if count is not None and n > count:
                 return
-            occ = cur + tod
+            occ = local(cur + tod)
             if until is not None and occ > until:
                 return
             yield occ, occ + length
@@ -236,7 +279,10 @@ def main():
     except Exception:
         conf = {}
     src = conf.get("source", "") or ""
-    days = int(conf.get("days", 2))
+    try:
+        days = max(1, int(conf.get("days", 2)))
+    except (TypeError, ValueError):
+        days = 2
     now = datetime.now()
     lo = now.replace(hour=0, minute=0, second=0, microsecond=0)
     hi = lo + timedelta(days=days)
