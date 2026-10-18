@@ -222,8 +222,10 @@ Scope {
         }
 
         readonly property rect dockRect: Qt.rect(((screen?.width ?? 1920) - panel.fullWidth) / 2, (screen?.height ?? 1080) - margins.bottom - panel.fullHeight, panel.fullWidth, panel.fullHeight)
-        readonly property bool covered: CosmicWindows.fullscreen || CosmicWindows.windows.some(w => w.workspace_active && !w.minimized && w.w > 0 && w.x < dockRect.x + dockRect.width && w.x + w.w > dockRect.x && w.y < dockRect.y + dockRect.height && w.y + w.h > dockRect.y)
-        readonly property bool wanted: JellyPanel.open || !covered || hover.hovered || DockReveal.edge || root.popup !== "" || root.dragging
+        // Any visible window on the active workspace counts, wherever it sits; an empty desktop keeps the dock up
+        readonly property bool covered: CosmicWindows.fullscreen || CosmicWindows.windows.some(w => w.workspace_active && !w.minimized)
+        // JellyPanel (Super) is a full-screen app grid, so the dock steps aside while it is open
+        readonly property bool wanted: !JellyPanel.open && (!covered || hover.hovered || DockReveal.edge || root.popup !== "" || root.dragging)
         property bool shown: true
 
         Component.onCompleted: if (!wanted) hideTimer.restart()
@@ -231,6 +233,9 @@ Scope {
             if (wanted) {
                 hideTimer.stop();
                 shown = true;
+            } else if (JellyPanel.open) {
+                hideTimer.stop();
+                shown = false;
             } else {
                 hideTimer.restart();
             }
