@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=dither-eye
+Description=Dithered eye boot animation
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/dither-eye
+ScriptFile=/usr/share/plymouth/themes/dither-eye/dither-eye.script

@@ -1,0 +1,31 @@
+frame_count = 100;
+ticks_per_frame = 2;   # refresh runs ~50Hz, so 25 fps
+
+Window.SetBackgroundTopColor(0, 0, 0);
+Window.SetBackgroundBottomColor(0, 0, 0);
+
+for (i = 0; i < frame_count; i++) {
+  if (i < 10)
+    filename = "frames/frame-00" + i + ".png";
+  else
+    filename = "frames/frame-0" + i + ".png";
+  frames[i] = Image(filename);
+}
+
+# fit the frame to ~70% of the screen height
+scale = Window.GetHeight() * 0.7 / frames[0].GetHeight();
+sprite = Sprite();
+sprite.SetImage(frames[0].Scale(frames[0].GetWidth() * scale, frames[0].GetHeight() * scale));
+sprite.SetX(Window.GetWidth() / 2 - frames[0].GetWidth() * scale / 2);
+sprite.SetY(Window.GetHeight() / 2 - frames[0].GetHeight() * scale / 2);
+
+# pre-scale once so the refresh callback stays cheap
+for (i = 0; i < frame_count; i++)
+  scaled[i] = frames[i].Scale(frames[i].GetWidth() * scale, frames[i].GetHeight() * scale);
+
+tick = 0;
+fun refresh_callback () {
+  sprite.SetImage(scaled[Math.Int(tick / ticks_per_frame) % frame_count]);
+  tick++;
+}
+Plymouth.SetRefreshFunction(refresh_callback);
