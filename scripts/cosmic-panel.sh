@@ -7,8 +7,8 @@ set -uo pipefail
 
 F="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicPanel/v1/entries"
 case "${1:-status}" in
-    hide)   sys_track "$F"; mkdir -p "$(dirname "$F")"; printf '[]' > "$F"; log "COSMIC top panel hidden" ;;
-    show)   sys_track "$F"; mkdir -p "$(dirname "$F")"; printf '["Panel"]' > "$F"; log "COSMIC top panel shown" ;;
+    hide)   cosmic_entries remove Panel; log "COSMIC top panel hidden" ;;
+    show)   cosmic_entries add Panel; log "COSMIC top panel shown" ;;
     status) log "COSMIC panels: $(cat "$F" 2>/dev/null || echo '["Panel"] (default)')" ;;
     *) echo "usage: cosmic-panel.sh hide|show|status" >&2; exit 2 ;;
 esac

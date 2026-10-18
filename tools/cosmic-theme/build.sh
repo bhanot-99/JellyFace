@@ -3,4 +3,4 @@
 set -e
 . "$(dirname "$0")/../../scripts/rust-env.sh"
 cd "$(dirname "$0")"
-cargo build --release
+cargo build --release --locked

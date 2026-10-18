@@ -7,6 +7,11 @@ app="notify-send" icon="" urgency=1 timeout=-1; hints=""
 gv() { local s="${1//\\/\\\\}"; s="${s//\'/\\\'}"; s="${s//$'\n'/\\n}"; printf "'%s'" "$s"; }   # GVariant string
 while [ $# -gt 0 ]; do
     case "$1" in
+        # options that take a value: a missing value (flag last on the line) ends parsing instead of looping or failing
+        -a|--app-name|-u|--urgency|-i|--icon|-t|--expire-time|-h|--hint|-c|--category|-r|--replace-id|-A|--action)
+            [ $# -ge 2 ] || { shift; break; } ;;
+    esac
+    case "$1" in
         -a|--app-name) app="$2"; shift 2 ;;
         -u|--urgency)  case "$2" in low) urgency=0;; critical) urgency=2;; *) urgency=1;; esac; shift 2 ;;
         -i|--icon)     icon="$2"; shift 2 ;;
@@ -28,5 +33,5 @@ done
 summary="${1:-}"; body="${2:-}"
 [ -n "$summary" ] || { echo "usage: notify-send [-a app] [-u low|normal|critical] [-i icon] [-t ms] SUMMARY [BODY]" >&2; exit 1; }
 exec gdbus call --session --dest org.freedesktop.Notifications --object-path /org/freedesktop/Notifications \
-    --method org.freedesktop.Notifications.Notify "$app" 0 "$icon" "$summary" "$body" "[]" \
+    --method org.freedesktop.Notifications.Notify "$(gv "$app")" 0 "$(gv "$icon")" "$(gv "$summary")" "$(gv "$body")" "[]" \
     "{'urgency': <byte $urgency>$hints}" "int32 $timeout" >/dev/null

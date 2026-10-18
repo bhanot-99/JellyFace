@@ -40,6 +40,10 @@ backup() {
     log "backed up $src -> $dest"
 }
 
+# Quote a path for an Exec= line: systemd (ExecStart=) and the desktop-entry spec (Exec=) both split on spaces.
+systemd_quote() { local s="$1"; s="${s//\\/\\\\}"; s="${s//\"/\\\"}"; s="${s//%/%%}"; s="${s//\$/\$\$}"; printf '"%s"' "$s"; }
+desktop_quote() { local s="$1"; s="${s//\\/\\\\\\\\}"; s="${s//\"/\\\\\"}"; s="${s//\`/\\\\\`}"; s="${s//\$/\\\\\$}"; printf '"%s"' "$s"; }
+
 # --- tracked system changes -------------------------------------------------------------------------------------
 # Every file JellyFace changes outside its own folder (COSMIC settings, user services, ...) is recorded here together
 # with a copy of what was there before, so `jellyface revert-system` can put everything back exactly.
@@ -49,14 +53,41 @@ JF_MANIFEST="${XDG_STATE_HOME:-$HOME/.local/state}/jellyface/system-manifest.tsv
 sys_track() {
     local path="$1" dest="(new)"
     mkdir -p "$(dirname "$JF_MANIFEST")"
-    # already tracked once -> keep the first (original) version only
-    if grep -qF "$path"$'\t' "$JF_MANIFEST" 2>/dev/null; then return 0; fi
+    # already tracked once -> keep the first (original) version only (whole first column, not a substring match)
+    if awk -F'\t' -v p="$path" '$1==p{f=1} END{exit !f}' "$JF_MANIFEST" 2>/dev/null; then return 0; fi
     if [ -e "$path" ]; then
         dest="$JF_BACKUPS/system/$(date +%Y%m%d-%H%M%S)$(echo "$path" | tr '/' '_')"
         mkdir -p "$JF_BACKUPS/system"
         cp -a "$path" "$dest"
     fi
     printf '%s\t%s\n' "$path" "$dest" >> "$JF_MANIFEST"
+}
+
+# cosmic_entries add|remove <Panel|Dock>: edit COSMIC's list of panels without touching the other entry (the dock and the
+# top-panel scripts used to overwrite the whole list, undoing each other).
+cosmic_entries() {
+    local f="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic/com.system76.CosmicPanel/v1/entries"
+    sys_track "$f"; mkdir -p "$(dirname "$f")"
+    python3 -I - "$f" "$1" "$2" <<'PY'
+import json, os, sys
+path, action, name = sys.argv[1:4]
+try:
+    items = json.load(open(path))
+    if not isinstance(items, list):
+        raise ValueError
+except Exception:
+    items = ["Panel", "Dock"]          # COSMIC's default
+if action == "add" and name not in items:
+    items.append(name)
+elif action == "remove":
+    items = [i for i in items if i != name]
+order = ["Panel", "Dock"]
+items.sort(key=lambda i: order.index(i) if i in order else len(order))
+tmp = path + ".tmp"
+with open(tmp, "w") as out:
+    out.write(json.dumps(items, separators=(",", ":")))
+os.replace(tmp, path)
+PY
 }
 
 # ws_ready: true once the compositor answers ext-workspace-v1 requests. wsd streams forever, so read just its first

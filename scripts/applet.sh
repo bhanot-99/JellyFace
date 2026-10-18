@@ -49,7 +49,7 @@ case "${1:-}" in
 Name=JellyFace
 Comment=JellyFace menu: launcher, dashboard, lock screen and wallpaper theme
 Type=Application
-Exec=env JELLYFACE_ROOT=$JF_ROOT $BIN
+Exec=env $(desktop_quote "JELLYFACE_ROOT=$JF_ROOT") $(desktop_quote "$BIN")
 Terminal=false
 Categories=COSMIC;
 Keywords=COSMIC;Applet;JellyFace;

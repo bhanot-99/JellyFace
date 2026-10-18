@@ -8,7 +8,8 @@ description = "JellyFace menu as a native COSMIC panel applet"
 serde_json = "1"
 
 [dependencies.libcosmic]
-# same library (and commit) as tools/cosmic-theme: the one that matches the installed COSMIC's config format
+# libcosmic for the panel applet (tools/cosmic-theme pins a different commit: it only needs the theme crates, which
+# have to match the installed COSMIC's config format). Cargo.lock keeps both reproducible; builds use --locked.
 git = "https://github.com/pop-os/libcosmic"
 rev = "adb3e34"
 default-features = false

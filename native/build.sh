@@ -3,4 +3,4 @@
 set -e
 . "$(dirname "$0")/../scripts/rust-env.sh"
 cd "$(dirname "$0")/jellyface-applet"
-cargo build --release
+cargo build --release --locked

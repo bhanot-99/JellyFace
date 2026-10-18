@@ -102,9 +102,12 @@ cmd_ipc() {
 cmd_autostart() {
     case "${1:-}" in
         on)  mkdir -p "$(dirname "$AUTOSTART")"
-             printf '[Desktop Entry]\nType=Application\nName=JellyFace\nExec=%s start\nX-GNOME-Autostart-enabled=true\n' "$JF_ROOT/bin/jellyface" > "$AUTOSTART"
+             printf '[Desktop Entry]\nType=Application\nName=JellyFace\nExec=%s start\nX-GNOME-Autostart-enabled=true\n' "$(desktop_quote "$JF_ROOT/bin/jellyface")" > "$AUTOSTART"
              log "autostart enabled ($AUTOSTART)" ;;
-        off) [ -e "$AUTOSTART" ] && mv "$AUTOSTART" "$JF_BACKUPS/jellyface.desktop.disabled.$(date +%s)" || true
+        off) if [ -e "$AUTOSTART" ]; then
+                 mkdir -p "$JF_BACKUPS"    # a fresh checkout has no backups/ yet; without it the move failed and autostart stayed on
+                 mv "$AUTOSTART" "$JF_BACKUPS/jellyface.desktop.disabled.$(date +%s)" || die "could not disable autostart ($AUTOSTART)"
+             fi
              log "autostart disabled" ;;
         *)   die "usage: jellyface autostart on|off" ;;
     esac
@@ -123,7 +126,7 @@ cmd_doctor() {
     chk "shell plugin built"      '[ -d "$JF_INSTALL/qml" ]' "run: jellyface build"
     chk "workspace protocol"      ws_ready "compositor lacks ext-workspace-v1?"
     for f in "$JF_CONFIG_DIR/shell.json" "$JF_CONFIG_DIR/shell-tokens.json" "$JF_STATE_DIR/scheme.json"; do
-        chk "valid JSON: ${f/#$HOME/~}" "python3 -I -c 'import json,sys;json.load(open(sys.argv[1]))' '$f'" "fix or restore from config/"
+        chk "valid JSON: ${f/#$HOME/~}" "python3 -I -c 'import json,sys;json.load(open(sys.argv[1]))' $(printf %q "$f")" "fix or restore from config/"
     done
     chk "lock screen rejects a wrong password" '! printf "wrong-password\0" | PAM_USER="$USER" "$JF_ROOT/scripts/pam-host-check.sh"' "the lock screen would accept anything; do not rely on it"
     chk "lock screen PAM stack is the host-checking one" 'grep -q pam-host-check.sh "$JF_SHELL/assets/pam.d/passwd" && ! grep -q nullok "$JF_SHELL/assets/pam.d/passwd"' "run: jellyface restart (regenerates it)"

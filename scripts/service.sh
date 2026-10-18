@@ -16,7 +16,7 @@ case "${1:-status}" in
         cat > "$UNIT" <<UNITEOF
 [Unit]
 Description=JellyFace desktop shell for COSMIC
-Documentation=file://$JF_ROOT/README.md
+Documentation=file://$(printf '%s' "$JF_ROOT" | sed 's/ /%20/g')/README.md
 After=graphical-session.target
 PartOf=graphical-session.target
 # give up after 5 failed starts within 5 minutes instead of looping forever
@@ -25,8 +25,8 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-ExecStart=$JF_ROOT/bin/jellyface start --foreground
-ExecStopPost=$JF_ROOT/bin/jellyface stop
+ExecStart=$(systemd_quote "$JF_ROOT/bin/jellyface") start --foreground
+ExecStopPost=$(systemd_quote "$JF_ROOT/bin/jellyface") stop
 Restart=on-failure
 RestartSec=5
 # the container's exec session can linger after a hard kill: don't wait long, ExecStopPost cleans up

@@ -7,7 +7,11 @@ export PATH="$CARGO_HOME/bin:$PATH"
 if [ ! -x "$CARGO_HOME/bin/cargo" ]; then
     echo "[jellyface] installing the Rust toolchain into $JF_RUST_ROOT/.rust (about 600 MB, project-local)"
     command -v curl >/dev/null || { echo "curl is required"; return 1 2>/dev/null || exit 1; }
-    curl -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable || return 1
+    # download first, then run: a dropped connection can no longer execute half a script (HTTPS only, TLS 1.2+)
+    rustup_sh="$(mktemp)" || return 1
+    curl --proto '=https' --tlsv1.2 -sSf -o "$rustup_sh" https://sh.rustup.rs \
+        && sh "$rustup_sh" -y --no-modify-path --profile minimal --default-toolchain stable
+    rustup_rc=$?; rm -f "$rustup_sh"; [ "$rustup_rc" -eq 0 ] || return 1
 fi
 # stand-in "-dev" metadata: the Rust build only needs the library to link against, not its headers
 JF_FAKELIBS="$JF_RUST_ROOT/.rust/fakelibs"
