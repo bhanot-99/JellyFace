@@ -28,6 +28,8 @@ export JFG_ROOTFS JFG_PRISTINE_QML=$JFG_OPT/qml uid gid mode TZ
 exec unshare --mount --propagation private bash -c '
     set -eu
     R=$JFG_ROOTFS
+    # the Arch userland keeps its setuid programs: no suid/sgid effect inside it (here, and below via no_new_privs)
+    mount --bind "$R" "$R"; mount -o remount,bind,nosuid "$R"
     mount --rbind /dev  "$R/dev"
     mount -t proc proc  "$R/proc"
     mount --rbind /sys  "$R/sys"
@@ -40,7 +42,7 @@ exec unshare --mount --propagation private bash -c '
          JF_GREETER_DATA=/jf-data/data JF_GREETER_RUN=/jf-data/run)
     if [ "$mode" = smoke ]; then
         env=("${env[@]}" QT_QPA_PLATFORM=offscreen JF_GREETER_TEST=1)
-        exec chroot --userspec="$uid:$gid" "$R" "${env[@]}" timeout 8 quickshell -p /jf-qml
+        exec setpriv --no-new-privs chroot --userspec="$uid:$gid" "$R" "${env[@]}" timeout 8 quickshell -p /jf-qml
     fi
-    exec chroot --userspec="$uid:$gid" "$R" "${env[@]}" quickshell -p /jf-qml
+    exec setpriv --no-new-privs chroot --userspec="$uid:$gid" "$R" "${env[@]}" quickshell -p /jf-qml
 '

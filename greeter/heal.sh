@@ -40,10 +40,16 @@ fi
 
 # 4. greetd must point at the launcher (an OS update may have rewritten the stock config)
 if ! grep -q "^command = \"$JFG_LIB/launch\"" "$JFG_GREETD_CONF" 2>/dev/null; then
-    if [ -f "$JFG_PRISTINE/cosmic-greeter.toml" ]; then
-        cp -a "$JFG_GREETD_CONF" "$JFG_GREETD_CONF.before-heal.$(date +%s)" 2>/dev/null
-        install -m 644 -o root -g root "$JFG_PRISTINE/cosmic-greeter.toml" "$JFG_GREETD_CONF" && fixed+=("re-pointed greetd at launcher")
+    cp -a "$JFG_GREETD_CONF" "$JFG_GREETD_CONF.before-heal.$(date +%s)" 2>/dev/null
+    if grep -q "^command = \"cosmic-greeter-start\"" "$JFG_GREETD_CONF" 2>/dev/null; then
+        # edit the config that is there now (an OS update may have changed other settings): don't swap in an old copy
+        sed -i "s|^command = \"cosmic-greeter-start\"|command = \"$JFG_LIB/launch\"|" "$JFG_GREETD_CONF" \
+            && cp -a "$JFG_GREETD_CONF" "$JFG_PRISTINE/cosmic-greeter.toml" && fixed+=("re-pointed greetd at launcher")
+    elif [ -f "$JFG_PRISTINE/cosmic-greeter.toml" ]; then
+        install -m 644 -o root -g root "$JFG_PRISTINE/cosmic-greeter.toml" "$JFG_GREETD_CONF" && fixed+=("re-pointed greetd at launcher (from the saved copy)")
     fi
+    # keep the three newest safety copies, not one per repair
+    ls -1t "$JFG_GREETD_CONF".before-heal.* 2>/dev/null | tail -n +4 | while read -r old; do rm -f -- "$old"; done
 fi
 
 # 5. the userland copy must run
@@ -56,7 +62,7 @@ fi
 # 6. prove the greeter really loads (headless, ~8s)
 out=$("$JFG_LIB/enter" --smoke 2>&1); rc=$?
 if [ "$rc" -eq 124 ] && ! printf '%s' "$out" | grep -qiE 'failed to load configuration|error'; then
-    rm -f "$JFG_ETC/broken"; echo 0 > "$JFG_RUN/fails"; chown cosmic-greeter: "$JFG_RUN/fails"
+    rm -f "$JFG_ETC/broken"; jfg_reset_fails
     status "OK: JellyFace greeter active${fixed:+ (healed: ${fixed[*]})}"
     exit 0
 fi

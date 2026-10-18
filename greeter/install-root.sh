@@ -16,9 +16,13 @@ extract_rootfs() {
     [ -f "$proj/.greeter-root.tar" ] || { echo "missing $proj/.greeter-root.tar (run: jellyface greeter export)"; exit 1; }
     say "unpacking the Arch userland (3.9 GB, a minute or two)"
     rm -rf "$JFG_ROOTFS.new"; mkdir -p "$JFG_ROOTFS.new"
-    tar -xpf "$proj/.greeter-root.tar" --numeric-owner -C "$JFG_ROOTFS.new" 2>/dev/null || true
+    tar -xpf "$proj/.greeter-root.tar" --numeric-owner -C "$JFG_ROOTFS.new" 2>"$JFG_ROOTFS.new.err" \
+        || { say "tar reported problems (last lines below); continuing only if the userland still starts"; tail -5 "$JFG_ROOTFS.new.err"; }
+    rm -f "$JFG_ROOTFS.new.err"
     [ -x "$JFG_ROOTFS.new/usr/bin/quickshell" ] || { echo "unpacked tree has no quickshell"; exit 1; }
-    [ -d "$JFG_ROOTFS" ] && mv "$JFG_ROOTFS" "$JFG_ROOTFS.old.$(date +%s)"      # keep the previous one, never delete
+    # keep ONE previous userland as a way back (each is ~4 GB), drop the older ones
+    for old in "$JFG_ROOTFS".old.*; do [ -e "$old" ] && rm -rf -- "$old"; done
+    [ -d "$JFG_ROOTFS" ] && mv "$JFG_ROOTFS" "$JFG_ROOTFS.old.$(date +%s)"
     mv "$JFG_ROOTFS.new" "$JFG_ROOTFS"
 }
 
@@ -59,7 +63,7 @@ install)
         grep -q "^command = \"$JFG_LIB/launch\"" "$JFG_GREETD_CONF" || { echo "could not edit greetd config"; exit 1; }
     fi
     cp -a "$JFG_GREETD_CONF" "$JFG_PRISTINE/cosmic-greeter.toml"
-    rm -f "$JFG_ETC/disabled" "$JFG_ETC/broken"; echo 0 > "$JFG_RUN/fails"; chown cosmic-greeter: "$JFG_RUN/fails"
+    rm -f "$JFG_ETC/disabled" "$JFG_ETC/broken"; jfg_reset_fails
     systemctl enable --now jellyface-greeter-heal.path >/dev/null 2>&1
     systemctl enable jellyface-greeter-heal.service >/dev/null 2>&1
     printf 'OK: JellyFace greeter active\n%s\n' "$(date '+%F %T')" > "$JFG_STATUS"; chmod 644 "$JFG_STATUS"
@@ -72,7 +76,7 @@ uninstall)
     say "stock COSMIC greeter restored (files under /opt/jellyface-greeter and the backup were kept)"
     ;;
 disable) install -d "$JFG_ETC"; touch "$JFG_ETC/disabled"; say "disabled: stock COSMIC greeter will be used" ;;
-enable)  rm -f "$JFG_ETC/disabled" "$JFG_ETC/broken"; echo 0 > "$JFG_RUN/fails"; chown cosmic-greeter: "$JFG_RUN/fails"; "$JFG_LIB/heal" manual; cat "$JFG_STATUS" ;;
+enable)  rm -f "$JFG_ETC/disabled" "$JFG_ETC/broken"; jfg_reset_fails; "$JFG_LIB/heal" manual; cat "$JFG_STATUS" ;;
 rebuild) extract_rootfs; "$JFG_LIB/heal" manual; cat "$JFG_STATUS" ;;
 *) echo "usage: $0 install|uninstall|enable|disable|rebuild"; exit 2 ;;
 esac
