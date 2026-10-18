@@ -135,13 +135,15 @@ StyledRect {
             id: bodyText
 
             Layout.fillWidth: true
-            textFormat: Text.MarkdownText
-            text: String(root.modelData?.body ?? "").replace(/(.)\n(?!\n)/g, "$1\n\n") || Tr.tr("No body here! :/")
+            // plain text only: Markdown would load remote images from any app's notification and make its links clickable
+            textFormat: Text.PlainText
+            text: String(root.modelData?.body ?? "") || Tr.tr("No body here! :/")
             color: root.modelData?.urgency === "critical" ? Colours.palette.m3secondary : Colours.palette.m3outline
             wrapMode: Text.WordWrap
 
             onLinkActivated: link => {
-                Qt.openUrlExternally(link);
+                if (/^(https?|mailto):/i.test(link))   // never hand an arbitrary scheme to the system
+                    Qt.openUrlExternally(link);
                 root.screenState.sidebar = false;
             }
         }

@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Jellyface.Config
 import Jellyface.I18n
 
 Singleton {
@@ -24,6 +25,8 @@ Singleton {
     SystemClock {
         id: clock
 
-        precision: SystemClock.Seconds
+        // The clock only needs to tick every second while a seconds display is switched on; otherwise it wakes the shell once a
+        // minute instead of 86,400 times a day (every binding on the time re-evaluates on each tick).
+        precision: GlobalConfig.bar.clock.showSeconds || GlobalConfig.dashboard.showClockSeconds ? SystemClock.Seconds : SystemClock.Minutes
     }
 }

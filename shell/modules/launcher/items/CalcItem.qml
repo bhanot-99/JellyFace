@@ -79,7 +79,7 @@ Item {
                 id: stateLayer
 
                 onClicked: {
-                    Quickshell.execDetached([...GlobalConfig.general.apps.terminal, "fish", "-C", `exec qalc -i '${root.math}'`]);
+                    Quickshell.execDetached([...GlobalConfig.general.apps.terminal, "fish", "-C", `exec qalc -i '${root.math.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`]);
                     root.list.screenState.launcher = false;
                 }
 
