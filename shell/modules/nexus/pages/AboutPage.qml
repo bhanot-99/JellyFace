@@ -16,7 +16,6 @@ PageBase {
     readonly property int pluginCount: 0
 
     property string quickshellVersion
-    property string cliVersion
 
     title: Tr.tr("About")
 
@@ -32,19 +31,6 @@ PageBase {
             command: ["quickshell", "--version"]
             stdout: StdioCollector {
                 onStreamFinished: root.quickshellVersion = text.trim().split(" ")[1] ?? ""
-            }
-        }
-
-        // Parsed from the jellyface CLI's package listing; the sh wrapper avoids a
-        // warning when the (optional) CLI isn't installed
-        Process {
-            running: true
-            command: ["sh", "-c", "jellyface --version 2>/dev/null"]
-            stdout: StdioCollector {
-                onStreamFinished: {
-                    const m = text.match(/caelestia-cli\S*\s+(\d+(?:\.\d+)*)/);
-                    root.cliVersion = m ? m[1] : "";
-                }
             }
         }
 
@@ -126,11 +112,6 @@ PageBase {
             first: true
             label: Tr.trCtx("Shell", "the jellyface shell itself, not a unix shell")
             value: CUtils.version || "…"
-        }
-
-        InfoRow {
-            label: Tr.trCtx("CLI", "the jellyface command line tool")
-            value: root.cliVersion || "…"
         }
 
         InfoRow {

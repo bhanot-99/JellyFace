@@ -317,7 +317,7 @@ Scope {
                             implicitWidth: chipRow.implicitWidth + Tokens.padding.large * 2
                             implicitHeight: 38
                             radius: Tokens.rounding.full
-                            color: area.containsMouse || index === 0 ? Glass.glassPillHover : Glass.sheet
+                            color: chipArea.containsMouse || index === 0 ? Glass.glassPillHover : Glass.sheet
 
                             GlassBevel {
                                 radius: actionChip.radius
@@ -345,7 +345,7 @@ Scope {
                             }
 
                             MouseArea {
-                                id: area
+                                id: chipArea
 
                                 anchors.fill: parent
                                 hoverEnabled: true

@@ -13,11 +13,8 @@ import qs.services
 import qs.utils
 import "."
 
-// JellyFace Dock & Desktop Widget Ecosystem:
-// 1. Original Bottom Dock: Glass capsule at the bottom centre of the screen with auto-hide,
-//    hover magnification, drag-to-reorder, and running window indicators.
-// 2. Desktop Dashboard: Clean 2-column modular widgets (CommandBar, System Monitor, Notifications, Mail)
-//    anchored to the desktop wallpaper on WlrLayer.Bottom.
+// JellyFace Dock: glass capsule at the bottom centre of the screen with auto-hide, hover magnification,
+// drag-to-reorder and running window indicators.
 Scope {
     id: root
 
@@ -196,9 +193,7 @@ Scope {
         dock: root
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 1. Original Bottom Dock Window (Floating Glass Capsule)
-    // ─────────────────────────────────────────────────────────────────────────────
+    // The dock window (floating glass capsule)
     StyledWindow {
         id: win
 
@@ -493,8 +488,11 @@ Scope {
                 }
             }
             onCanceled: {
+                const wasHeld = held;
                 held = false;
                 root.dragging = false;
+                if (wasHeld)
+                    root.save();   // the model already follows the drag; keep dock.json in step with it
             }
             onClicked: mouse => {
                 if (dragged)

@@ -34,6 +34,10 @@ yay -S --needed --noconfirm quickshell-git qt6-m3shapes-git libcava
 if ! grep -q "^IgnorePkg.*quickshell-git" /etc/pacman.conf; then
     sudo cp -n /etc/pacman.conf /etc/pacman.conf.jellyface-orig
     sudo sed -i "s|^#IgnorePkg *=.*|# JellyFace: its shell plugin is built against these exact versions (unpin: comment out the next line, then jellyface build)\nIgnorePkg = qt6-* quickshell-git qt6-m3shapes-git|" /etc/pacman.conf
+    # no commented-out stock line to replace (or an IgnorePkg of the user'"'"'s own): add the pin under [options]
+    if ! grep -q "^IgnorePkg.*quickshell-git" /etc/pacman.conf; then
+        sudo sed -i "/^\[options\]/a IgnorePkg = qt6-* quickshell-git qt6-m3shapes-git" /etc/pacman.conf
+    fi
 fi
 '
 

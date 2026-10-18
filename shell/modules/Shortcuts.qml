@@ -223,18 +223,22 @@ Scope {
         // Open the dashboard on a given tab: 0 Dashboard, 1 Media, 2 Performance, 3 Weather
         function dashboardTab(index: int): void {
             const screenState = ShellState.forActive();
+            if (!screenState)
+                return;
             screenState.dashboardTab = index;
             screenState.dashboard = true;
         }
 
         function list(): string {
             const screenState = ShellState.forActive();
+            if (!screenState)
+                return "";
             return Object.keys(screenState).filter(k => typeof screenState[k] === "boolean").join("\n");
         }
 
         function isOpen(drawer: string): string {
             const screenState = ShellState.forActive();
-            if (typeof screenState[drawer] !== "boolean")
+            if (!screenState || typeof screenState[drawer] !== "boolean")
                 return "unknown";
             return screenState[drawer] ? "1" : "0";
         }

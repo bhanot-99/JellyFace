@@ -9,7 +9,7 @@ State file:  ~/.local/state/jellyface/mail.json
 
 Usage:
   mail.py refresh
-  mail.py set-password <app_password>
+  mail.py set-password [-]          (prompts; '-' reads it from stdin)
   mail.py set-account <email_address>
   mail.py mark-read <id>
   mail.py open-client [gmail|thunderbird]
@@ -35,7 +35,14 @@ STATE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/
 CONF_FILE = os.path.join(CONF_DIR, "mail.json")
 STATE_FILE = os.path.join(STATE_DIR, "mail.json")
 
-DEFAULT_EMAIL = "bhanot1054@gmail.com"
+DEFAULT_EMAIL = ""   # set with: jellyface mail set-account <address>
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+FETCH_BYTES = 65536  # headers + the start of the body: enough for a preview, never whole attachments
+
+
+def imap_date(dt):
+    """IMAP SINCE date (DD-Mon-YYYY) with English month names whatever the locale (strftime("%b") follows it)."""
+    return f"{dt.day:02d}-{MONTHS[dt.month - 1]}-{dt.year}"
 
 
 def write_private_json(path, data):
@@ -51,7 +58,7 @@ def write_private_json(path, data):
 
 
 def load_config():
-    """Load configuration, initializing with bhanot1054@gmail.com if not present."""
+    """Load configuration, creating an empty (private) one on first use."""
     cfg = {
         "enabled": True,
         "email": DEFAULT_EMAIL,
@@ -157,6 +164,14 @@ def format_email_date(date_str):
         return ""
 
 
+def decode_payload(payload, charset):
+    """Bytes -> str; an unknown or wrong charset name must not lose the whole preview."""
+    try:
+        return payload.decode(charset or "utf-8", errors="replace")
+    except LookupError:
+        return payload.decode("utf-8", errors="replace")
+
+
 def get_body_snippet(msg):
     """Extract snippet text from email.message.Message."""
     body_text = ""
@@ -170,19 +185,16 @@ def get_body_snippet(msg):
                 if content_type == "text/plain":
                     payload = part.get_payload(decode=True)
                     if payload:
-                        charset = part.get_content_charset() or "utf-8"
-                        body_text = payload.decode(charset, errors="replace")
+                        body_text = decode_payload(payload, part.get_content_charset())
                         break
                 elif content_type == "text/html" and not body_text:
                     payload = part.get_payload(decode=True)
                     if payload:
-                        charset = part.get_content_charset() or "utf-8"
-                        body_text = payload.decode(charset, errors="replace")
+                        body_text = decode_payload(payload, part.get_content_charset())
         else:
             payload = msg.get_payload(decode=True)
             if payload:
-                charset = msg.get_content_charset() or "utf-8"
-                body_text = payload.decode(charset, errors="replace")
+                body_text = decode_payload(payload, msg.get_content_charset())
     except Exception:
         pass
     return clean_text_snippet(body_text)
@@ -197,28 +209,31 @@ def fetch_gmail_emails(cfg):
     folder = cfg.get("folder", "INBOX")
     limit = int(cfg.get("limit", 8))
 
+    if not account:
+        return None, "no_account", 0
     if not password:
-        return None, "no_password"
+        return None, "no_password", 0
 
     socket.setdefaulttimeout(12)
     mail = None
     try:
         mail = imaplib.IMAP4_SSL(server, port)
         mail.login(account, password)
-        status, _ = mail.select(folder, readonly=False)
+        # read-only: never changes flags and (unlike close() after a read-write select) never expunges anything
+        status, _ = mail.select(f'"{folder}"', readonly=True)
         if status != "OK":
-            return None, f"Failed to select folder {folder}"
+            return None, f"network_error: could not open folder {folder}", 0
 
         # Date window: strictly last 15 days
         cutoff_dt = datetime.now(timezone.utc) - timedelta(days=15)
         cutoff_ts = cutoff_dt.timestamp()
-        since_date = cutoff_dt.strftime("%d-%b-%Y")
+        since_date = imap_date(cutoff_dt)
 
         # Search for messages within the last 15 days
-        status_unseen, data_unseen = mail.search(None, f'(UNSEEN SINCE "{since_date}")')
+        status_unseen, data_unseen = mail.uid("SEARCH", f'(UNSEEN SINCE "{since_date}")')
         unseen_ids = [int(x) for x in data_unseen[0].split()] if (status_unseen == "OK" and data_unseen and data_unseen[0]) else []
 
-        status_all, data_all = mail.search(None, f'(SINCE "{since_date}")')
+        status_all, data_all = mail.uid("SEARCH", f'(SINCE "{since_date}")')
         all_ids = [int(x) for x in data_all[0].split()] if (status_all == "OK" and data_all and data_all[0]) else []
 
         # Target IDs: prioritize latest unseen messages (within last 15 days), then backfill with recent messages
@@ -237,8 +252,8 @@ def fetch_gmail_emails(cfg):
         emails_list = []
         for msg_id in recent_ids:
             try:
-                # Fetch flags and RFC822 using BODY.PEEK so we don't automatically mark unseen messages as read
-                res, fetch_data = mail.fetch(msg_id, "(FLAGS BODY.PEEK[])")
+                # Flags + the first FETCH_BYTES of the message; BODY.PEEK so unseen messages are not marked as read
+                res, fetch_data = mail.uid("FETCH", msg_id, f"(FLAGS BODY.PEEK[]<0.{FETCH_BYTES}>)")
                 if res != "OK" or not fetch_data:
                     continue
 
@@ -286,7 +301,7 @@ def fetch_gmail_emails(cfg):
                 if not preview:
                     preview = subject
 
-                # Unique ID: use IMAP msg id string with prefix
+                # Unique ID: the IMAP UID (stable; sequence numbers shift whenever a message is deleted)
                 imap_id = msg_id.decode("ascii") if isinstance(msg_id, bytes) else str(msg_id)
                 msg_uid = f"gmail-{imap_id}"
 
@@ -307,7 +322,6 @@ def fetch_gmail_emails(cfg):
                 continue
 
         try:
-            mail.close()
             mail.logout()
         except Exception:
             pass
@@ -339,7 +353,7 @@ def get_setup_card(account):
             "sender": "Gmail Connection Setup",
             "email": account,
             "subject": f"Connect {account} with an App Password",
-            "preview": "1. Go to myaccount.google.com/apppasswords -> 2. Generate 16-char App Password -> 3. Run: jellyface mail set-password <password>",
+            "preview": "1. Go to myaccount.google.com/apppasswords -> 2. Generate 16-char App Password -> 3. Run: jellyface mail set-password",
             "time": "Now",
             "timestamp": time.time(),
             "unread": True,
@@ -371,6 +385,12 @@ def refresh():
 
     emails, status, total_unseen = fetch_gmail_emails(cfg)
 
+    if status == "no_account":
+        save_state({"account": "", "emails": [], "unreadCount": 0, "status": "needs_account",
+                    "lastError": "No account configured"})
+        print("[mail] Setup required: run 'jellyface mail set-account <address>' first")
+        return
+
     if status == "no_password":
         state = {
             "account": account,
@@ -380,7 +400,7 @@ def refresh():
             "lastError": "No App Password configured"
         }
         save_state(state)
-        print(f"[mail] Setup required: enter App Password for {account} via 'jellyface mail set-password <pass>'")
+        print(f"[mail] Setup required: enter App Password for {account} via 'jellyface mail set-password'")
         return
 
     if status.startswith("auth_error"):
@@ -423,14 +443,13 @@ def mark_read(mail_id):
     cfg = load_config()
     imap_id = None
 
-    # Update local state immediately
+    # Update local state immediately (only an unread message lowers the counter)
     for m in state.get("emails", []):
         if m.get("id") == mail_id:
+            if m.get("unread") and state.get("unreadCount", 0) > 0:
+                state["unreadCount"] -= 1
             m["unread"] = False
             imap_id = m.get("imap_id")
-
-    if "unreadCount" in state and state["unreadCount"] > 0:
-        state["unreadCount"] -= 1
 
     save_state(state)
     print(f"[mail] Marked {mail_id} as read locally")
@@ -442,9 +461,8 @@ def mark_read(mail_id):
             account = cfg.get("email", DEFAULT_EMAIL)
             mail = imaplib.IMAP4_SSL(cfg.get("server", "imap.gmail.com"), int(cfg.get("port", 993)))
             mail.login(account, password)
-            mail.select(cfg.get("folder", "INBOX"))
-            mail.store(imap_id, "+FLAGS", "\\Seen")
-            mail.close()
+            mail.select('"%s"' % cfg.get("folder", "INBOX"))
+            mail.uid("STORE", imap_id, "+FLAGS", "\\Seen")   # no close(): it would expunge \\Deleted messages
             mail.logout()
             print(f"[mail] Flagged email {imap_id} as \\Seen on Gmail server")
         except Exception as e:
@@ -551,7 +569,7 @@ def print_status():
         print(" 1. Ensure 2-Step Verification is active on your Google Account.")
         print(" 2. Open: https://myaccount.google.com/apppasswords")
         print(" 3. Create an App Password named 'JellyFace'.")
-        print(" 4. Run: jellyface mail set-password <16-character-password>")
+        print(" 4. Run: jellyface mail set-password   (it asks for the 16-character password)")
     print("═════════════════════════════════════════════════════")
 
 
@@ -565,10 +583,15 @@ def main():
     if cmd in ("refresh", "sync"):
         refresh()
     elif cmd in ("set-password", "password"):
-        if len(sys.argv) < 3:
-            print("Error: Password required. Usage: jellyface mail set-password <16-char-app-password>", file=sys.stderr)
-            sys.exit(1)
-        set_password(sys.argv[2])
+        if len(sys.argv) >= 3 and sys.argv[2] != "-":
+            set_password(sys.argv[2])   # works, but is visible in `ps` and the shell history: prefer the prompt
+        else:
+            import getpass
+            pw = sys.stdin.readline().strip() if (sys.argv[2:] == ["-"] or not sys.stdin.isatty()) else getpass.getpass("App password: ")
+            if not pw:
+                print("Error: Password required. Usage: jellyface mail set-password   (prompts; or pipe it in with '-')", file=sys.stderr)
+                sys.exit(1)
+            set_password(pw)
     elif cmd in ("set-account", "account"):
         if len(sys.argv) < 3:
             print("Error: Email required. Usage: jellyface mail set-account <email>", file=sys.stderr)

@@ -32,10 +32,12 @@ trap cleanup EXIT INT TERM
 
 # Integer seconds for Quickshell IPC
 INT_SECS="${DURATION%%.*}"
-[ -z "$INT_SECS" ] || [ "$INT_SECS" -le 0 ] && INT_SECS=5
+{ [ -z "$INT_SECS" ] || [ "$INT_SECS" -le 0 ]; } && INT_SECS=1
+# the shell closes everything after INT_SECS; wait the same time so the cleanup below never cuts it short
+DURATION="$INT_SECS"
 
 # Trigger all panels and status popouts in the shell
-"$JF_ROOT/bin/jellyface" ipc drawers popAll "$INT_SECS" >/dev/null 2>&1
+"$JF_ROOT/bin/jellyface" ipc drawers popAll "$INT_SECS" >/dev/null 2>&1 || die "could not reach the shell (is it running? try: jellyface status)"
 
 sleep "$DURATION"
 

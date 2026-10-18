@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+- `jellyface mail`: no longer crashes when no password or account is set; uses IMAP UIDs (marking a message read could hit
+  the wrong one after a deletion), opens the mailbox read-only (it used to expunge messages flagged for deletion), reads
+  only the start of each message instead of downloading whole attachments, and no longer depends on the locale's month
+  names. The password is asked for instead of being typed on the command line. No personal address is built in any more.
+- Agenda: recurring events that started more than ~13 years ago (birthdays, anniversaries) were silently dropped;
+  `webcal://` addresses work.
+- Interface names and file paths are passed to `sh -c` as arguments instead of being pasted into the command line
+  (VPN and network statistics, area-picker clipboard copy).
+- A crashed window helper no longer leaves a stale "fullscreen" state that kept the bar hidden; the window helper
+  forgets workspaces that were removed.
+- Media artwork in a URL scheme Qt cannot load (`attachment:`) is ignored instead of logging warnings and showing a
+  broken image.
+- Dock: a cancelled drag keeps the new order; the Dynamic Island's buttons no longer shadow `Item.enabled`.
+- `jellyface pop-all` reports an unreachable shell and waits exactly as long as the panels stay open.
+- The Qt/Quickshell pin in the container is also added when `pacman.conf` has no commented `IgnorePkg` line.
+- About page: removed the "CLI" row that never showed a version.
+
+### Clean-up
+- Removed the unused mail service (its dashboard widget was removed earlier) and stale comments; leftover upstream
+  names (`caelestia-cli`, the upstream repository in User-Agent headers) now say JellyFace.
+
 ## 1.1.0 (2026-10-15)
 
 Stability and polish release. No new features.

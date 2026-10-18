@@ -168,7 +168,7 @@ JellyFace -- a desktop shell for COSMIC (Pop!_OS)
   jellyface cosmic-tweaks [--revert]   auto-hide COSMIC's own top panel (backs it up first)
   jellyface greeter test|window|install|status|...   JellyFace as the login screen (self-healing; see greeter/)
   jellyface mail [refresh|status|set-password|set-account]
-                                  sync and configure Gmail (bhanot1054@gmail.com) for dashboard
+                                  sync and configure a Gmail inbox (IMAP app password)
   jellyface demo-island [--auto]  interactive demo showcase for Dynamic Island animations
   jellyface pop-all [seconds]     pop out all panels and popouts at once for N seconds (default: 5)
   jellyface doctor                check that everything is in place

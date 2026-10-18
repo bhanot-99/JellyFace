@@ -42,7 +42,8 @@ Singleton {
     function getArtUrl(player: MprisPlayer): string {
         if (!player)
             return "";
-        if (player.trackArtUrl)
+        // some players report art in a scheme Qt cannot load (e.g. "attachment:..."): treat it as "no artwork"
+        if (player.trackArtUrl && /^(\/|(file|https?|data|qrc|image):)/i.test(player.trackArtUrl))
             return player.trackArtUrl;
 
         const url = player.metadata["xesam:url"] ?? "";

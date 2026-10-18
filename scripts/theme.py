@@ -337,7 +337,8 @@ def write_state(**kw):
     st.update(kw)
     os.makedirs(os.path.dirname(STATE), exist_ok=True)
     tmp = STATE + ".tmp"
-    json.dump(st, open(tmp, "w"), indent=2)
+    with open(tmp, "w") as f:
+        json.dump(st, f, indent=2)
     os.replace(tmp, STATE)
 
 

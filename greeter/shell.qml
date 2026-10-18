@@ -16,7 +16,7 @@ ShellRoot {
     readonly property string dataDir: Quickshell.env("JF_GREETER_DATA") || "/var/lib/jellyface-greeter"
     readonly property bool testMode: Quickshell.env("JF_GREETER_TEST") === "1"
 
-    property string user: "bhanot"
+    property string user: ""
     property string sessionCmd: "start-cosmic"
     property var c: ({})
     property string error: ""

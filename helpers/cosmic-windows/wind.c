@@ -180,6 +180,7 @@ static const struct zcosmic_toplevel_handle_v1_listener cosmic_listener = {
 static void l_toplevel(void *d, struct ext_foreign_toplevel_list_v1 *l, struct ext_foreign_toplevel_handle_v1 *h) {
     if (nwins >= MAXWIN) { ext_foreign_toplevel_handle_v1_destroy(h); return; }
     struct win *w = calloc(1, sizeof *w);
+    if (!w) { ext_foreign_toplevel_handle_v1_destroy(h); return; }
     w->id = next_id++;
     w->ext = h;
     wins[nwins++] = w;
@@ -205,6 +206,10 @@ static void wh_state(void *d, struct ext_workspace_handle_v1 *h, uint32_t st) {
     for (int i = 0; i < nwss; i++) if (wss[i].h == h) { if (wss[i].state != st) { wss[i].state = st; dirty = 1; } return; }
 }
 static void wh_removed(void *d, struct ext_workspace_handle_v1 *h) {
+    // windows must not keep a pointer to a destroyed handle (a new handle could reuse the address)
+    for (int i = 0; i < nwins; i++)
+        for (int j = 0; j < wins[i]->nws; j++)
+            if (wins[i]->wsh[j] == h) { wins[i]->wsh[j] = wins[i]->wsh[--wins[i]->nws]; j--; }
     for (int i = 0; i < nwss; i++)
         if (wss[i].h == h) { ext_workspace_handle_v1_destroy(h); memmove(&wss[i], &wss[i + 1], (nwss - i - 1) * sizeof *wss); nwss--; dirty = 1; return; }
 }

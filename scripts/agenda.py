@@ -40,6 +40,7 @@ def write(obj):
 
 
 def read_source(src):
+    src = re.sub(r"^webcal://", "https://", src, flags=re.I)
     if re.match(r"https?://", src):
         req = urllib.request.Request(src, headers={"User-Agent": "JellyFace-agenda"})
         with urllib.request.urlopen(req, timeout=20) as r:
@@ -136,6 +137,10 @@ def occurrences(ev, lo, hi):
     tod = start - day
     guard = 0
     cur = day
+    if count is None:
+        # no COUNT: occurrences only depend on the distance from the start, so skip straight to the window (a birthday
+        # that started 20 years ago would otherwise run out of loop iterations before reaching today)
+        cur = max(day, (lo - length).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1))
     while cur <= hi + timedelta(days=1) and guard < 5000:
         guard += 1
         ok = False

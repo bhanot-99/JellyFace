@@ -838,7 +838,6 @@ Scope {
         property int pointSize: 20
         property color color: root.colTextPrimary
         property color activeColor: "#FFFFFF"
-        property bool enabled: true
 
         signal clicked()
 
