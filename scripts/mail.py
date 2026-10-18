@@ -25,9 +25,11 @@ import json
 import os
 import re
 import socket
+import ssl
 import subprocess
 import sys
 import time
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 
 CONF_DIR = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "jellyface")
@@ -40,6 +42,12 @@ MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", 
 FETCH_BYTES = 65536  # headers + the start of the body: enough for a preview, never whole attachments
 
 
+def imap_connect(cfg):
+    """TLS connection with the server certificate and host name verified (imaplib's own default context checks neither)."""
+    return imaplib.IMAP4_SSL(cfg.get("server", "imap.gmail.com"), int(cfg.get("port", 993)),
+                             ssl_context=ssl.create_default_context(), timeout=12)
+
+
 def imap_date(dt):
     """IMAP SINCE date (DD-Mon-YYYY) with English month names whatever the locale (strftime("%b") follows it)."""
     return f"{dt.day:02d}-{MONTHS[dt.month - 1]}-{dt.year}"
@@ -49,11 +57,12 @@ def write_private_json(path, data):
     """Write JSON data atomically with 0600 file permissions."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
+    # created 0600 from the start: the file holds the app password, so it must never exist world-readable
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
         f.flush()
         os.fsync(f.fileno())
-    os.chmod(tmp, 0o600)
     os.replace(tmp, path)
 
 
@@ -204,8 +213,6 @@ def fetch_gmail_emails(cfg):
     """Connect to Gmail via IMAP and retrieve latest emails."""
     account = cfg.get("email", DEFAULT_EMAIL)
     password = (cfg.get("app_password") or "").strip().replace(" ", "")
-    server = cfg.get("server", "imap.gmail.com")
-    port = int(cfg.get("port", 993))
     folder = cfg.get("folder", "INBOX")
     limit = int(cfg.get("limit", 8))
 
@@ -217,7 +224,7 @@ def fetch_gmail_emails(cfg):
     socket.setdefaulttimeout(12)
     mail = None
     try:
-        mail = imaplib.IMAP4_SSL(server, port)
+        mail = imap_connect(cfg)
         mail.login(account, password)
         # read-only: never changes flags and (unlike close() after a read-write select) never expunges anything
         status, _ = mail.select(f'"{folder}"', readonly=True)
@@ -459,7 +466,7 @@ def mark_read(mail_id):
     if imap_id and password:
         try:
             account = cfg.get("email", DEFAULT_EMAIL)
-            mail = imaplib.IMAP4_SSL(cfg.get("server", "imap.gmail.com"), int(cfg.get("port", 993)))
+            mail = imap_connect(cfg)
             mail.login(account, password)
             mail.select('"%s"' % cfg.get("folder", "INBOX"))
             mail.uid("STORE", imap_id, "+FLAGS", "\\Seen")   # no close(): it would expunge \\Deleted messages
@@ -474,9 +481,9 @@ def open_client(client_type="gmail"):
     cfg = load_config()
     account = (cfg.get("email") or DEFAULT_EMAIL).strip()
     if account and "@" in account:
-        gmail_url = f"https://mail.google.com/mail/?authuser={account}"
+        gmail_url = "https://mail.google.com/mail/?authuser=" + urllib.parse.quote(account, safe="@")
     elif account.isdigit():
-        gmail_url = f"https://mail.google.com/mail/u/{account}/"
+        gmail_url = f"https://mail.google.com/mail/u/{int(account)}/"
     else:
         gmail_url = "https://mail.google.com/mail/"
 
