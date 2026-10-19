@@ -170,6 +170,8 @@ JellyFace -- a desktop shell for COSMIC (Pop!_OS)
   jellyface files install|update|theme|status   the yazi terminal file manager in JellyFace's colours
   jellyface fix-icons             create icon aliases from config/icon-aliases.txt (e.g. Flatpak VLC tray icon)
   jellyface agenda set <ics-path|ical-url>   choose the calendar for the desktop Agenda card (also: agenda, agenda status)
+  jellyface agenda holidays <region ...>   show public holidays and festivals (indian, usa, uk, ...) in the dashboard calendar
+  jellyface agenda add-source <ics|url>    add another calendar (remove-source to drop it)
   jellyface cosmic-tweaks [--revert]   auto-hide COSMIC's own top panel (backs it up first)
   jellyface greeter test|window|install|status|...   JellyFace as the login screen (self-healing; see greeter/)
   jellyface mail [refresh|status|set-password|set-account]

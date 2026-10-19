@@ -3,6 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
 import M3Shapes
 import Jellyface.Config
 import qs.components
@@ -24,6 +26,24 @@ CustomMouseArea {
     readonly property int animDirection: screenState.dashboardDate > currentDate ? -1 : 1
     property real animTranslate
     property real animOpacity: 1
+
+    // { "YYYY-MM-DD": [{ title, holiday }] } written by scripts/agenda.py (your calendars, local events, public holidays)
+    property var dayEvents: ({})
+    readonly property string stateDir: `${Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"}/jellyface`
+
+    FileView {
+        path: `${root.stateDir}/calendar.json`
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            try {
+                root.dayEvents = JSON.parse(text());
+            } catch (e) {
+                root.dayEvents = ({});
+            }
+        }
+    }
 
     function onWheel(event: WheelEvent): void {
         if (event.angleDelta.y > 0)
@@ -178,7 +198,7 @@ CustomMouseArea {
                 required property var model
 
                 horizontalAlignment: Text.AlignHCenter
-                text: model.shortName
+                text: model.shortName.slice(0, 2) // "Wed" / "Thu" are wider than a day cell and ran into each other
                 font: Tokens.font.body.builders.small.weight(Font.Medium).build()
                 color: (model.day === 0 || model.day === 6) ? Colours.palette.m3tertiary : Colours.palette.m3onSurface
             }
@@ -212,14 +232,33 @@ CustomMouseArea {
                     implicitWidth: implicitHeight
                     implicitHeight: text.implicitHeight + Tokens.padding.small
 
+                    readonly property var events: root.dayEvents[Qt.formatDate(model.date, "yyyy-MM-dd")] ?? []
+                    readonly property bool hasHoliday: events.some(e => e.holiday)
+
                     // Click a day to add an event on it
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
+                        ToolTip.visible: containsMouse && dayItem.events.length > 0
+                        ToolTip.delay: 300
+                        ToolTip.text: dayItem.events.map(e => e.title).join("\n")
                         onClicked: {
                             root.screenState.dashboard = false;
                             AgendaEvents.openForm(dayItem.model.date);
                         }
+                    }
+
+                    // dot under the date: your events in the accent colour, public holidays and festivals in the tertiary one
+                    Rectangle {
+                        visible: dayItem.events.length > 0 && dayItem.model.month === grid.month
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 1
+                        width: 4
+                        height: 4
+                        radius: 2
+                        color: dayItem.hasHoliday ? Colours.palette.m3tertiary : Colours.palette.m3secondary
                     }
 
                     StyledText {

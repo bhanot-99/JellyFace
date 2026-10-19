@@ -154,6 +154,9 @@ for its menu, or the dock to add apps and web apps. A custom symbol: `"symbol": 
 
 **Agenda.** Google Calendar on the web -> Settings -> your calendar -> *Integrate calendar* -> **Secret address in iCal
 format**, then `jellyface agenda set "<address>"` (keep the address private). A local `.ics` path works too.
+Add more calendars with `jellyface agenda add-source <url>`, and festivals / public holidays with
+`jellyface agenda holidays indian` (or `usa`, `uk`, `christian`, `hindu` ...). The dashboard calendar shows a dot under
+every day with something on it (tertiary colour = holiday) and lists the titles when you hover.
 
 ## Lock screen and idle behaviour
 

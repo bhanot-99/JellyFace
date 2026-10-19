@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Features
+- Dashboard calendar shows events: a dot under each day (tertiary = public holiday / festival) and the titles on hover. `jellyface agenda holidays <region>` adds Google's public holiday calendars, `agenda add-source` adds more iCal calendars; the Agenda card includes them too.
 - Dynamic Island: iPhone-style rework — spring morph, empty idle pill, split dual-activity bubbles, timer / notification / mute / volume / charging activities, artwork-tinted cava equaliser and glow, blur+scale transitions, tap / long-press / swipe-up gestures. The idle clock is gone.
 - `jellyface files install`: the yazi terminal file manager (no sudo; download checked against GitHub's SHA-256), the Nerd
   Font symbols for its icons, defaults tuned for Kitty's full-resolution previews (`config/yazi/`), a `magick` stand-in so

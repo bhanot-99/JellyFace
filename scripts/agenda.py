@@ -7,6 +7,9 @@ Commands:  agenda.py            refresh now
            agenda.py add TITLE YYYY-MM-DD [HH:MM [HH:MM [LOCATION]]]   add a local event (no time = all day)
            agenda.py remove ID  remove a local event
            agenda.py set SRC    save the calendar source (.ics path or iCal URL) and refresh
+           agenda.py add-source SRC | remove-source SRC   extra calendars (a friend's, a team's, a sports fixture list ...)
+           agenda.py holidays [REGION ...]   show Google's public holidays and festivals for a region, for example
+                                    indian, usa, uk, canadian, australian, german, "christian" or "hindu" (none = clear)
            agenda.py status
 
 Supported: timed and all-day events, UTC / TZID / floating times, and simple repeats (RRULE DAILY, WEEKLY with
@@ -23,6 +26,8 @@ except ImportError:  # pragma: no cover
 CONF = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "jellyface", "desktop.json")
 LOCAL = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "jellyface", "events.json")
 OUT = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "jellyface", "agenda.json")
+MONTHS = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "jellyface", "calendar.json")
+HOLIDAY_URL = "https://calendar.google.com/calendar/ical/{}%23holiday%40group.v.calendar.google.com/public/basic.ics"
 DAYS = {"MO": 0, "TU": 1, "WE": 2, "TH": 3, "FR": 4, "SA": 5, "SU": 6}
 
 
@@ -219,6 +224,26 @@ def set_source(src):
     print("agenda source saved" if src else "agenda source cleared")
 
 
+def update_conf(fn):
+    try:
+        with open(CONF) as f:
+            conf = json.load(f)
+    except Exception:
+        conf = {}
+    fn(conf.setdefault("agenda", {}))
+    write_private(CONF, conf, indent=4)
+
+
+def set_list(key, items, label):
+    update_conf(lambda a: a.__setitem__(key, items))
+    print(f"{label}: " + (", ".join(items) if items else "none"))
+
+
+def holiday_url(region):
+    region = region.strip().lower()
+    return HOLIDAY_URL.format(region if "." in region else f"en.{region}")
+
+
 def load_local():
     try:
         with open(LOCAL) as f:
@@ -258,8 +283,29 @@ def add_local(args):
     save_local(items)
 
 
+def add_days(days_map, s, e, title, holiday):
+    """Every calendar day an event touches (an all-day event ends at midnight of the day AFTER its last day)."""
+    last = e - timedelta(seconds=1) if e > s else s
+    d = s.replace(hour=0, minute=0, second=0, microsecond=0)
+    while d <= last and len(days_map) < 800:
+        days_map.setdefault(d.strftime("%Y-%m-%d"), []).append({"title": title, "holiday": holiday})
+        d += timedelta(days=1)
+
+
 def main():
-    if len(sys.argv) > 1 and sys.argv[1] == "add":
+    if len(sys.argv) > 2 and sys.argv[1] in ("add-source", "remove-source"):
+        cur = []
+        try:
+            with open(CONF) as f:
+                cur = list(json.load(f).get("agenda", {}).get("sources", []))
+        except Exception:
+            pass
+        src = sys.argv[2]
+        cur = [x for x in cur if x != src] + ([src] if sys.argv[1] == "add-source" else [])
+        set_list("sources", cur, "extra calendars")
+    elif len(sys.argv) > 1 and sys.argv[1] == "holidays":
+        set_list("holidays", [r for r in sys.argv[2:] if r.strip()], "holiday calendars")
+    elif len(sys.argv) > 1 and sys.argv[1] == "add":
         add_local(sys.argv[2:])
     elif len(sys.argv) > 2 and sys.argv[1] == "remove":
         save_local([e for e in load_local() if e["id"] != sys.argv[2]])
@@ -278,7 +324,8 @@ def main():
             conf = json.load(f).get("agenda", {})
     except Exception:
         conf = {}
-    src = conf.get("source", "") or ""
+    sources = [(x, False) for x in ([conf.get("source", "")] + list(conf.get("sources", []))) if x]
+    sources += [(holiday_url(r), True) for r in conf.get("holidays", []) if str(r).strip()]
     try:
         days = max(1, int(conf.get("days", 2)))
     except (TypeError, ValueError):
@@ -286,35 +333,43 @@ def main():
     now = datetime.now()
     lo = now.replace(hour=0, minute=0, second=0, microsecond=0)
     hi = lo + timedelta(days=days)
+    # the month grid on the dashboard looks further around than the card does
+    mlo, mhi = lo - timedelta(days=45), lo + timedelta(days=200)
     state, error, events = "ok", "", []
-    if src:
+    for src, holiday in sources:
         try:
-            events = parse_events(read_source(src))
+            events += [{**ev, "holiday": holiday} for ev in parse_events(read_source(src))]
         except Exception as e:
             state, error = "error", str(e)[:200]
-    out = []
+    out, days_map = [], {}
     for ev in load_local():
         try:
             s, e = datetime.fromisoformat(ev["start"]), datetime.fromisoformat(ev["end"])
             if e > lo and s < hi:
                 out.append({**ev, "local": True})
+            if e > mlo and s < mhi:
+                add_days(days_map, s, e, ev["title"], False)
         except Exception:
             continue
-    if not src and not out and not load_local():
+    if not sources and not out and not load_local():
         state = "no-source"
     for ev in events:
         if ev.get("cancelled"):
             continue
         try:
-            for s, e in occurrences(ev, lo, hi):
-                if e <= lo or s >= hi or any(abs((s - x).total_seconds()) < 60 for x in ev["exdates"]):
+            for s, e in occurrences(ev, mlo, mhi):
+                if e <= mlo or s >= mhi or any(abs((s - x).total_seconds()) < 60 for x in ev["exdates"]):
                     continue
-                out.append({"title": ev.get("title", "(no title)"), "location": ev.get("location", ""),
-                            "start": s.isoformat(), "end": e.isoformat(), "allDay": ev["allday"]})
+                title = ev.get("title", "(no title)")
+                add_days(days_map, s, e, title, ev["holiday"])
+                if e > lo and s < hi:
+                    out.append({"title": title, "location": ev.get("location", ""), "start": s.isoformat(),
+                                "end": e.isoformat(), "allDay": ev["allday"]})
         except Exception:
             continue
     out.sort(key=lambda x: (x["start"], x["title"]))
     write({"state": state, "error": error, "events": out[:60], "updated": now.isoformat()})
+    write_private(MONTHS, {d: sorted(v, key=lambda x: (not x["holiday"], x["title"]))[:6] for d, v in days_map.items()})
 
 
 main()
