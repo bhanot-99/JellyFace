@@ -167,6 +167,7 @@ JellyFace -- a desktop shell for COSMIC (Pop!_OS)
   jellyface autostart on|off      start JellyFace at login
   jellyface theme apply|match|list|auto|status   wallpaper-driven colour themes (see: jellyface theme --help)
   jellyface glass [on|off]        frosted-glass look that adapts to any wallpaper (off = wallpaper palettes)
+  jellyface files install|update|theme|status   the yazi terminal file manager in JellyFace's colours
   jellyface fix-icons             create icon aliases from config/icon-aliases.txt (e.g. Flatpak VLC tray icon)
   jellyface agenda set <ics-path|ical-url>   choose the calendar for the desktop Agenda card (also: agenda, agenda status)
   jellyface cosmic-tweaks [--revert]   auto-hide COSMIC's own top panel (backs it up first)
@@ -193,6 +194,7 @@ case "${1:-help}" in
     cosmic-dock)   shift; exec "$JF_ROOT/scripts/cosmic-dock.sh" "$@" ;;
     cosmic-panel)  shift; exec "$JF_ROOT/scripts/cosmic-panel.sh" "$@" ;;
     tiling)        shift; exec "$JF_ROOT/scripts/tiling.sh" "$@" ;;
+    files)         shift; exec "$JF_ROOT/scripts/yazi.sh" "$@" ;;
     focus)         shift; exec "$JF_ROOT/scripts/focus.sh" "$@" ;;
     notify)        shift; exec "$JF_ROOT/scripts/shims/notify-send" "$@" ;;
     integrate)     shift; exec "$JF_ROOT/scripts/integrate.sh" "$@" ;;

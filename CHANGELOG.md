@@ -4,6 +4,14 @@
 
 ### Features
 - Dynamic Island: iPhone-style rework — spring morph, empty idle pill, split dual-activity bubbles, timer / notification / mute / volume / charging activities, artwork-tinted cava equaliser and glow, blur+scale transitions, tap / long-press / swipe-up gestures. The idle clock is gone.
+- `jellyface files install`: the yazi terminal file manager (no sudo; download checked against GitHub's SHA-256), the Nerd
+  Font symbols for its icons, defaults tuned for Kitty's full-resolution previews (`config/yazi/`), a `magick` stand-in so
+  HEIC/AVIF/JXL previews work with Ubuntu's ImageMagick 6, and a theme in the shell's colours that follows every palette
+  change. Everything it adds is recorded for `jellyface revert-system`; a `theme.toml` of your own is never overwritten.
+- Kitty follows the JellyFace theme too (set up by `jellyface files install`): `~/.config/kitty/jellyface-theme.conf`,
+  included once from `kitty.conf` (your other settings untouched), is rewritten on every palette change and open Kitty
+  windows reload it at once. The greyscale palettes get soft, readable hues for the 16 terminal colours. A palette change
+  never creates these files by itself. Tests: `tests/terminal-themes.sh`.
 
 ### Security
 - `jellyface mail` verifies the IMAP server's certificate and host name (Python's default `IMAP4_SSL` checks neither, so the

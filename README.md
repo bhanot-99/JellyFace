@@ -102,6 +102,17 @@ jellyface integrate             # shows a plan, asks, then wires JellyFace into 
 | Native applet | A JellyFace button in COSMIC's own panel (`jellyface applet install`, `applet panel-add`). |
 | COSMIC theming | Optional: COSMIC's own apps follow JellyFace's colours (`jellyface theme system on\|off`). |
 
+### Optional: terminal file manager
+
+`jellyface files install` sets up [yazi](https://github.com/sxyazi/yazi), a fast terminal file manager with previews of
+images, PDFs, videos, archives, fonts and code. No sudo: yazi and its icon font go into your home folder (downloads are
+checked against GitHub's published SHA-256), and its defaults come from `config/yazi/`. yazi and, if installed,
+[Kitty](https://sw.kovidgoyal.net/kitty/) get themes in JellyFace's colours that follow every palette change; Kitty
+shows previews at full resolution (most other terminals show coloured blocks). `kitty.conf` only gains one
+`include jellyface-theme.conf` line. Delete the first line of a generated theme to keep your own edits.
+`jellyface files status` lists the optional preview tools that are missing (`sudo apt install ...`), and
+`jellyface revert-system` removes everything `files install` added.
+
 ### Optional: login screen
 
 `jellyface greeter` can make JellyFace's lock-screen look your login screen as well. It needs `sudo` and changes system
@@ -234,6 +245,7 @@ jellyface cosmic-tweaks [--revert]       panel auto-hide, always-on lock screen,
 jellyface applet install|panel-add|panel-remove|remove
 jellyface glass on|off                   frosted glass or wallpaper palettes
 jellyface theme apply|match|list|tint|soft|system|auto|status
+jellyface files install|update|theme|status   yazi file manager + Kitty in JellyFace's colours
 jellyface lock                           lock the screen
 jellyface agenda set <ics|url> | status
 jellyface focus|tiling on|off|status     COSMIC focus-follows-cursor / auto-tiling
@@ -262,7 +274,7 @@ scripts/             install, build, supervisor, theming, COSMIC tweaks, revert
 helpers/             C helpers for COSMIC workspaces and windows
 native/              native COSMIC panel applet (Rust)     tools/  COSMIC theme writer (Rust)
 greeter/             optional login screen                  config/ defaults
-tests/               stability suite                        docs/   architecture notes
+tests/               test suites                            docs/   architecture notes
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit together, [CHANGELOG.md](CHANGELOG.md) for
