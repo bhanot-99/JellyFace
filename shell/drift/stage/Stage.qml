@@ -6,6 +6,7 @@ import Quickshell.Wayland
 import qs.drift
 import qs.drift.components
 import qs.drift.surfaces
+import qs.drift.surfaces.cc
 
 // The Stage: one full-screen overlay window that holds every Drift pop-up surface. It exists only while a surface is
 // open (or still animating out): it takes the keyboard, closes on a click outside the surface or on Esc, and blurs
@@ -38,7 +39,7 @@ Scope {
         PanelWindow {
             id: win
 
-            readonly property list<Item> surfaces: [gallery]
+            readonly property list<Item> surfaces: [gallery, cc]
 
             screen: Quickshell.screens[0]
             WlrLayershell.namespace: "jellyface-drift-stage"
@@ -73,6 +74,10 @@ Scope {
 
                 Gallery {
                     id: gallery
+                }
+
+                ControlCenter {
+                    id: cc
                 }
             }
         }
