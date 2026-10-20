@@ -21,7 +21,7 @@ JellyFace/
 ├── Color_Palette/           palette packs (*.txt) that wallpaper theming chooses from
 ├── greeter/                 optional login screen (greetd), installed only by `jellyface greeter install`
 ├── tests/                   stability.sh (restart / crash / stress suite), greeter UI test
-├── docs/                    this file
+├── docs/                    this file, BACKLOG.md (known issues not fixed yet)
 ├── backups/                 backups of your COSMIC settings that `revert-system` restores from (never deleted automatically)
 ├── logs/                    runtime logs (git-ignored)
 ├── .rust/                   project-local Rust toolchain + build stand-ins (git-ignored, safe to delete)

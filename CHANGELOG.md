@@ -1,6 +1,41 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 (2026-10-20)
+
+Stability, security and polish since 1.0.0, plus the new Dynamic Island, dashboard calendar events and the yazi file
+manager. After updating: `jellyface build`, then `jellyface restart` (and `jellyface greeter install` if you use the
+login screen).
+
+### Switching windows, workspaces and tabs
+- No more flashes when switching away from or back to a fullscreen app (video, game, F11 browser), by Alt+Tab, a click,
+  a workspace switch or a browser tab change:
+  - The Dynamic Island sits on the layer COSMIC itself draws fullscreen windows over, in the same frame as the switch.
+    It used to be hidden only once the shell heard about the fullscreen window, so it flashed over the video every time.
+  - The window helper (`wind`) prints a state only once COSMIC has finished a batch of changes, and prints focus,
+    fullscreen and workspace changes at once (it used to wait up to 80 ms, and could print a half-applied switch).
+  - Its first line already knows which window is focused and fullscreen; it used to show every window unfocused on the
+    current workspace, so the bar appeared over a fullscreen app for a moment at every start.
+  - The bar's window title no longer flicks to "Desktop" and back on every switch, and the dock's focus dots no longer
+    blink: COSMIC passes through "nothing focused" for up to ~100 ms between two windows, which the shell now bridges.
+  - The workspace indicator keeps its pills (they were rebuilt on every switch, so the highlight jumped) and no longer
+    hides itself in fullscreen, which jolted the rest of the bar mid-animation.
+- New stability test: rapid window and workspace switching (`tests/stability.sh`, section 9).
+
+### Stability
+- Every `jellyface restart` or crash left the shell's clipboard watcher and network monitor running inside the container;
+  they piled up and each copy was recorded once per leftover watcher. The supervisor now stops them (and those earlier
+  versions left behind) whenever a shell is gone.
+- Notifications: at login COSMIC's notification daemon could get its name back before JellyFace's guard was listening, and
+  the shell then showed no notifications for the whole session. The guard now listens first and re-checks every 30 s.
+- Clipboard history: restoring an entry over 128 KiB did nothing (the text was passed to `wl-copy` as an argument, above
+  the kernel's limit); it now goes through stdin.
+- Launcher and JellyPanel actions: "Settings" opens again and "Random wallpaper" (an upstream command COSMIC has no
+  equivalent for) is hidden; JellyPanel no longer offers the calculator / scheme actions it cannot run.
+- `jellyface restart` says "stopped" instead of "not running" when it stopped the service.
+- The volume and brightness sliders on the right use the same flat tonal track as the rest of the shell; a glass bevel
+  made them the only controls with a lit top edge and a sheen.
+- Dock: the window list is matched against each app's window classes once, not on every window update (every browser tab
+  change re-ran a desktop-entry lookup for every dock icon).
 
 ### Features
 - Dashboard calendar shows events: a dot under each day (tertiary = public holiday / festival) and the titles on hover. `jellyface agenda holidays <region>` adds Google's public holiday calendars, `agenda add-source` adds more iCal calendars; the Agenda card includes them too.
@@ -15,6 +50,8 @@
   never creates these files by itself. Tests: `tests/terminal-themes.sh`.
 
 ### Security
+- Fingerprint and face unlock are off unless you turn them on (`lock.enableFprint`, `lock.enableHowdy`); Howdy's face check
+  accepts a photo.
 - `jellyface mail` verifies the IMAP server's certificate and host name (Python's default `IMAP4_SSL` checks neither, so the
   app password could be read on the network path); its temp files are created 0600 and its requests have timeouts.
 - Login screen: the root helper no longer writes or chowns inside the directory owned by the greeter user (a planted symlink
@@ -59,14 +96,6 @@
 - Builds use `cargo --locked`, rustup is downloaded before it is run, and the shell version comes from this changelog.
 - `shell/assets/pam.d/passwd` (generated per machine) is no longer tracked.
 
-### Clean-up
-- Removed the unused mail service (its dashboard widget was removed earlier) and stale comments; leftover upstream
-  names (`caelestia-cli`, the upstream repository in User-Agent headers) now say JellyFace.
-
-## 1.1.0 (2026-10-15)
-
-Stability and polish release. No new features.
-
 ### Lock screen
 - The lock screen now **stays on screen**: COSMIC's screen-off and idle-suspend timers are set to *never* by
   `jellyface cosmic-tweaks` (undo with `--revert`), so a locked screen no longer turns black after a few minutes.
@@ -74,7 +103,7 @@ Stability and polish release. No new features.
   Before, the session stayed locked with nothing drawn to unlock it, and only a hard reboot helped.
 - `jellyface stop` / `restart` refuse to run while the screen is locked (`JF_FORCE=1` overrides).
 
-### Fixes and performance
+### Notifications and helpers
 - A JellyFace restart no longer bounces COSMIC's notification daemon, which restarted COSMIC's whole top panel and
   crashed its applets every time.
 - The workspace and window helpers back off (up to once a minute) instead of being restarted every 2 s when the
@@ -87,7 +116,10 @@ Stability and polish release. No new features.
 - `jellyface doctor` also checks the pin, COSMIC's lock-screen fallback and the always-on lock screen setting.
 
 ### Clean-up and documentation
+- Removed the unused mail service (its dashboard widget was removed earlier) and stale comments; leftover upstream
+  names (`caelestia-cli`, the upstream repository in User-Agent headers) now say JellyFace.
 - Removed upstream CI, Nix and editor files, the stale port patch and build caches.
+- `docs/BACKLOG.md` lists what is known and not fixed yet.
 - New README, architecture notes, security notes; JellyFace's own code is now MIT-licensed (`shell/` stays GPL-3.0).
 
 ## 1.0.0 (2026-10-14)
