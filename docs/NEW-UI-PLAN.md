@@ -1,6 +1,23 @@
 # New UI plan — codename "Drift" (working name)
 
-Branch: `ui-redesign`. Status: **plan only, nothing built yet.**
+Branch: `ui-redesign`. Status: **steps 0-9 built** (2026-10-20); step 10 (optional extras) not started.
+
+| Step | Commit | Checked |
+|---|---|---|
+| 0 Plumbing | 9ec57a8 | switching both ways, Classic fallback, fast socket (9 ms) |
+| 1 Style gallery | 467503c | screenshots, light and dark |
+| 2 Wallpaper, top bar, dock | 254c65c | screenshots |
+| 3 Control Center | 100b84c | screenshots (grid, Wi-Fi page with real networks) |
+| 4 Command bar, keyboard sheet | 374caee | screenshot (windows and apps listed) |
+| 5 Toasts, Today, power menu | 8ec885c | screenshot (Today with agenda and weather) |
+| 6 Appearance | 44ef633 | screenshot |
+| 7 Hints, desks, clipboard | d1bb810 | screenshots (desks with real windows, clipboard fan) |
+| 8 Lock screen | f994ac8 | load-checked only: not locked during the build (needs your password) |
+| 9 Hardening | this commit | drift-check clean in both interfaces, doctor, idle CPU 0 %, ~290 MB |
+
+Not done yet: the full `tests/stability.sh` run in Drift mode (it restarts the shell many times, so it waits until
+you are not using the desktop); keyboard shortcuts pressed for real (they can only be tested at the keyboard).
+The OSD was dropped: COSMIC already shows its own volume/brightness pop-up.
 
 A second, complete look for JellyFace that sits **next to** the current one ("Classic"). You choose one with
 `jellyface ui drift|classic`. Classic keeps working unchanged and remains the default until Drift is finished.
