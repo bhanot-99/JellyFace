@@ -5,6 +5,7 @@
   clipboard-store.py pin ID         pin / unpin an entry (pinned entries are never trimmed)
   clipboard-store.py delete ID      remove one entry
   clipboard-store.py clear          remove everything except pinned entries
+  clipboard-store.py copy ID        put an entry back on the clipboard
 
 History lives in ~/.local/state/jellyface/clipboard/history.json (newest first); images are saved next to it as PNG.
 Content that a password manager marks as sensitive is never stored.
@@ -123,8 +124,26 @@ def prune_orphans(entries):
                 pass
 
 
+def copy(entry_id):
+    """wl-copy gets the text on stdin: as an argument (how the shell used to pass it) anything over 128 KiB, the kernel's
+    limit for one argument, failed silently, and the history keeps text up to MAX_TEXT characters."""
+    e = next((e for e in load() if e["id"] == entry_id), None)
+    if not e:
+        return
+    try:
+        if e.get("kind") == "image":
+            with open(e["file"], "rb") as f:
+                subprocess.run(["wl-copy", "--type", "image/png"], stdin=f, stdout=subprocess.DEVNULL, timeout=10)
+        else:
+            subprocess.run(["wl-copy"], input=e.get("text", "").encode(), stdout=subprocess.DEVNULL, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+    if cmd == "copy" and len(sys.argv) > 2:
+        return copy(sys.argv[2])     # reads only: the history is replaced atomically, no lock needed
     os.makedirs(STATE, mode=0o700, exist_ok=True)
     try:
         os.chmod(STATE, 0o700)   # also for a history folder created by an older version
@@ -150,7 +169,7 @@ def main():
                     drop_file(e)
             entries = [e for e in entries if e.get("pinned")]
         else:
-            sys.exit("usage: clipboard-store.py add|pin ID|delete ID|clear")
+            sys.exit("usage: clipboard-store.py add|pin ID|delete ID|clear|copy ID")
         prune_orphans(entries)
         save(entries)
 

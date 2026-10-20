@@ -20,30 +20,28 @@ Singleton {
         open = !open;
     }
 
+    // through the store, which hands the text to wl-copy on stdin (an argument fails above 128 KiB)
     function copy(entry: var): void {
-        if (entry.kind === "image")
-            Quickshell.execDetached(["sh", "-c", "wl-copy --type image/png < \"$1\"", "_", entry.file]);
-        else
-            Quickshell.execDetached(["wl-copy", "--", entry.text]);
+        Quickshell.execDetached(["python3", "-I", script, "copy", entry.id]);
     }
 
     function togglePin(entry: var): void {
-        Quickshell.execDetached(["python3", script, "pin", entry.id]);
+        Quickshell.execDetached(["python3", "-I", script, "pin", entry.id]);
     }
 
     function remove(entry: var): void {
-        Quickshell.execDetached(["python3", script, "delete", entry.id]);
+        Quickshell.execDetached(["python3", "-I", script, "delete", entry.id]);
     }
 
     function clear(): void {
-        Quickshell.execDetached(["python3", script, "clear"]);
+        Quickshell.execDetached(["python3", "-I", script, "clear"]);
     }
 
     Process {
         id: watcher
 
         running: true
-        command: ["wl-paste", "--watch", "python3", root.script, "add"]
+        command: ["wl-paste", "--watch", "python3", "-I", root.script, "add"]
         onExited: restart.start()
     }
 

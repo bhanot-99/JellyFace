@@ -16,6 +16,17 @@ Searcher {
         return search.slice(GlobalConfig.launcher.actionPrefix.length);
     }
 
+    // The default actions were written for upstream's `caelestia` CLI. `jellyface shell <target> <function>` becomes an
+    // IPC call to this shell (the jellyface CLI has no `shell` command); null = nothing JellyFace can run
+    // (`jellyface wallpaper`: COSMIC owns the wallpaper). Other commands are returned unchanged.
+    function runnable(command: var): var {
+        if (command[0] !== "jellyface")
+            return command;
+        if (command[1] === "shell" && command.length > 3)
+            return ["quickshell", "ipc", "-p", Quickshell.shellDir, "call", ...command.slice(2)];
+        return null;
+    }
+
     list: variants.instances
     useFuzzy: GlobalConfig.launcher.useFuzzy.actions
 
@@ -24,7 +35,7 @@ Searcher {
 
         model: {
             const enableDangerous = GlobalConfig.launcher.enableDangerousActions;
-            return GlobalConfig.launcher.actions.values.filter(a => a.enabled && (enableDangerous || !a.dangerous));
+            return GlobalConfig.launcher.actions.values.filter(a => a.enabled && (enableDangerous || !a.dangerous) && root.runnable(a.command ?? []) !== null);
         }
 
         Action {}
@@ -51,7 +62,7 @@ Searcher {
             } else {
                 list.screenState.launcher = false;
                 if (!SessionManager.exec(command))
-                    Quickshell.execDetached(command);
+                    Quickshell.execDetached(root.runnable(command));
             }
         }
     }

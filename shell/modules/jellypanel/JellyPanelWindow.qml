@@ -84,14 +84,20 @@ Scope {
                 if (q.startsWith(">"))
                     return true;
                 if (q.length > 1 && win.shown.length === 0)
-                    return Actions.query(">" + q).length > 0;
+                    return win.actionsFor(">" + q).length > 0;
                 return false;
             }
             readonly property var matchedActions: {
                 if (!isActionQuery)
                     return [];
                 const q = search.text.trim();
-                return Actions.query(q.startsWith(">") ? q : ">" + q);
+                return actionsFor(q.startsWith(">") ? q : ">" + q);
+            }
+
+            // "autocomplete" actions switch the launcher into its calculator/scheme/wallpaper modes, which JellyPanel
+            // does not have: running them started a program called "autocomplete"
+            function actionsFor(q: string): var {
+                return Actions.query(q).filter(a => a.command[0] !== "autocomplete");
             }
 
             function runAction(action: var): void {
@@ -101,7 +107,7 @@ Scope {
                     Colours.setMode(action.command[1]);
                 } else {
                     if (!SessionManager.exec(action.command))
-                        Quickshell.execDetached(action.command);
+                        Quickshell.execDetached(Actions.runnable(action.command));
                 }
                 JellyPanel.open = false;
             }

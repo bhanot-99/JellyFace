@@ -88,7 +88,7 @@ Scope {
     Process {
         id: refresh
 
-        command: ["python3", Quickshell.shellPath("../scripts/agenda.py")]
+        command: ["python3", "-I", Quickshell.shellPath("../scripts/agenda.py")]
     }
 
     FileView {

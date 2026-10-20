@@ -19,12 +19,12 @@ Singleton {
     }
 
     function add(title: string, day: string, start: string, end: string, location: string): void {
-        Quickshell.execDetached(["python3", script, "add", title, day, start, end, location]);
+        Quickshell.execDetached(["python3", "-I", script, "add", title, day, start, end, location]);
     }
 
     function remove(id: string): void {
         // agenda.py refreshes the card by itself after removing (a second, parallel refresh could write the old list back)
-        Quickshell.execDetached(["python3", script, "remove", id]);
+        Quickshell.execDetached(["python3", "-I", script, "remove", id]);
     }
 
     IpcHandler {
