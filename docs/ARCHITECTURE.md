@@ -166,8 +166,8 @@ drift/
 ├── components/                 Glass, Tile, Slider, Toggle, ListRow, Segmented, Keycap, Sails (the wallpaper art) ...
 ├── stage/Stage.qml             one full-screen overlay window holding every pop-up surface (built once, shown/hidden)
 └── surfaces/                   ControlCenter (cc/), CommandBar, Today, Appearance, Hints, Desks, ClipboardCarousel,
-                                SessionMenu, KeysSheet, Gallery, DriftLockSurface, desktop/ (Wallpaper, TopBar, Dock,
-                                Osd, Toasts)
+                                SessionMenu, KeysSheet, Gallery, RightPanel, DriftLockSurface, desktop/ (Wallpaper,
+                                SideBar, Dock, LevelBars, TopEdge, Toasts); Classic's DynamicIsland in Drift colours
 ```
 
 - **Shortcuts** go through `jellyface ipc drift toggle <surface>`, which writes to Drift's socket from the host (a few ms).

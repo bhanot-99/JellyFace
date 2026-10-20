@@ -47,8 +47,9 @@ jellyface ui drift     # Drift: Super+Space command bar, Super+C Control Center,
 jellyface ui classic   # back to Classic
 ```
 
-Drift has a living "glass sails" wallpaper, floating top-bar pills, a glass dock, a Control Center whose tiles grow into
-their detail views, a command bar (apps, windows, settings, files, maths, units), window hints, a desk overview, a
+Drift works like Classic (side bar on the left, Dynamic Island at the top, dashboard from the top edge, notification
+panel and volume/brightness bars on the right, an auto-hiding dock) but looks new: a living "glass sails" wallpaper,
+glass everywhere, a Control Center whose tiles grow into their detail views, a command bar (apps, windows, settings, files, maths, units), window hints, a desk overview, a
 clipboard carousel, Today, Deep Focus, an Appearance window (light / dark / auto, accent, wallpaper, glass) and its own
 lock screen on the same secure lock. See [docs/NEW-UI-PLAN.md](docs/NEW-UI-PLAN.md).
 

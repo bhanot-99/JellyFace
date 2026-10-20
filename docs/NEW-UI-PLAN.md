@@ -15,6 +15,12 @@ Branch: `ui-redesign`. Status: **steps 0-9 built** (2026-10-20); step 10 (option
 | 8 Lock screen | f994ac8 | load-checked only: not locked during the build (needs your password) |
 | 9 Hardening | this commit | drift-check clean in both interfaces, doctor, idle CPU 0 %, ~290 MB |
 
+**Change of direction (2026-10-20, after the build):** Drift keeps Classic's way of working and only changes the look:
+a left side bar replaces the top bar, Classic's Dynamic Island sits at the top centre, the top edge opens Today (like
+Classic's dashboard), the bell opens a right panel (notifications + quick toggles), volume/brightness bars slide in on
+the right, and the dock hides while a window is on the desk. Classic's left launcher is gone; the command bar replaces
+it. Commit 1ca9b64. Sections 3 and 6 below describe the first version.
+
 Not done yet: the full `tests/stability.sh` run in Drift mode (it restarts the shell many times, so it waits until
 you are not using the desktop); keyboard shortcuts pressed for real (they can only be tested at the keyboard).
 The OSD was dropped: COSMIC already shows its own volume/brightness pop-up.
