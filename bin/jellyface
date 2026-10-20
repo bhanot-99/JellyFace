@@ -61,12 +61,16 @@ cmd_stop() {
     if [ -z "${INVOCATION_ID:-}" ] && [ "${JF_FORCE:-0}" != 1 ] && locked_by_shell; then
         die "the screen is locked by JellyFace; not stopping it now (JF_FORCE=1 overrides)"
     fi
+    local via_service=0
     if use_service && systemctl --user is-active --quiet jellyface.service; then
         systemctl --user stop jellyface.service    # its ExecStopPost runs this command again, inside the service
+        via_service=1
     fi
     local p; p="$(supervisor_pid || true)"
     if [ -z "$p" ]; then
-        pkill -f "$JF_QS_RE" 2>/dev/null && log "stopped stray shell" || log "not running"
+        if pkill -f "$JF_QS_RE" 2>/dev/null; then log "stopped stray shell"
+        elif [ "$via_service" = 1 ]; then log "stopped"
+        else log "not running"; fi
         lock_handover
         return 0
     fi
@@ -210,7 +214,7 @@ case "${1:-help}" in
     fix-icons)     shift; exec "$JF_ROOT/scripts/fix-icons.sh" "$@" ;;
     cosmic-tweaks) shift; exec "$JF_ROOT/scripts/cosmic-tweaks.sh" "$@" ;;
     greeter)       shift; exec "$JF_ROOT/scripts/greeter.sh" "$@" ;;
-    demo-island)   shift; exec python3 "$JF_ROOT/tests/demo-island.py" "$@" ;;
+    demo-island)   shift; exec python3 -I "$JF_ROOT/tests/demo-island.py" "$@" ;;
     pop-all)       shift; exec "$JF_ROOT/scripts/pop-all.sh" "$@" ;;
     doctor)        cmd_doctor ;;
     help|-h|--help) usage ;;

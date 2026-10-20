@@ -14,13 +14,14 @@ exec 9>"$LOCK"
 flock -n 9 || { log "already running"; exit 0; }
 echo $$ > "$PIDFILE"
 
-child=0 guard=0
+child=0 guard=0 rotator=0
 # set while COSMIC's notification daemon has been displaced; kept across a restart, so the final stop still hands back
 TOOK="$RUNTIME/jellyface.took-notifications"
 RESTARTING="$RUNTIME/jellyface.restarting"
 cleanup() {   # stop our own children and the shell, never anything else
     rm -f "$PIDFILE"
     [ "$guard" -gt 0 ] && { pkill -P "$guard" 2>/dev/null; kill "$guard" 2>/dev/null; }
+    [ "$rotator" -gt 0 ] && { pkill -P "$rotator" 2>/dev/null; kill "$rotator" 2>/dev/null; }   # and its `sleep`
     [ "$child" -gt 0 ] && kill "$child" 2>/dev/null
     pkill -P $$ 2>/dev/null
     pkill -f "$JF_QS_RE" 2>/dev/null
@@ -31,6 +32,8 @@ cleanup() {   # stop our own children and the shell, never anything else
     elif [ -e "$TOOK" ]; then rm -f "$TOOK"; pkill -x cosmic-notifica 2>/dev/null; fi
     rm -f "$RESTARTING"
     lock_handover
+    for _ in $(seq 1 20); do pgrep -f "$JF_QS_RE" >/dev/null || break; sleep 0.1; done
+    reap_orphans
     return 0
 }
 trap cleanup EXIT
@@ -48,6 +51,7 @@ if pgrep -f "$JF_QS_RE|$JF_WSD_RE|$JF_WIND_RE" >/dev/null; then
     pkill -f "$JF_QS_RE" 2>/dev/null; pkill -f "$JF_WSD_RE" 2>/dev/null; pkill -f "$JF_WIND_RE" 2>/dev/null
     for _ in $(seq 1 40); do pgrep -f "$JF_QS_RE" >/dev/null || break; sleep 0.1; done
 fi
+reap_orphans   # also the clipboard watchers and network monitors that earlier versions left behind on every restart
 
 # --- preflight ---------------------------------------------------------------
 container_exists || die "container '$JF_CONTAINER' does not exist. Run: jellyface install"
@@ -98,16 +102,26 @@ notif_check() {
 }
 notif_guard() {
     local line
-    sleep 3; notif_check
+    # Subscribe first, check after: COSMIC respawns its daemon within a second of the first kill, and a check made
+    # before dbus-monitor was listening missed that registration (the shell then had no notifications all session).
+    # A check every 30 s covers anything the monitor still misses.
+    sleep 3
     dbus-monitor --session "type='signal',sender='org.freedesktop.DBus',member='NameOwnerChanged',arg0='$JF_NOTIF_NAME'" 2>/dev/null |
-        while read -r line; do
-            case "$line" in *NameOwnerChanged*) ( sleep 1.5; notif_check ) ;; esac
-        done
+        { sleep 0.5; notif_check
+          while :; do
+            if read -r -t 30 line; then
+                case "$line" in *NameOwnerChanged*) ( sleep 1.5; notif_check ) ;; esac
+            else
+                [ $? -gt 128 ] || break      # EOF (not a timeout)
+                notif_check
+            fi
+          done; }
 }
 
 mkdir -p "$JF_ROOT/logs"
 # the logs used to be rotated only when the shell started: a session that runs for weeks grew them without limit
 ( while sleep 600; do jf_rotate "$JF_ROOT/logs/jellyface.log"; jf_rotate "$JF_ROOT/logs/theme.log" 1048576; done ) 9>&- >/dev/null 2>&1 &
+rotator=$!
 watcher=0
 notif_guard 9>&- >/dev/null 2>&1 &
 guard=$!
@@ -147,6 +161,8 @@ while :; do
     rc=$?
     child=0
     lock_handover     # died while locked: COSMIC's lock screen takes over at once, the restarted shell does not re-lock
+    for _ in $(seq 1 20); do pgrep -f "$JF_QS_RE" >/dev/null || break; sleep 0.1; done
+    reap_orphans
     [ "$rc" -eq 124 ] && { log "timeout reached, stopping"; break; }
     [ "$rc" -eq 0 ]   && { log "shell exited normally"; break; }
 

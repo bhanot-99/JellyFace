@@ -14,6 +14,10 @@ JF_QS_RE="^quickshell -p ${JF_SHELL}\$"
 JF_WSD_RE="^${JF_SHELL}/\\.\\./helpers/cosmic-ws/wsd\$"
 JF_WIND_RE="^${JF_SHELL}/\\.\\./helpers/cosmic-windows/wind\$"
 JF_SUP_RE="^((/usr)?/bin/)?bash ${JF_ROOT}/scripts/run\\.sh"
+# Long-running programs the shell starts inside the container. Quickshell does not stop them when it is terminated or
+# crashes, so they outlived every restart (reparented to the container's conmon) and piled up: one more clipboard
+# watcher per restart, each recording every copy again.
+JF_ORPHAN_RE="^(/usr)?(/s?bin/)?wl-paste --watch python3 -I ${JF_SHELL}/\\.\\./scripts/clipboard-store\\.py add\$|^(/usr)?(/s?bin/)?nmcli monitor\$"
 JF_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/jellyface"
 JF_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/jellyface"
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
@@ -106,6 +110,20 @@ ws_ready() {
     read -r -t 3 -u "$fd" line
     exec {fd}<&-
     [[ "$line" == *'"ws"'* ]]
+}
+
+# reap_orphans: stop those programs once their shell is gone. Only orphans inside the container are touched (their
+# parent is no longer a quickshell; they were reparented to conmon or the user's systemd): the running shell's own
+# children, and anything on the host, keep running.
+reap_orphans() {
+    local p pp host_ns
+    host_ns="$(readlink /proc/self/ns/mnt)"
+    for p in $(pgrep -f "$JF_ORPHAN_RE"); do
+        [ "$(readlink "/proc/$p/ns/mnt" 2>/dev/null)" != "$host_ns" ] || continue
+        pp="$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')"
+        [ "$(cat "/proc/$pp/comm" 2>/dev/null)" = quickshell ] || kill "$p" 2>/dev/null
+    done
+    return 0
 }
 
 # --- notifications -----------------------------------------------------------------------------------------------
