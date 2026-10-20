@@ -70,6 +70,8 @@ check "exactly one of each at the end" '[ "$(n_sup)" -eq 1 ] && [ "$(n_shell)" -
 # the shell's clipboard watcher and network monitor used to survive every restart and pile up
 sleep 3
 check "no leftover clipboard watchers / network monitors" '[ "$(pgrep -fc "$JF_ORPHAN_RE")" -le 2 ]'
+# laptops: exactly one lid handler holds logind's lid inhibitor (scripts/lid.sh), none left from earlier runs
+check "one lid inhibitor (laptops only)" '[ "$(busctl get-property org.freedesktop.UPower /org/freedesktop/UPower org.freedesktop.UPower LidIsPresent 2>/dev/null)" != "b true" ] || [ "$(systemd-inhibit --list --no-pager | grep -c "^JellyFace ")" -eq 1 ]'
 
 echo "6. invalid config does not prevent startup"
 "$JF" stop >/dev/null; sleep 1
