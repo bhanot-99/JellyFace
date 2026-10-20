@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.0 (2026-10-20)
 
 ### Quill UI: a second interface (opt-in)
 JellyFace now has two complete looks. **Classic** is unchanged and stays the default; **Quill UI** is new: calm pastel

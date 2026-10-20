@@ -4,11 +4,11 @@
 
 <p align="center">
   <b>A frosted-glass desktop shell for COSMIC on Pop!_OS</b><br>
-  Bar · dashboard · dock · full-screen app grid · lock screen · notifications · clipboard history, on top of the COSMIC desktop you already have.
+  Two complete interfaces, Classic and the new Quill UI: bar · dashboard · dock · command bar · Control Center · lock screen · notifications · clipboard history, on top of the COSMIC desktop you already have.
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-1.1.0-8ab4f8">
+  <img alt="version" src="https://img.shields.io/badge/version-2.0.0-8ab4f8">
   <img alt="platform" src="https://img.shields.io/badge/Pop!__OS%2024.04-COSMIC-48b9c7">
   <img alt="licence" src="https://img.shields.io/badge/licence-MIT%20%2B%20GPL--3.0%20(shell)-lightgrey">
 </p>
@@ -52,7 +52,8 @@ Quill UI works like Classic (side bar on the left, Dynamic Island at the top, da
 panel and volume/brightness bars on the right, an auto-hiding dock) but looks new: a living "glass sails" wallpaper,
 glass everywhere, a Control Center whose tiles grow into their detail views, a command bar (apps, windows, settings, files, maths, units), window hints, a desk overview, a
 clipboard carousel, Today, Deep Focus, an Appearance window (light / dark / auto, accent, wallpaper, glass) and its own
-lock screen on the same secure lock. See [docs/NEW-UI-PLAN.md](docs/NEW-UI-PLAN.md).
+lock screen on the same secure lock. See [docs/NEW-UI-PLAN.md](docs/NEW-UI-PLAN.md) and
+[Using Quill UI](#using-quill-ui).
 
 | Classic | |
 |---|---|
@@ -174,6 +175,30 @@ Add more calendars with `jellyface agenda add-source <url>`, and festivals / pub
 `jellyface agenda holidays indian` (or `usa`, `uk`, `christian`, `hindu` ...). The dashboard calendar shows a dot under
 every day with something on it (tertiary colour = holiday) and lists the titles when you hover.
 
+### Using Quill UI
+
+| Do this | To get this |
+|---|---|
+| **Super+Space** (or **Super**) | Command bar: apps, open windows, settings, actions, files, maths (`24*7`) and units (`5 km in mi`) |
+| **Super+C**, or a status icon on the side bar | Control Center (its tiles open into Wi-Fi, Bluetooth, Sound, Focus, Battery, Notifications) |
+| **Super+E** | Window hints: press a window's letter to jump to it |
+| **Super+W** or **Super+D** | Desks: every workspace and its windows |
+| **Super+V** | Clipboard carousel (←/→, type to filter, Enter copies back, Delete removes, Ctrl+P pins) |
+| **Super+P** | Appearance: theme, accent, wallpaper, glass, dock and bar |
+| **Super+Shift+F** | Deep Focus: Do Not Disturb, a timer on the side bar, the dock steps aside |
+| **Super+Shift+/** | Every Quill shortcut |
+| Rest the cursor on the **top edge** (or click the clock) | Today: Dashboard, Media, Performance and Weather tabs |
+| Cursor in the **top-right corner**, or the bell | The right panel: notifications and quick toggles |
+| Rest the cursor on the **middle of the right edge** | Volume and brightness bars (they also appear when either changes) |
+| Cursor on the **bottom edge** | The dock, when it has hidden for a window |
+| Scroll on the side bar | Volume (top half) or brightness (bottom half) |
+| **Escape** or a click outside | Close whatever is open |
+
+From scripts: `jellyface ipc quill toggle|open <surface>` (`command`, `cc`, `hints`, `desks`, `clipboard`, `today`,
+`appearance`, `keys`, `session`, `panel`), `jellyface ipc quill cc wifi`, `jellyface ipc quill dashboard 1`,
+`jellyface ipc quill search "text"`, and `jellyface ipc quill open lockpreview` to see the lock screen without locking.
+Classic's `jellyface ipc drawers ...` calls keep working in Quill.
+
 ## Lock screen and idle behaviour
 
 - After **3 minutes** without input (or **Super+L**), JellyFace's lock screen appears and **stays on screen**:
@@ -197,6 +222,8 @@ every day with something on it (tertiary colour = holiday) and lists the titles 
 | `~/.config/jellyface/shell-tokens.json` | Sizes of the dashboard, cards and components |
 | `~/.config/jellyface/dock.json` | Dock apps |
 | `~/.config/jellyface/desktop.json` | Agenda card (`"enabled": false` hides it) |
+| `~/.config/jellyface/quill.json` | Quill UI's look (written by its Appearance window): theme, accent, wallpaper, glass, dock and bar |
+| `~/.config/jellyface/ui` | Which interface runs: `quill` or `classic` (set by `jellyface ui` / `jellyface switch`) |
 | `~/.local/state/jellyface/scheme.json` | Colours (written automatically) |
 | `config/icon-aliases.txt` | Tray icons that ask for a name nobody ships (`jellyface fix-icons` applies them) |
 
@@ -251,12 +278,15 @@ If you ever want newer Quickshell/Qt in the container: comment out the `IgnorePk
 | Weather shows `--` | The weather service was unreachable; it retries by itself |
 | Rebuild from scratch | `jellyface build` (recreates the build caches) |
 | Editing the QML | `JF_DEV=1 jellyface start` enables live reload |
+| Quill UI shows Classic instead | Quill failed to load and Classic stepped in: `tests/quill-check.sh` prints the error |
 
 ## Command reference
 
 ```
 jellyface install | build | doctor | help
 jellyface start [--timeout N] [--foreground] | stop | restart | status
+jellyface switch                         Quill UI <-> Classic (restarts the shell)
+jellyface ui quill|classic|toggle|status choose the interface
 jellyface service on|off|status          start with the COSMIC session (systemd user service)
 jellyface integrate [--yes]              service + tweaks + applet + theming, after a confirmation
 jellyface revert-system [--list]         undo every change made outside ~/JellyFace
@@ -288,7 +318,7 @@ rm -rf ~/JellyFace               # copy backups/ somewhere first if you want to 
 ## Project layout
 
 ```
-bin/jellyface        command line          shell/      the Quickshell shell (QML + C++ plugin)
+bin/jellyface        command line          shell/      the Quickshell shell (QML + C++ plugin); shell/quill: Quill UI
 scripts/             install, build, supervisor, theming, COSMIC tweaks, revert
 helpers/             C helpers for COSMIC workspaces and windows
 native/              native COSMIC panel applet (Rust)     tools/  COSMIC theme writer (Rust)
