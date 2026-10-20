@@ -38,7 +38,7 @@ Item {
     }
 
     // the command is built here, not bound: started in the same change, a binding could still hold the old folder
-    function list(): void {
+    function scan(): void {
         videos = [];
         lister.running = false;
         if (!dir)
@@ -47,8 +47,8 @@ Item {
         lister.running = true;
     }
 
-    onDirChanged: list()
-    Component.onCompleted: list()
+    onDirChanged: scan()
+    Component.onCompleted: scan()
 
     Process {
         id: lister
