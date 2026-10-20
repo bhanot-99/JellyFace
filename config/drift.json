@@ -1,0 +1,11 @@
+{
+  "theme": "light",
+  "accent": "indigo",
+  "wallpaper": "mist",
+  "living": true,
+  "transparency": 0.5,
+  "frost": 0.7,
+  "dock": "always",
+  "bar": "full",
+  "focusMinutes": 25
+}

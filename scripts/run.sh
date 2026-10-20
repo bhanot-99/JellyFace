@@ -73,6 +73,7 @@ validate_json "$JF_CONFIG_DIR/shell-tokens.json" "$JF_ROOT/config/shell-tokens.j
 validate_json "$JF_STATE_DIR/scheme.json"        "$JF_ROOT/config/scheme.json"
 validate_json "$JF_CONFIG_DIR/dock.json"         "$JF_ROOT/config/dock.json"
 validate_json "$JF_CONFIG_DIR/desktop.json"      "$JF_ROOT/config/desktop.json"
+validate_json "$JF_CONFIG_DIR/drift.json"        "$JF_ROOT/config/drift.json"
 
 # The lock screen's PAM stack checks the typed password against the HOST account; it needs the absolute path to
 # this checkout, so (re)generate it from the template (only when it changed, to leave the file alone otherwise).
@@ -151,9 +152,10 @@ while :; do
     export QS_ICON_THEME="$4"
     unset QT_QPA_PLATFORMTHEME
     export PATH="$5:$PATH"   # notify-send shim (neither the host nor the container ships libnotify)
+    export JF_UI="$6"        # which interface shell.qml loads: drift or classic (jellyface ui)
     if [ "$3" -gt 0 ]; then timeout "$3" quickshell -p "$2"; else quickshell -p "$2"; fi 2>&1 | sed -u "s/\x1b\[[0-9;]*m//g"
     exit "${PIPESTATUS[0]}"
-    ' "$JF_INSTALL" "$JF_SHELL" "$remaining" "$ICON_THEME" "$JF_ROOT/scripts/shims" 9>&- &
+    ' "$JF_INSTALL" "$JF_SHELL" "$remaining" "$ICON_THEME" "$JF_ROOT/scripts/shims" "$(jf_ui)" 9>&- &
     child=$!
 
     # wallpaper theming watcher: started after the shell so it never competes with it for CPU at login

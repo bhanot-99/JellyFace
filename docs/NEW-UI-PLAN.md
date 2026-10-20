@@ -102,8 +102,10 @@ shell/
     └── DriftState.qml     which surface is open, the keyboard-focus owner, and the fast IPC socket
 ```
 
-- **No Classic code is changed.** The only shared edits are additive: `run.sh` and `bin/jellyface` learn
-  `ui drift|classic`, and `shell.json` gets `"ui": "classic"` (the default).
+- **Classic's code is unchanged.** `shell.qml` now holds only what both share (services, lock, idle, battery, area
+  picker) and loads `ClassicShell.qml` (Classic's former contents, as they were) or `drift/DriftShell.qml`. Drift is
+  compiled first; if it fails to load, Classic starts instead. `jellyface ui drift|classic` writes
+  `~/.config/jellyface/ui` and restarts; `run.sh` passes it in as `JF_UI`.
 - **Shared services stay single.** The notification server, clipboard watcher, idle/lock monitors and the lock-safety
   flag (`jellyface-locked`) all run from the same singletons, so both UIs behave the same under the hood. Only one UI
   runs at a time.
@@ -119,18 +121,21 @@ shell/
 
 ## 6. Shortcut map (Drift)
 
-| Keys | Action | Conflict with COSMIC's defaults |
+Installed by `jellyface ui drift` (`config/drift-shortcuts.ron`) and removed again by `jellyface ui classic`. Keys that
+COSMIC already uses were avoided except Super+Space (decided).
+
+| Keys | Action | Notes |
 |---|---|---|
-| Super+Space | Command bar | **Yes:** COSMIC uses it to switch keyboard layout. **Decided:** Drift takes it over and `ui classic` gives it back. |
-| Super | (Classic: JellyPanel) | In Drift: also the command bar, or unused. **Decision needed.** |
-| Super+C | Control Center | free |
-| Super+J | Window hints | **Yes:** COSMIC uses it for Focus(Down) (vim-style). Alternative: Super+G. **Decision needed.** |
-| Super+W | Desks overview | **Yes:** COSMIC's own workspace overview. Drift's would replace it. |
+| Super+Space | Command bar | takes over COSMIC's keyboard-layout switch while Drift is on |
+| Super | Command bar | Classic's JellyPanel shortcut; in Drift it opens the command bar |
+| Super+C | Control Center | free in COSMIC |
+| Super+E | Window hints | free (Super+J/G are COSMIC's focus-down / floating) |
+| Super+D | Desks overview | free (COSMIC's own overview stays on Super+W) |
+| Super+P | Appearance | free (Super+, is COSMIC's zoom out) |
+| Super+Shift+/ | Keyboard sheet | free |
 | Super+V | Clipboard | already JellyFace's |
 | Super+Shift+F | Deep Focus | already JellyFace's |
 | Super+L | Lock | already JellyFace's |
-| Super+, | Appearance | free |
-| Super+Shift+/ | Keyboard sheet | free |
 
 ## 7. Build order, with a checkpoint after every step
 
@@ -168,11 +173,11 @@ Decided (2026-10-20):
 - **Command bar: Super+Space**, taking over COSMIC's keyboard-layout switch while Drift is on (put back by `ui classic`).
 - **Default look: light pastel.** Dark and Auto are in Appearance.
 - **Step 1 is a live QML gallery**, not Figma.
+- Plain Super opens the command bar in Drift; window hints on Super+E, desks on Super+D, appearance on Super+P
+  (free keys, so COSMIC's own bindings stay).
 - Classic's pending hover-intent work was committed to `main` (412a0b9) and this branch was rebased onto it.
 
 Still open:
 
 1. The name: "Drift" is a placeholder.
-2. What plain Super does in Drift (nothing, the command bar too, or JellyPanel as in Classic).
-3. Window hints on Super+J (overriding COSMIC's focus-down) or Super+G.
-4. The Tidepool Figma direction: shelved in favour of this?
+2. The Tidepool Figma direction: shelved in favour of this?

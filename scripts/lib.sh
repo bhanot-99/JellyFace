@@ -22,6 +22,10 @@ JF_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/jellyface"
 JF_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/jellyface"
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
 
+# Which interface the shell shows: "drift" or "classic" (the default). `jellyface ui` sets it.
+JF_UI_FILE="$JF_CONFIG_DIR/ui"
+jf_ui() { [ "$(tr -d '[:space:]' < "$JF_UI_FILE" 2>/dev/null)" = drift ] && echo drift || echo classic; }
+
 log()  { printf '\033[1;35m[jellyface]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[jellyface] warning:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31m[jellyface] error:\033[0m %s\n' "$*" >&2; exit 1; }

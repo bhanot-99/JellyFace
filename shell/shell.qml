@@ -5,14 +5,11 @@
 //@ pragma DefaultEnv QT_QUICK_FLICKABLE_WHEEL_DECELERATION=10000
 
 import "modules"
-import "modules/drawers"
-import "modules/dock"
-import "modules/clipboard"
-import "modules/jellypanel"
-import "modules/island"
-import "modules/agenda"
 import "modules/areapicker"
 import "modules/lock"
+// never used as a type here (Drift is compiled by path below); this import is only how Quickshell finds drift/ and
+// its qs.drift module
+import "drift" as DriftFiles
 import QtQuick
 import Quickshell
 import qs.services
@@ -20,9 +17,21 @@ import qs.services
 ShellRoot {
     id: root
 
+    // Which interface runs: "drift" (the new one, drift/) or Classic. Set by `jellyface ui`, which writes
+    // ~/.config/jellyface/ui and restarts the shell; scripts/run.sh passes it in as JF_UI.
+    readonly property bool wantDrift: Quickshell.env("JF_UI") === "drift"
+    // Drift is compiled separately: if it ever fails to load, Classic comes up instead of a desktop with nothing on it
+    readonly property Component driftShell: wantDrift ? Qt.createComponent(Qt.resolvedUrl("drift/DriftShell.qml")) : null
+    readonly property bool drift: driftShell !== null && driftShell.status === Component.Ready
+
     // Live reload on every saved QML file is a development aid: for everyone else it only meant half-saved edits (or a
     // `git pull`) briefly loading a broken shell. JF_DEV=1 jellyface start turns it back on.
     settings.watchFiles: Quickshell.env("JF_DEV") === "1"
+
+    Component.onCompleted: {
+        if (wantDrift && !drift)
+            console.warn(`drift: failed to load, starting Classic instead: ${driftShell?.errorString() ?? ""}`);
+    }
 
     Binding {
         target: ShellState
@@ -33,21 +42,24 @@ ShellRoot {
     GSFLoader {}
     ServiceLoader {}
 
-    Dock {}
-    JellyPanelWindow {}
-    DynamicIsland {}
-    Drawers {}
+    // Shared by both interfaces: the lock screen (and its safety net), idle handling, battery warnings, area picker
     AreaPicker {}
-    ClipboardPopup {}
-    Agenda {}
-    EventForm {}
     Lock {
         id: lock
     }
-
-    Shortcuts {}
     BatteryMonitor {}
     IdleMonitors {
         lock: lock
+    }
+
+    LazyLoader {
+        active: !root.drift
+
+        ClassicShell {}
+    }
+
+    LazyLoader {
+        active: root.drift
+        component: root.driftShell
     }
 }

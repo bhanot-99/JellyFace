@@ -101,6 +101,11 @@ cmd_ipc() {
     if [ "${1:-}" = jellypanel ] && [[ "${2:-}" =~ ^(toggle|open|close)$ ]] && [ -S "$sock" ] && command -v nc >/dev/null; then
         printf '%s\n' "$2" | nc -NU "$sock" 2>/dev/null && return 0
     fi
+    # the same for Drift's surfaces (shortcuts: config/drift-shortcuts.ron)
+    sock="${XDG_RUNTIME_DIR:-/tmp}/jellyface-drift.sock"
+    if [ "${1:-}" = drift ] && [[ "${2:-}" =~ ^(toggle|open|close)$ ]] && [[ "${3:-}" =~ ^[a-z]*$ ]] && [ -S "$sock" ] && command -v nc >/dev/null; then
+        printf '%s %s\n' "$2" "${3:-}" | nc -NU "$sock" 2>/dev/null && return 0
+    fi
     in_container 'quickshell ipc -p "$1" call "${@:2}"' "$JF_SHELL" "$@"
 }
 
@@ -157,6 +162,7 @@ JellyFace -- a desktop shell for COSMIC (Pop!_OS)
                                   start the shell (--timeout N exits after N seconds: safe for testing)
   jellyface stop | restart | status
   jellyface ipc <target> <fn> [args]   e.g.  jellyface ipc drawers toggle launcher
+  jellyface ui drift|classic|status   choose the interface: Drift (new) or Classic (see docs/NEW-UI-PLAN.md)
   jellyface lock                  lock the screen with JellyFace's own lock screen (Super+L does the same)
   jellyface notify [-u low|normal|critical] [-a app] [-i icon] SUMMARY [BODY]
                                   send a desktop notification (e.g. to test the notification panel)
@@ -196,6 +202,7 @@ case "${1:-help}" in
     ipc)           shift; cmd_ipc "$@" ;;
     autostart)     shift; cmd_autostart "$@" ;;
     lock)          exec "$0" ipc lock lock ;;
+    ui)            shift; exec "$JF_ROOT/scripts/ui.sh" "$@" ;;
     overview)      shift; exec cosmic-workspaces "$@" ;;
     cosmic-dock)   shift; exec "$JF_ROOT/scripts/cosmic-dock.sh" "$@" ;;
     cosmic-panel)  shift; exec "$JF_ROOT/scripts/cosmic-panel.sh" "$@" ;;
