@@ -616,30 +616,40 @@ WlSessionLockSurface {
                     }
                 }
 
-                // the notifications that came in
+                // the notifications that came in: as tall as they need (three at most), one line when there are none
                 Tile {
+                    id: notifTile
+
+                    readonly property var items: [...Notifs.notClosed].reverse().slice(0, 3)
+
                     width: parent.width
-                    height: card.height - card.pad * 2 - 190 - 14
+                    height: items.length > 0 ? notifList.y + notifList.implicitHeight + 14 : 50
                     interactive: false
                     clip: true
+
+                    Behavior on height {
+                        Anim {}
+                    }
 
                     Text {
                         x: 18
                         y: 16
-                        text: Notifs.notClosed.length > 0 ? `${Notifs.notClosed.length} notification${Notifs.notClosed.length === 1 ? "" : "s"}` : "No notifications"
+                        text: Notifs.notClosed.length > 3 ? `${Notifs.notClosed.length} notifications · newest 3` : Notifs.notClosed.length > 0 ? `${Notifs.notClosed.length} notification${Notifs.notClosed.length === 1 ? "" : "s"}` : "No notifications"
                         font.family: Theme.mono
                         font.pixelSize: 13
                         color: Theme.textSecondary
                     }
 
                     Column {
+                        id: notifList
+
                         x: 12
                         y: 46
                         width: parent.width - 24
                         spacing: 6
 
                         Repeater {
-                            model: [...Notifs.notClosed].reverse().slice(0, 6)
+                            model: notifTile.items
 
                             NotificationCard {
                                 required property var modelData
