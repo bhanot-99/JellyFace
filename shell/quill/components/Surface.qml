@@ -15,6 +15,9 @@ FocusScope {
     property real rise: 10
     // fully shown (1) or gone (0): surfaces animate their own parts from this
     property real progress: active ? 1 : 0
+    // The compositor's blur can't fade, only switch on or off, so it is kept only while the surface is mostly shown;
+    // held to the end of the fade-out it lingers as a blurred footprint of a pane that has already faded away.
+    readonly property bool frosted: progress > 0.5
 
     visible: progress > 0.001
     opacity: progress

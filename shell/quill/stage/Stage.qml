@@ -66,7 +66,7 @@ Scope {
             Region {
                 id: blur
 
-                regions: win.surfaces.filter(s => s.visible && s.blur).map(s => s.blur)
+                regions: win.surfaces.filter(s => s.frosted && s.blur).map(s => s.blur)
             }
 
             // a click anywhere outside a surface closes it
