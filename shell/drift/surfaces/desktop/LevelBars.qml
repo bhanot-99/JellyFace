@@ -6,8 +6,9 @@ import qs.drift
 import qs.drift.components
 
 // Classic's right-edge volume and brightness bars, in Drift's glass: whenever the volume, the microphone or the
-// brightness changes (keys, scrolling on the side bar, another app), tall sliders slide in at the right edge for a
-// moment. Hovering keeps them; drag or scroll to adjust. Not while the right panel is open.
+// brightness changes (keys, scrolling on the side bar, another app), or the cursor rests on the middle of the right
+// edge, tall sliders slide in there. Hovering keeps them; drag or scroll to adjust. Not while the right panel is open.
+// The top-right corner opens the right panel.
 Scope {
     id: root
 
@@ -70,6 +71,47 @@ Scope {
 
         target: root.monitor
         ignoreUnknownSignals: true
+    }
+
+    // The right edge, as in Classic: the cursor in the top-right corner opens the right panel; resting on the middle of
+    // the edge shows these bars for as long as it stays (and a moment after).
+    property bool edgeHover
+
+    onEdgeHoverChanged: {
+        if (edgeHover && DriftState.open !== "panel") {
+            showMic = false;
+            shown = true;
+            hide.stop();
+        } else if (!edgeHover && shown) {
+            hide.restart();
+        }
+    }
+
+    PanelWindow {
+        screen: Quickshell.screens[0]
+        visible: !CosmicWindows.fullscreen && DriftState.open === ""
+        WlrLayershell.namespace: "jellyface-drift-right-edge"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.exclusionMode: ExclusionMode.Ignore
+        anchors.top: true
+        anchors.bottom: true
+        anchors.right: true
+        implicitWidth: 2
+        color: "transparent"
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            onPositionChanged: e => {
+                if (e.y < 60) {
+                    root.edgeHover = false;
+                    DriftState.show("panel");
+                } else {
+                    root.edgeHover = Math.abs(e.y - height / 2) < 160;
+                }
+            }
+            onExited: root.edgeHover = false
+        }
     }
 
     PanelWindow {
