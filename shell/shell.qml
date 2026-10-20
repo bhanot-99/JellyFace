@@ -29,8 +29,28 @@ ShellRoot {
     settings.watchFiles: Quickshell.env("JF_DEV") === "1"
 
     Component.onCompleted: {
-        if (wantDrift && !drift)
+        if (wantDrift && !drift) {
             console.warn(`drift: failed to load, starting Classic instead: ${driftShell?.errorString() ?? ""}`);
+            // tests/drift-check.sh: compile every Drift file on its own, so the real error shows, not just "Type X
+            // unavailable" from the file that uses it
+            const files = (Quickshell.env("JF_DRIFT_PROBE") ?? "").split(" ").filter(f => f);
+            for (const f of files) {
+                const c = Qt.createComponent(Qt.resolvedUrl(f));
+                if (c.status !== Component.Ready)
+                    console.warn(`drift: probe ${f}: ${c.errorString()}`);
+            }
+            // and the type named in the error, loaded through its module as Drift does
+            const type = (driftShell?.errorString() ?? "").match(/Type (\w+) unavailable/)?.[1];
+            const file = files.find(f => f.endsWith(`/${type}.qml`));
+            if (file) {
+                const mod = "qs." + file.split("/").slice(0, -1).join(".");
+                try {
+                    Qt.createQmlObject(`import ${mod}\n${type} {}`, root, "probe").destroy();
+                } catch (e) {
+                    console.warn(`drift: probe ${mod}.${type}: ${JSON.stringify(e.qmlErrors ?? e.message)}`);
+                }
+            }
+        }
     }
 
     Binding {

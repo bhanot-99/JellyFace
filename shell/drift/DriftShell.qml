@@ -3,6 +3,7 @@ import Quickshell
 import qs.services
 import qs.drift
 import qs.drift.stage
+import qs.drift.surfaces.desktop
 
 // Drift: JellyFace's second interface (docs/NEW-UI-PLAN.md). shell.qml loads this or Classic, never both. The lock
 // screen, idle handling, battery warnings and every service are shared with Classic; everything drawn is Drift's own.
@@ -24,8 +25,13 @@ Scope {
         CosmicWindows;
         DriftState;
         DriftConfig;
+        DriftApps;
+        DeepFocus;
         console.info("drift: loaded");
     }
 
+    Wallpaper {}
+    TopBar {}
+    Dock {}
     Stage {}
 }
