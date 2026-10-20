@@ -98,6 +98,44 @@ CustomMouseArea {
         return x >= left && x <= right && y >= top && y <= bottom;
     }
 
+    // Cursor speed (px/ms, smoothed) and the last sample it was measured from
+    property real cursorSpeed
+    property point lastCursor
+    property real lastCursorTime
+
+    function trackSpeed(x: real, y: real): void {
+        const now = Date.now();
+        const dt = now - lastCursorTime;
+        if (dt > 0 && dt < 100)
+            cursorSpeed = cursorSpeed * 0.5 + Math.hypot(x - lastCursor.x, y - lastCursor.y) / dt * 0.5;
+        else
+            cursorSpeed = 0;
+        lastCursor = Qt.point(x, y);
+        lastCursorTime = now;
+    }
+
+    // Hover only opens the dashboard when the cursor is pushed against the very top edge, near the middle, and rests
+    // there: a flick up towards a title bar or tab never stops at y = 0, so it no longer opens it by accident. A cursor
+    // that slows down onto the edge is aimed at it and opens it sooner than one that slams into it.
+    function inDashboardTrigger(x: real, y: real): bool {
+        const halfWidth = 240;
+        const panel = panels.dashboard;
+        const panelW = (panel.width > 0 ? panel.width : panel.implicitWidth) || 854;
+        const centre = bar.implicitWidth + panel.x + panelW / 2;
+        return y <= 2 && x >= centre - halfWidth && x <= centre + halfWidth;
+    }
+
+    Timer {
+        id: dashboardOpenTimer
+
+        interval: DashboardPeek.dwell
+        onRunningChanged: DashboardPeek.active = running
+        onTriggered: {
+            root.screenState.dashboard = true;
+            dashboardCloseTimer.stop();
+        }
+    }
+
     Timer {
         id: dashboardCloseTimer
 
@@ -139,6 +177,7 @@ CustomMouseArea {
         if (!containsMouse) {
             overPanel = false;
             DockReveal.edge = false;
+            dashboardOpenTimer.stop();
         }
         if (!containsMouse) {
             // Only hide if not activated by shortcut
@@ -171,6 +210,7 @@ CustomMouseArea {
     }
 
     onPositionChanged: event => {
+        trackSpeed(event.x, event.y);
         updateOverPanel(event.x, event.y);
         // the bottom edge under the dock calls an auto-hidden dock back (modules/dock)
         DockReveal.edge = event.y >= root.height - borderThickness - 2 && event.x >= DockReveal.left && event.x <= DockReveal.right;
@@ -296,9 +336,11 @@ CustomMouseArea {
         // left the dashboard zone and the debounce timer expires (preventing animation flicker / minor movement glitches)
         if (Config.dashboard.showOnHover) {
             if (!screenState.dashboard) {
-                if (inTopPanel(panels.dashboard, x, y)) {
-                    screenState.dashboard = true;
-                    dashboardCloseTimer.stop();
+                if (pressed || !inDashboardTrigger(x, y)) {
+                    dashboardOpenTimer.stop();
+                } else if (!dashboardOpenTimer.running) {
+                    DashboardPeek.dwell = cursorSpeed < 0.8 ? 120 : 300;
+                    dashboardOpenTimer.start();
                 }
             } else if (!pressed) {
                 if (inDashboardZone(x, y)) {

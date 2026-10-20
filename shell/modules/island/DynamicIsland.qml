@@ -139,7 +139,7 @@ Scope {
     readonly property real morph: {
         const hMin = compactActive ? compactHeightActive : compactHeightIdle;
         const hMax = expandedHeight;
-        return Math.max(0, Math.min(1, (islandCapsule.height - hMin) / (hMax - hMin)));
+        return Math.max(0, Math.min(1, (islandCapsule.baseHeight - hMin) / (hMax - hMin)));
     }
 
     function lengthStr(length: real): string {
@@ -546,12 +546,23 @@ Scope {
             id: islandCapsule
 
             property bool expanded: false
+            // 0 → 1 over the dashboard's hover wait (services/DashboardPeek): the island is pulled down towards it
+            property real peek: DashboardPeek.active && !expanded && !root.suppressed ? 1 : 0
+            // the morph between states springs; the peek is added on top so it tracks the wait exactly
+            property real baseHeight: expanded ? root.expandedHeight : (root.compactActive ? root.compactHeightActive : root.compactHeightIdle)
+
+            Behavior on peek {
+                NumberAnimation {
+                    duration: DashboardPeek.active ? DashboardPeek.dwell : 260
+                    easing.type: DashboardPeek.active ? Easing.OutCubic : Easing.OutBack
+                }
+            }
 
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.horizontalCenterOffset: secondCapsule.shown ? -(root.splitGap + root.splitSecondWidth) / 2 : 0
             anchors.top: parent.top
             width: expanded ? root.expandedWidth : root.split ? root.splitPrimaryWidth : (root.compactActive ? root.compactWidthActive : root.compactWidthIdle)
-            height: expanded ? root.expandedHeight : (root.compactActive ? root.compactHeightActive : root.compactHeightIdle)
+            height: baseHeight + peek * 14
             radius: Math.min(height / 2, root.expandedRadius)
             color: root.colBg
             clip: true
@@ -632,7 +643,7 @@ Scope {
                 }
             }
 
-            Behavior on height {
+            Behavior on baseHeight {
                 SpringAnimation {
                     spring: root.springStiffness
                     damping: islandCapsule.expanded ? root.springDamping : root.springDampingCollapse
@@ -716,7 +727,7 @@ Scope {
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.top: parent.top
                 width: islandCapsule.width
-                height: islandCapsule.height
+                height: islandCapsule.baseHeight
                 opacity: root.morph < 0.25 ? Math.max(0, 1 - root.morph / 0.25) : 0
                 scale: 1 - 0.18 * blurAmt
                 transformOrigin: Item.Top
