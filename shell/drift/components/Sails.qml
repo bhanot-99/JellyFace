@@ -9,6 +9,8 @@ Item {
     id: root
 
     property string mood: DriftConfig.wallpaper
+    // "system": COSMIC's own wallpaper is shown instead of the sails (the sails stay as the fallback)
+    readonly property bool system: mood === "system" && Moods.systemWallpaper !== ""
     property bool living: DriftConfig.living
     property bool darken: Theme.dark
     readonly property var m: Moods.mood(mood)
@@ -111,5 +113,14 @@ Item {
         Behavior on color {
             ColorAnim { duration: 1200 }
         }
+    }
+
+    Image {
+        visible: root.system
+        anchors.fill: parent
+        source: root.system ? Moods.systemWallpaper : ""
+        sourceSize: Qt.size(Math.max(64, root.width), Math.max(64, root.height))
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
     }
 }

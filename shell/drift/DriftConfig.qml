@@ -12,7 +12,7 @@ Singleton {
 
     property string theme: "light" // light | dark | auto (dark from sunset to sunrise)
     property string accent: "indigo"
-    property string wallpaper: "mist"
+    property string wallpaper: "system" // COSMIC's own; or one of Moods.names
     property bool living: true // wallpaper colours follow the time of day
     property real transparency: 0.5 // 0 = solid glass, 1 = as clear as it gets
     property real frost: 0.7 // 0 = no blur behind the glass, 1 = full frost

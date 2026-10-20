@@ -480,14 +480,14 @@ Surface {
                             onPicked: DriftConfig.set("wallpaper", modelData)
                             preview: [
                                 Sails {
-                                    visible: mood.modelData !== "system"
+                                    visible: mood.modelData !== "system" || Moods.systemWallpaper !== ""
                                     anchors.fill: parent
                                     mood: mood.modelData
                                     living: false
                                     darken: false
                                 },
                                 Rectangle {
-                                    visible: mood.modelData === "system"
+                                    visible: mood.modelData === "system" && Moods.systemWallpaper === ""
                                     anchors.fill: parent
                                     color: Theme.well
 

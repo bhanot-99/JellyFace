@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import qs.services
 
 // Wallpaper moods for the "glass sails" (components/Sails.qml): a sky gradient and five sail colours each, back to
@@ -52,6 +53,20 @@ Singleton {
                 sails: ["#C9CCD6", "#B8BCC8", "#D6D8E0", "#A9AEBC", "#DADCE3"]
             }
         })
+
+    // COSMIC's own wallpaper (the "system" mood), from its background settings; empty for a slideshow folder
+    property string systemWallpaper
+
+    FileView {
+        path: `${Quickshell.env("XDG_CONFIG_HOME") || Quickshell.env("HOME") + "/.config"}/cosmic/com.system76.CosmicBackground/v1/all`
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: {
+            const m = text().match(/source:\s*Path\("([^"]+)"\)/);
+            root.systemWallpaper = m && /\.(jpe?g|png|webp|bmp|avif|jxl)$/i.test(m[1]) ? `file://${m[1]}` : "";
+        }
+    }
 
     function mood(name: string): var {
         return moods[name] ?? moods.mist;
