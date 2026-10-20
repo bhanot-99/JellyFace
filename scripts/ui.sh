@@ -59,6 +59,7 @@ case "${1:-status}" in
     classic)
         printf 'classic\n' > "$JF_UI_FILE" 2>/dev/null || true
         shortcuts remove
+        "$JF_ROOT/scripts/drift-cosmic.sh" gaps restore || warn "could not restore COSMIC's window gaps"
         log "interface: Classic"
         restart_shell Classic ;;
     status)

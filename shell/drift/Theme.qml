@@ -31,6 +31,12 @@ Singleton {
             Quickshell.execDetached(["distrobox-host-exec", Quickshell.shellPath("../scripts/drift-cosmic.sh"), "mode", dark ? "dark" : "light"]);
     }
 
+    // tiled windows with or without COSMIC's gaps (Appearance → Dock & bar); `jellyface ui classic` restores COSMIC's
+    function syncGaps(): void {
+        if (DriftConfig.loaded)
+            Quickshell.execDetached(["distrobox-host-exec", Quickshell.shellPath("../scripts/drift-cosmic.sh"), "gaps", DriftConfig.windowGaps ? "restore" : "none"]);
+    }
+
     onDarkChanged: syncCosmic()
 
     Connections {
@@ -40,6 +46,11 @@ Singleton {
 
         function onLoadedChanged(): void {
             root.syncCosmic();
+            root.syncGaps();
+        }
+
+        function onWindowGapsChanged(): void {
+            root.syncGaps();
         }
 
         target: DriftConfig

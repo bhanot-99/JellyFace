@@ -673,8 +673,23 @@ Surface {
                     onPicked: o => DriftConfig.set("bar", o)
                 }
 
+                Item {
+                    width: 1
+                    height: Theme.s3
+                }
+
+                SettingRow {
+                    label: "Gaps between windows"
+                    sub: "Off: tiled windows fill the screen like a maximized one"
+
+                    Toggle {
+                        checked: DriftConfig.windowGaps
+                        onToggled: c => DriftConfig.set("windowGaps", c)
+                    }
+                }
+
                 Label {
-                    topPadding: Theme.s5
+                    topPadding: Theme.s3
                     text: "Deep Focus session"
                     font.weight: Font.Medium
                     bottomPadding: Theme.s2

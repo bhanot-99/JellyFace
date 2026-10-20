@@ -20,9 +20,10 @@ Singleton {
     property string bar: "full" // the side bar: full | minimal
     property int focusMinutes: 25
     property bool cosmicSync: false // COSMIC's own apps follow light/dark (scripts/drift-cosmic.sh)
+    property bool windowGaps: false // COSMIC's gaps around tiled windows (off: they fill the screen like a maximized one)
 
     property bool loaded
-    readonly property var keys: ["theme", "accent", "wallpaper", "living", "transparency", "frost", "dock", "bar", "focusMinutes", "cosmicSync"]
+    readonly property var keys: ["theme", "accent", "wallpaper", "living", "transparency", "frost", "dock", "bar", "focusMinutes", "cosmicSync", "windowGaps"]
 
     function set(key: string, value: var): void {
         if (root[key] === value)

@@ -8,5 +8,6 @@
   "dock": "autohide",
   "bar": "full",
   "focusMinutes": 25,
-  "cosmicSync": false
+  "cosmicSync": false,
+  "windowGaps": false
 }
