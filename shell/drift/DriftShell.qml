@@ -38,9 +38,11 @@ Scope {
     LevelBars {}
     TopEdge {}
 
-    // Classic's Dynamic Island exactly as it is (pitch black); it steps aside while Today, which drops from the same
-    // spot, is open
+    // Classic's Dynamic Island exactly as it is (pitch black), but out of sight while idle: it appears only for media,
+    // a timer, a notification, volume or charging. It steps aside while the dashboard, which drops from the same spot,
+    // is open.
     DynamicIsland {
+        idleVisible: false
         hidden: DriftState.open === "today"
     }
     Toasts {}

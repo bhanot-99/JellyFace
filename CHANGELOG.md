@@ -14,8 +14,10 @@ glass, an interface that appears when you call it, keyboard first, one motion cu
   media and notifications, each tile growing in place into its detail view (networks with passwords, device pairing,
   sound devices and app volumes, Deep Focus sessions, power profiles, every notification). Fully keyboard-driven.
 - Command bar (Super+Space or Super): apps, open windows, settings, actions, files, maths and unit conversion.
-- Window hints (Super+E), desk overview (Super+D), clipboard carousel (Super+V), Today (top edge or the clock), power
-  menu, keyboard sheet (Super+Shift+/), notification toasts, Deep Focus (Super+Shift+F) with a timer.
+- The dashboard (top edge or the clock) has Classic's four tabs in Drift's look: Dashboard (calendar, events,
+  weather, resources, quick actions), Media (cover, visualiser, seek, controls, synced lyrics), Performance (CPU, GPU,
+  memory, storage, network, battery) and Weather (now, next hours, the week).
+- Window hints (Super+E), desk overview (Super+W or Super+D), clipboard carousel (Super+V), power menu, keyboard sheet (Super+Shift+/), notification toasts, Deep Focus (Super+Shift+F) with a timer.
 - Appearance (Super+P): light / dark / auto (by sunset), accent, wallpaper, glass transparency and frost, dock and bar
   modes, and an optional switch so COSMIC's own apps follow light and dark.
 - Its own lock screen look on the same lock, password check and safety net as Classic.
@@ -27,7 +29,8 @@ glass, an interface that appears when you call it, keyboard first, one motion cu
 - `shell.qml` holds only what both interfaces share; Classic moved unchanged into `ClassicShell.qml`.
 - The lock screen opens the session itself if a lock surface ever fails to finish its unlock animation (1.5 s).
 - The window helper (`wind`) also reports each window's workspace (`"ws"`).
-- The Dynamic Island's colours can be set by the interface that shows it, and it has a `hidden` switch.
+- The Dynamic Island's colours can be set by the interface that shows it, it has a `hidden` switch, `idleVisible` can
+  be turned off (Drift hides the idle pill), and a hidden island no longer catches clicks at the top centre.
 
 ### Fixes
 - Closing the lid showed COSMIC's lock screen after waking instead of JellyFace's. COSMIC's own locker locks on every

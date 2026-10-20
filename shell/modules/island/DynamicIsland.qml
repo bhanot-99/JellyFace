@@ -27,8 +27,8 @@ Scope {
     id: root
 
     // --- Tunables ---
-    // Idle matches the iPhone 14 Pro cutout: an empty black pill (set false to hide it entirely)
-    readonly property bool idleVisible: true
+    // Idle matches the iPhone 14 Pro cutout: an empty black pill (an interface can set it false to hide it while idle)
+    property bool idleVisible: true
     // Desktop affordance on top of iPhone's long-press: hovering a compact activity expands it
     readonly property bool hoverExpand: true
     // Pause this long over a bubble before the card opens, so a quick tap or swipe still reaches the bubble
@@ -433,8 +433,9 @@ Scope {
         implicitWidth: root.expandedWidth + root.windowSlack
         implicitHeight: root.expandedHeightMax + root.windowSlack
 
+        // only while it shows: a hidden island (suppressed, or idle with idleVisible off) must not catch clicks
         mask: Region {
-            item: islandCapsule
+            item: islandCapsule.opacity > 0 ? islandCapsule : null
 
             Region {
                 item: secondCapsule

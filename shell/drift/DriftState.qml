@@ -20,6 +20,8 @@ Singleton {
     property string ccPage: ""
     // Appearance's page
     property string appearancePage: "theme"
+    // the dashboard's tab: 0 Dashboard, 1 Media, 2 Performance, 3 Weather (as Classic's)
+    property int dashTab: 0
     // text the command bar opens with (`jellyface ipc drift search <text>`)
     property string commandText: ""
 
@@ -113,6 +115,12 @@ Singleton {
             root.show("command");
         }
 
+        // open the dashboard on a tab: 0 Dashboard, 1 Media, 2 Performance, 3 Weather
+        function dashboard(n: int): void {
+            root.dashTab = Math.max(0, Math.min(3, n));
+            root.show("today");
+        }
+
         // open Control Center on one of its pages: wifi bluetooth sound focus battery notifications
         function cc(page: string): void {
             root.show("cc");
@@ -149,6 +157,12 @@ Singleton {
 
         function closeAll(): void {
             root.close();
+        }
+
+        // Classic's `jellyface ipc drawers dashboardTab <n>`
+        function dashboardTab(n: int): void {
+            root.dashTab = Math.max(0, Math.min(3, n));
+            root.show("today");
         }
 
         target: "drawers"
