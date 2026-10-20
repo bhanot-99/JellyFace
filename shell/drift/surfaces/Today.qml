@@ -65,8 +65,10 @@ Surface {
         HoverHandler {
             id: zoneHover
 
-            onHoveredChanged: {
-                if (hovered) {
+            readonly property bool inside: hovered || sheetHover.hovered
+
+            onInsideChanged: {
+                if (inside) {
                     visit.restart();
                     leave.stop();
                 } else {
@@ -85,9 +87,9 @@ Surface {
 
         interval: 300
         onTriggered: {
-            if (zoneHover.hovered && root.progress > 0.99)
+            if (zoneHover.inside && root.progress > 0.99)
                 root.visited = true;
-            else if (zoneHover.hovered)
+            else if (zoneHover.inside)
                 restart();
         }
     }
@@ -97,7 +99,7 @@ Surface {
 
         interval: 350
         onTriggered: {
-            if (!zoneHover.hovered && root.active)
+            if (!zoneHover.inside && root.active)
                 DriftState.close();
         }
     }
@@ -120,6 +122,11 @@ Surface {
 
         MouseArea {
             anchors.fill: parent
+        }
+
+        // hover reaches the panel through every button on it (the zone beside it loses it to hover-enabled buttons)
+        HoverHandler {
+            id: sheetHover
         }
 
         Segmented {

@@ -37,17 +37,23 @@ Item {
             Quickshell.execDetached(["distrobox-host-exec", "xdg-open", uri]);
     }
 
-    onDirChanged: {
+    // the command is built here, not bound: started in the same change, a binding could still hold the old folder
+    function list(): void {
         videos = [];
-        if (dir)
-            lister.running = true;
+        lister.running = false;
+        if (!dir)
+            return;
+        lister.command = ["distrobox-host-exec", "sh", "-c", "find \"$1\" -maxdepth 1 -type f -iregex '.*\\.\\(mkv\\|mp4\\|webm\\|avi\\|mov\\|m4v\\|wmv\\|flv\\|mpg\\|mpeg\\|ts\\|ogv\\)' | sort -V | head -n 300", "list", dir];
+        lister.running = true;
     }
+
+    onDirChanged: list()
+    Component.onCompleted: list()
 
     Process {
         id: lister
 
-        // on the host: the folder may be on a disk the container does not see
-        command: ["distrobox-host-exec", "sh", "-c", "find \"$1\" -maxdepth 1 -type f -iregex '.*\\.\\(mkv\\|mp4\\|webm\\|avi\\|mov\\|m4v\\|wmv\\|flv\\|mpg\\|mpeg\\|ts\\|ogv\\)' | sort -V | head -n 300", "list", root.dir]
+        // (runs on the host: the folder may be on a disk the container does not see)
         stdout: StdioCollector {
             onStreamFinished: {
                 root.videos = text.split("\n").filter(l => l);
