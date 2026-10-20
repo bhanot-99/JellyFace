@@ -19,7 +19,7 @@ Surface {
         {name: "Command bar", keys: ["Super"], run: () => DriftState.show("command")},
         {name: "Control Center", keys: ["Super", "C"], run: () => DriftState.show("cc")},
         {name: "Window hints", keys: ["Super", "E"], run: () => DriftState.show("hints")},
-        {name: "Desks", keys: ["Super", "D"], run: () => DriftState.show("desks")},
+        {name: "Desks", keys: ["Super", "W"], run: () => DriftState.show("desks")},
         {name: "Clipboard history", keys: ["Super", "V"], run: () => DriftState.show("clipboard")},
         {name: "Appearance", keys: ["Super", "P"], run: () => DriftState.show("appearance")},
         {name: "Deep Focus", keys: ["Super", "Shift", "F"], run: () => DeepFocus.active ? DeepFocus.stop() : DeepFocus.start(0)},

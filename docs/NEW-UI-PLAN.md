@@ -153,7 +153,7 @@ COSMIC already uses were avoided except Super+Space (decided).
 | Super | Command bar | Classic's JellyPanel shortcut; in Drift it opens the command bar |
 | Super+C | Control Center | free in COSMIC |
 | Super+E | Window hints | free (Super+J/G are COSMIC's focus-down / floating) |
-| Super+D | Desks overview | free (COSMIC's own overview stays on Super+W) |
+| Super+W, Super+D | Desks overview | Super+W takes over COSMIC's own workspace overview while Drift is on |
 | Super+P | Appearance | free (Super+, is COSMIC's zoom out) |
 | Super+Shift+/ | Keyboard sheet | free |
 | Super+V | Clipboard | already JellyFace's |

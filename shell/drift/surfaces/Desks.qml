@@ -7,7 +7,7 @@ import qs.services
 import qs.drift
 import qs.drift.components
 
-// Desks (Super+D): every COSMIC workspace as a card with its windows drawn where they are (COSMIC lets no shell
+// Desks (Super+W or Super+D; Super+W replaces COSMIC's own overview while Drift is on): every COSMIC workspace as a card with its windows drawn where they are (COSMIC lets no shell
 // capture windows, so they are outlines with the app's icon and title, not pictures). Click a desk or a window, or
 // ←/→ and Enter, or press its number.
 Surface {

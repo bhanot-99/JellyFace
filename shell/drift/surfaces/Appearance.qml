@@ -703,7 +703,7 @@ Surface {
                 }
 
                 Repeater {
-                    model: [["Command bar", "Super", "Space"], ["Control Center", "Super", "C"], ["Window hints", "Super", "E"], ["Desks", "Super", "D"], ["Clipboard", "Super", "V"], ["Appearance", "Super", "P"], ["Deep Focus", "Super", "Shift", "F"], ["Lock", "Super", "L"]]
+                    model: [["Command bar", "Super", "Space"], ["Control Center", "Super", "C"], ["Window hints", "Super", "E"], ["Desks", "Super", "W"], ["Clipboard", "Super", "V"], ["Appearance", "Super", "P"], ["Deep Focus", "Super", "Shift", "F"], ["Lock", "Super", "L"]]
 
                     Item {
                         id: sc
