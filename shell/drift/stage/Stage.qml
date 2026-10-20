@@ -40,7 +40,7 @@ Scope {
         PanelWindow {
             id: win
 
-            readonly property list<Item> surfaces: [gallery, cc, command, keys, today, session, appearance]
+            readonly property list<Item> surfaces: [gallery, cc, command, keys, today, session, appearance, hints, desks, clipboard]
 
             visible: root.shown
             screen: Quickshell.screens[0]
@@ -100,6 +100,18 @@ Scope {
 
                 Appearance {
                     id: appearance
+                }
+
+                Hints {
+                    id: hints
+                }
+
+                Desks {
+                    id: desks
+                }
+
+                ClipboardCarousel {
+                    id: clipboard
                 }
             }
         }

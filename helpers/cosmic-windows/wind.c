@@ -1,7 +1,8 @@
 // Prints COSMIC's windows (ext-foreign-toplevel-list + cosmic-toplevel-info) as JSON lines whenever anything changes:
 //   {"active":2,"fullscreen":false,"windows":[{"id":1,"app_id":"firefox","title":"...","activated":false,
-//     "fullscreen":false,"maximized":false,"minimized":false,"workspace_active":true,"x":0,"y":0,"w":800,"h":600}, ...]}
+//     "fullscreen":false,"maximized":false,"minimized":false,"workspace_active":true,"ws":0,"x":0,"y":0,"w":800,"h":600}, ...]}
 // x/y/w/h: the window's rectangle on its output, in logical pixels (0x0 until COSMIC has sent it).
+// ws: its workspace, as an index in the same order as cosmic-ws/wsd's list (-1 until known).
 // "active" is the id of the focused window on the workspace you are looking at (0 = none); "fullscreen" is true when a
 // window on that workspace is fullscreen. Windows on other workspaces never count.
 // Read-only except for two commands on stdin: "activate <id>" focuses a window, "close <id>" asks it to close. Exits when its parent goes away or the compositor connection breaks.
@@ -107,7 +108,10 @@ static void emit(void) {
         fprintf(out, ",\"activated\":%s,\"fullscreen\":%s,\"maximized\":%s,\"minimized\":%s,\"workspace_active\":%s",
                (w->state >> 2) & 1 ? "true" : "false", (w->state >> 3) & 1 ? "true" : "false",
                (w->state >> 0) & 1 ? "true" : "false", (w->state >> 1) & 1 ? "true" : "false", on_current_ws(w) ? "true" : "false");
-        fprintf(out, ",\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}", w->x, w->y, w->w, w->h);
+        // "ws": the window's workspace as an index into the ext-workspace list, the same order wsd prints (-1: unknown)
+        int ws = -1;
+        for (int j = 0; j < nwss && w->nws > 0 && ws < 0; j++) if (wss[j].h == w->wsh[0]) ws = j;
+        fprintf(out, ",\"ws\":%d,\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}", ws, w->x, w->y, w->w, w->h);
     }
     fputs("]}\n", out);
     fclose(out);

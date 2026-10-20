@@ -9,9 +9,13 @@ Item {
     property string placeholder: "Type to search"
     property int size: Theme.heading
     readonly property alias input: input
+    // ←/→ also navigate while nothing is typed (a horizontal list, like the clipboard)
+    property bool horizontal
     signal accepted
     signal escaped
-    signal navigate(int delta) // up / down arrows
+    signal navigate(int delta) // up / down arrows (and left / right when horizontal)
+    signal removeRequested // Delete with nothing typed
+    signal pinRequested // Ctrl+P
 
     implicitHeight: 48
 
@@ -49,6 +53,18 @@ Item {
         Keys.onDownPressed: root.navigate(1)
         Keys.onTabPressed: root.navigate(1)
         Keys.onBacktabPressed: root.navigate(-1)
+        Keys.onPressed: e => {
+            if (root.horizontal && text === "" && (e.key === Qt.Key_Left || e.key === Qt.Key_Right)) {
+                root.navigate(e.key === Qt.Key_Left ? -1 : 1);
+                e.accepted = true;
+            } else if (e.key === Qt.Key_Delete && text === "") {
+                root.removeRequested();
+                e.accepted = true;
+            } else if (e.key === Qt.Key_P && (e.modifiers & Qt.ControlModifier)) {
+                root.pinRequested();
+                e.accepted = true;
+            }
+        }
 
         Label {
             visible: input.text === ""
