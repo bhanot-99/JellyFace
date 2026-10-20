@@ -38,19 +38,10 @@ Scope {
     LevelBars {}
     TopEdge {}
 
-    // Classic's Dynamic Island, in Drift's colours; it steps aside while Today (which drops from the same spot) is open
+    // Classic's Dynamic Island exactly as it is (pitch black); it steps aside while Today, which drops from the same
+    // spot, is open
     DynamicIsland {
         hidden: DriftState.open === "today"
-        colBg: Theme.dark ? Qt.rgba(0.11, 0.1, 0.24, 0.97) : Qt.rgba(0.985, 0.985, 1, 0.97)
-        colTextPrimary: Theme.text
-        colTextSecondary: Theme.textSecondary
-        colTextTertiary: Theme.textMuted
-        colEqGreen: Theme.good
-        colAccentPink: Theme.accent
-        colTimer: Theme.warn
-        colDanger: Theme.bad
-        colScrubTrack: Theme.well
-        colArtBg: Theme.tile
     }
     Toasts {}
     Stage {}
