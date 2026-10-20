@@ -54,16 +54,18 @@ Singleton {
     // ─── text ───
     readonly property color text: dark ? "#F2F3FA" : "#1B1F3B"
     readonly property color textSecondary: dark ? "#B9BCD6" : "#5A6080"
-    readonly property color textMuted: dark ? "#8186A6" : "#8A90AE"
+    readonly property color textMuted: dark ? "#8186A6" : "#7C82A2"
+    // the spaced-out mono section labels: a quiet tint of the accent
+    readonly property color kicker: dark ? Qt.lighter(accent, 1.45) : Qt.darker(accent, 1.08)
 
     // ─── glass ───
     // t: 0 = solid, 1 = as clear as it gets (DriftConfig.transparency)
     readonly property real t: Math.max(0, Math.min(1, DriftConfig.transparency))
-    readonly property real paneAlpha: 0.9 - t * 0.5
+    readonly property real paneAlpha: (dark ? 0.9 : 0.95) - t * 0.42
     // pane: the body of a panel; sheet: a panel floating over app windows (a little denser so it reads over white
     // windows); tile: a card inside a pane; well: a slider track, input or recessed area
-    readonly property color pane: dark ? Qt.rgba(0.13, 0.12, 0.27, paneAlpha) : Qt.rgba(0.97, 0.97, 1.0, paneAlpha)
-    readonly property color sheet: dark ? Qt.rgba(0.12, 0.11, 0.25, Math.min(0.95, paneAlpha + 0.12)) : Qt.rgba(0.97, 0.97, 1.0, Math.min(0.95, paneAlpha + 0.12))
+    readonly property color pane: dark ? Qt.rgba(0.13, 0.12, 0.27, paneAlpha) : Qt.rgba(0.975, 0.975, 1.0, paneAlpha)
+    readonly property color sheet: dark ? Qt.rgba(0.12, 0.11, 0.25, Math.min(0.96, paneAlpha + 0.14)) : Qt.rgba(0.975, 0.975, 1.0, Math.min(0.97, paneAlpha + 0.14))
     readonly property color tile: dark ? Qt.rgba(1, 1, 1, 0.07) : Qt.rgba(1, 1, 1, 0.55)
     readonly property color tileHover: dark ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.8)
     readonly property color well: dark ? Qt.rgba(0, 0, 0, 0.25) : Qt.rgba(0.36, 0.4, 0.6, 0.12)

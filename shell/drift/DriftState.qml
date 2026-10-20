@@ -20,7 +20,7 @@ Singleton {
     // Appearance's page
     property string appearancePage: "theme"
 
-    readonly property var surfaces: ["cc", "command", "hints", "desks", "clipboard", "today", "appearance", "keys", "session"]
+    readonly property var surfaces: ["cc", "command", "hints", "desks", "clipboard", "today", "appearance", "keys", "session", "gallery"]
 
     function toggle(name: string): void {
         if (open === name)
