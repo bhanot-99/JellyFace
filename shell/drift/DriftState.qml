@@ -19,6 +19,8 @@ Singleton {
     property string ccPage: ""
     // Appearance's page
     property string appearancePage: "theme"
+    // text the command bar opens with (`jellyface ipc drift search <text>`)
+    property string commandText: ""
 
     readonly property var surfaces: ["cc", "command", "hints", "desks", "clipboard", "today", "appearance", "keys", "session", "gallery"]
 
@@ -102,6 +104,18 @@ Singleton {
 
         function current(): string {
             return root.open;
+        }
+
+        // open the command bar with this already typed
+        function search(text: string): void {
+            root.commandText = text;
+            root.show("command");
+        }
+
+        // open Control Center on one of its pages: wifi bluetooth sound focus battery notifications
+        function cc(page: string): void {
+            root.show("cc");
+            root.ccPage = page;
         }
 
         target: "drift"

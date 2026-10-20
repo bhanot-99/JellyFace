@@ -17,6 +17,7 @@ Rectangle {
     property bool busy // a spinner before the trailing text
     property bool dimmed
     property int rowHeight: 40
+    property int titleSize: Theme.body
     default property alias trailingItems: trail.data
     readonly property alias hovered: area.containsMouse
     signal clicked
@@ -70,8 +71,9 @@ Rectangle {
         Label {
             width: parent.width
             text: root.title
+            size: root.titleSize
             color: root.current ? "#FFFFFF" : Theme.text
-            font.weight: Font.Medium
+            font.weight: root.titleSize > Theme.body ? Font.DemiBold : Font.Medium
         }
 
         Label {

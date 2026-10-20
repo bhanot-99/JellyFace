@@ -27,11 +27,13 @@ Scope {
         DriftConfig;
         DriftApps;
         DeepFocus;
+        Power;
         console.info("drift: loaded");
     }
 
     Wallpaper {}
     TopBar {}
     Dock {}
+    Osd {}
     Stage {}
 }

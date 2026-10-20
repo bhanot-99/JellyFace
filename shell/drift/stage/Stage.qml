@@ -39,7 +39,7 @@ Scope {
         PanelWindow {
             id: win
 
-            readonly property list<Item> surfaces: [gallery, cc]
+            readonly property list<Item> surfaces: [gallery, cc, command, keys]
 
             screen: Quickshell.screens[0]
             WlrLayershell.namespace: "jellyface-drift-stage"
@@ -78,6 +78,14 @@ Scope {
 
                 ControlCenter {
                     id: cc
+                }
+
+                CommandBar {
+                    id: command
+                }
+
+                KeysSheet {
+                    id: keys
                 }
             }
         }
