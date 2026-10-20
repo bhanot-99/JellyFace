@@ -39,7 +39,7 @@ Scope {
         PanelWindow {
             id: win
 
-            readonly property list<Item> surfaces: [gallery, cc, command, keys]
+            readonly property list<Item> surfaces: [gallery, cc, command, keys, today, session]
 
             screen: Quickshell.screens[0]
             WlrLayershell.namespace: "jellyface-drift-stage"
@@ -86,6 +86,14 @@ Scope {
 
                 KeysSheet {
                     id: keys
+                }
+
+                Today {
+                    id: today
+                }
+
+                SessionMenu {
+                    id: session
                 }
             }
         }

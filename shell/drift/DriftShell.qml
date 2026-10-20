@@ -35,5 +35,6 @@ Scope {
     TopBar {}
     Dock {}
     Osd {}
+    Toasts {}
     Stage {}
 }
