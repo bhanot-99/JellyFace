@@ -6,8 +6,7 @@ import Quickshell.Io
 import qs.drift
 import qs.drift.components
 
-// The other videos in the folder of the one playing (a series' episodes, a course's lessons), in order, each with a
-// still from the video (made once by scripts/video-thumbs.sh, cached). The playing one is marked and scrolled into view; click another to play it
+// The other videos in the folder of the one playing (a series' episodes, a course's lessons), in order, by name. The playing one is marked and scrolled into view; click another to play it
 // in the same player (or open it, when the player has closed).
 Item {
     id: root
@@ -18,15 +17,9 @@ Item {
     readonly property string dir: file.slice(0, file.lastIndexOf("/"))
     readonly property string folderName: dir.slice(dir.lastIndexOf("/") + 1)
     property var videos: []
-    property var thumbs: ({}) // path -> true once its still exists
-    readonly property string cache: `${Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache"}/jellyface/video-thumbs`
 
     function uriOf(path: string): string {
         return "file://" + path.split("/").map(encodeURIComponent).join("/");
-    }
-
-    function thumbOf(path: string): string {
-        return thumbs[path] ? `file://${cache}/${Qt.md5(path)}.jpg` : "";
     }
 
     function play(path: string): void {
@@ -57,24 +50,6 @@ Item {
         stdout: StdioCollector {
             onStreamFinished: {
                 root.videos = text.split("\n").filter(l => l);
-                root.thumbs = ({});
-                // the playing one first, then its neighbours outwards
-                const at = Math.max(0, root.videos.indexOf(root.file));
-                const order = root.videos.map((v, i) => [Math.abs(i - at), v]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
-                thumber.command = ["distrobox-host-exec", Quickshell.shellPath("../scripts/video-thumbs.sh"), ...order.slice(0, 60)];
-                thumber.running = true;
-            }
-        }
-    }
-
-    Process {
-        id: thumber
-
-        stdout: SplitParser {
-            onRead: line => {
-                const t = Object.assign({}, root.thumbs);
-                t[line] = true;
-                root.thumbs = t;
             }
         }
     }
@@ -135,53 +110,20 @@ Item {
             readonly property string name: modelData.slice(modelData.lastIndexOf("/") + 1).replace(/\.[^.]+$/, "")
 
             width: list.width
-            height: 54
+            height: 40
             radius: Theme.radiusRow
             color: current ? Theme.accentSoft : rowArea.containsMouse ? Theme.tileHover : "transparent"
             border.width: current ? 1 : 0
             border.color: Theme.accent
 
-            Rectangle {
+            Icon {
                 id: thumb
 
-                x: 6
+                x: 10
                 anchors.verticalCenter: parent.verticalCenter
-                width: 72
-                height: 42
-                radius: 8
-                color: Theme.well
-                clip: true
-
-                Image {
-                    id: shot
-
-                    anchors.fill: parent
-                    source: root.thumbOf(row.modelData)
-                    sourceSize: Qt.size(144, 84)
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                }
-
-                Icon {
-                    visible: shot.status !== Image.Ready
-                    anchors.centerIn: parent
-                    name: row.current ? "play_circle" : "movie"
-                    size: 20
-                    color: row.current ? Theme.accent : Theme.textMuted
-                }
-
-                Rectangle {
-                    visible: row.current && shot.status === Image.Ready
-                    anchors.fill: parent
-                    color: Qt.rgba(0, 0, 0, 0.35)
-
-                    Icon {
-                        anchors.centerIn: parent
-                        name: "graphic_eq"
-                        size: 20
-                        color: "#FFFFFF"
-                    }
-                }
+                name: row.current ? "graphic_eq" : "movie"
+                size: 18
+                color: row.current ? Theme.accent : Theme.textMuted
             }
 
             Label {
