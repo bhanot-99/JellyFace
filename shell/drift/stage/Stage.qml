@@ -8,8 +8,8 @@ import qs.drift.components
 import qs.drift.surfaces
 import qs.drift.surfaces.cc
 
-// The Stage: one full-screen overlay window that holds every Drift pop-up surface. It exists only while a surface is
-// open (or still animating out): it takes the keyboard, closes on a click outside the surface or on Esc, and blurs
+// The Stage: one full-screen overlay window that holds every Drift pop-up surface. It is shown only while a surface
+// is open (or still animating out): it takes the keyboard, closes on a click outside the surface or on Esc, and blurs
 // exactly the panes on show.
 Scope {
     id: root
@@ -33,14 +33,16 @@ Scope {
         onTriggered: root.shown = root.wanted
     }
 
+    // built once and only shown and hidden, so a shortcut opens its surface at once (nothing to build or load)
     LazyLoader {
-        active: root.shown
+        active: true
 
         PanelWindow {
             id: win
 
-            readonly property list<Item> surfaces: [gallery, cc, command, keys, today, session]
+            readonly property list<Item> surfaces: [gallery, cc, command, keys, today, session, appearance]
 
+            visible: root.shown
             screen: Quickshell.screens[0]
             WlrLayershell.namespace: "jellyface-drift-stage"
             WlrLayershell.layer: WlrLayer.Overlay
@@ -94,6 +96,10 @@ Scope {
 
                 SessionMenu {
                     id: session
+                }
+
+                Appearance {
+                    id: appearance
                 }
             }
         }

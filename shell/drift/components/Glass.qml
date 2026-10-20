@@ -37,6 +37,12 @@ Item {
             ColorAnim {}
         }
 
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: Theme.haze
+        }
+
         // the lit top edge of the glass
         Rectangle {
             anchors.top: parent.top

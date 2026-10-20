@@ -19,9 +19,10 @@ Singleton {
     property string dock: "always" // always | autohide | off
     property string bar: "full" // full | minimal
     property int focusMinutes: 25
+    property bool cosmicSync: false // COSMIC's own apps follow light/dark (scripts/drift-cosmic.sh)
 
     property bool loaded
-    readonly property var keys: ["theme", "accent", "wallpaper", "living", "transparency", "frost", "dock", "bar", "focusMinutes"]
+    readonly property var keys: ["theme", "accent", "wallpaper", "living", "transparency", "frost", "dock", "bar", "focusMinutes", "cosmicSync"]
 
     function set(key: string, value: var): void {
         if (root[key] === value)

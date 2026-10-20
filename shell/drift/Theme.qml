@@ -25,6 +25,26 @@ Singleton {
     }
     readonly property bool dark: DriftConfig.theme === "dark" || (DriftConfig.theme === "auto" && night)
 
+    // COSMIC's own apps follow (Appearance → Theme), once the settings are read
+    function syncCosmic(): void {
+        if (DriftConfig.cosmicSync && DriftConfig.loaded)
+            Quickshell.execDetached(["distrobox-host-exec", Quickshell.shellPath("../scripts/drift-cosmic.sh"), "mode", dark ? "dark" : "light"]);
+    }
+
+    onDarkChanged: syncCosmic()
+
+    Connections {
+        function onCosmicSyncChanged(): void {
+            root.syncCosmic();
+        }
+
+        function onLoadedChanged(): void {
+            root.syncCosmic();
+        }
+
+        target: DriftConfig
+    }
+
     // ─── accent ───
     readonly property var accents: ({
             indigo: "#5B6CF0",
@@ -75,6 +95,8 @@ Singleton {
     readonly property color shadow: dark ? Qt.rgba(0, 0, 0, 0.45) : Qt.rgba(0.24, 0.27, 0.51, 0.2)
     readonly property color scrim: dark ? Qt.rgba(0.05, 0.05, 0.12, 0.35) : Qt.rgba(0.85, 0.87, 0.95, 0.25)
     readonly property bool blur: DriftConfig.frost > 0.05
+    // a milky haze over the glass, stronger with more frost
+    readonly property color haze: dark ? Qt.rgba(1, 1, 1, 0.05 * DriftConfig.frost) : Qt.rgba(1, 1, 1, 0.14 * DriftConfig.frost)
 
     // ─── shape and space ───
     readonly property int radiusPane: 28
