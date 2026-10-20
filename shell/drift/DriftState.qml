@@ -25,7 +25,7 @@ Singleton {
     // text the command bar opens with (`jellyface ipc drift search <text>`)
     property string commandText: ""
 
-    readonly property var surfaces: ["cc", "command", "hints", "desks", "clipboard", "today", "appearance", "keys", "session", "gallery", "panel"]
+    readonly property var surfaces: ["cc", "command", "hints", "desks", "clipboard", "today", "appearance", "keys", "session", "gallery", "panel", "lockpreview"]
 
     function toggle(name: string): void {
         if (open === name)
