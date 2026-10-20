@@ -31,6 +31,9 @@ Item {
     readonly property string album: live ? player.trackAlbum : LastMedia.album
     readonly property string art: live ? Players.getArtUrl(player) || (player.trackTitle === LastMedia.title ? LastMedia.art : "") : LastMedia.art
     readonly property bool empty: !live && !LastMedia.known
+    // what is playing as a URL: a local video gets its folder's other videos where the lyrics would be
+    readonly property string url: live ? String(player.metadata?.["xesam:url"] ?? "") : LastMedia.url
+    readonly property bool localVideo: url.startsWith("file://") && /\.(mkv|mp4|webm|avi|mov|m4v|wmv|flv|mpe?g|ts|ogv)$/i.test(url)
 
     implicitWidth: 820
     implicitHeight: 340
@@ -72,7 +75,7 @@ Item {
     readonly property var _lyrics: {
         if (!visible)
             return null;
-        if (title)
+        if (title && !localVideo)
             Lyrics.setTrack(artist ?? "", title, album ?? "", length);
         else
             Lyrics.clearTrack();
@@ -487,6 +490,7 @@ Item {
         clip: true
 
         Row {
+            visible: !root.localVideo
             x: 16
             y: 14
             spacing: 8
@@ -504,7 +508,7 @@ Item {
         }
 
         Label {
-            visible: !Lyrics.hasLyrics
+            visible: !root.localVideo && !Lyrics.hasLyrics
             anchors.centerIn: parent
             anchors.verticalCenterOffset: -16
             width: parent.width - 40
@@ -517,7 +521,7 @@ Item {
         ListView {
             id: lyrics
 
-            visible: Lyrics.hasLyrics
+            visible: !root.localVideo && Lyrics.hasLyrics
             x: 14
             y: 44
             width: parent.width - 28
@@ -556,6 +560,14 @@ Item {
                     }
                 }
             }
+        }
+
+        FolderVideos {
+            visible: root.localVideo
+            width: parent.width
+            height: parent.height - picker.height - 18
+            url: root.localVideo ? root.url : ""
+            player: root.player
         }
 
         // the player being controlled; click to choose another (when there are several)

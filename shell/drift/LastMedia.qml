@@ -17,6 +17,7 @@ Singleton {
     property string art
     property string identity
     property string entry // desktop entry of the player
+    property string url // what is playing: a file:// path for local media, http(s) for online
     property real length
     property real position
     readonly property bool known: title !== ""
@@ -35,11 +36,15 @@ Singleton {
         root.entry = p.desktopEntry ?? "";
         root.length = p.length > 0 && p.length < 2147483647 ? p.length : 0;
         root.position = p.position ?? 0;
+        root.url = String(p.metadata?.["xesam:url"] ?? "");
         saveTimer.restart();
     }
 
     function resume(): void {
-        if (entry)
+        // a local file plays again where it was; otherwise the player opens
+        if (url.startsWith("file://"))
+            Quickshell.execDetached(["distrobox-host-exec", "xdg-open", url]);
+        else if (entry)
             Quickshell.execDetached(["distrobox-host-exec", "gtk-launch", entry]);
     }
 
@@ -49,6 +54,10 @@ Singleton {
         }
 
         function onTrackArtistChanged(): void {
+            root.remember(Players.active);
+        }
+
+        function onMetadataChanged(): void {
             root.remember(Players.active);
         }
 
@@ -90,6 +99,7 @@ Singleton {
                 art: root.art,
                 identity: root.identity,
                 entry: root.entry,
+                url: root.url,
                 length: root.length,
                 position: root.position
             }))
@@ -106,7 +116,7 @@ Singleton {
                 return;
             try {
                 const d = JSON.parse(text());
-                for (const k of ["title", "artist", "album", "art", "identity", "entry", "length", "position"])
+                for (const k of ["title", "artist", "album", "art", "identity", "entry", "url", "length", "position"])
                     if (d[k] !== undefined)
                         root[k] = d[k];
             } catch (e) {}

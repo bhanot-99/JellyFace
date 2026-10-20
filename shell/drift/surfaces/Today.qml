@@ -22,7 +22,12 @@ Surface {
     readonly property var tabs: [home, media, performance, weather]
     readonly property Item tab: tabs[DriftState.dashTab] ?? home
 
-    onActiveChanged: if (active) home.reset()
+    onActiveChanged: {
+        if (active)
+            home.reset();
+        else
+            visited = false;
+    }
 
     Keys.onPressed: e => {
         const n = parseInt(e.text);
@@ -43,6 +48,57 @@ Surface {
     blur: Region {
         BlurRegion {
             pane: sheet.body
+        }
+    }
+
+    // Like Classic's dashboard: once the cursor has been over the panel (or the strip above it, where it came down from
+    // the top edge) and leaves, it closes after a moment. Opened from the clock, it stays until the cursor has visited.
+    property bool visited
+
+    Item {
+        id: zone
+
+        x: sheet.x
+        width: sheet.width
+        height: sheet.y + sheet.height + 6
+
+        HoverHandler {
+            id: zoneHover
+
+            onHoveredChanged: {
+                if (hovered) {
+                    visit.restart();
+                    leave.stop();
+                } else {
+                    visit.stop();
+                    if (root.visited && root.active)
+                        leave.restart();
+                }
+            }
+        }
+    }
+
+    // a visit counts once the cursor has rested in the zone, after the panel finished opening: while it grows (or
+    // changes height between tabs) the zone can sweep over a resting cursor and away again
+    Timer {
+        id: visit
+
+        interval: 300
+        onTriggered: {
+            if (zoneHover.hovered && root.progress > 0.99)
+                root.visited = true;
+            else if (zoneHover.hovered)
+                restart();
+        }
+    }
+
+    Timer {
+        id: leave
+
+        interval: 350
+        onTriggered: {
+            if (!zoneHover.hovered && root.active)
+                DriftState.close();
         }
     }
 
