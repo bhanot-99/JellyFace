@@ -27,7 +27,10 @@ Surface {
             return "colour";
         if (/^(https?:\/\/|www\.)\S+$/i.test(t))
             return "link";
-        if (/[{};]|^\s*(def|fn|function|import|const|let|class)\b|^\$ /m.test(t) && t.includes("\n"))
+        // code: several lines that end like code, or start with a keyword or a shell prompt (prose with a ";" is text)
+        const lines = t.split("\n");
+        const codeish = lines.filter(l => /[;{}]\s*$|^\s*(def|fn|function|import|from|const|let|var|class|return|if|for)\b|^\s*(\$|#!|\/\/)/.test(l)).length;
+        if (lines.length > 1 && codeish >= Math.max(2, lines.length * 0.3))
             return "code";
         return "text";
     }

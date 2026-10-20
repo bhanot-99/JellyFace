@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+### Drift: a second interface (opt-in)
+JellyFace now has two complete looks. **Classic** is unchanged and stays the default; **Drift** is new: calm pastel
+glass, an interface that appears when you call it, keyboard first, one motion curve for everything
+(`docs/NEW-UI-PLAN.md`). Switch with `jellyface ui drift` and back with `jellyface ui classic` (each restarts the shell).
+- Desktop: "glass sails" wallpaper in six moods (or COSMIC's own) that follows the time of day; floating top-bar pills
+  (desks, focused app, now playing, focus timer, time and status); a glass dock from the same `dock.json`.
+- Control Center (Super+C or the status pill): Wi-Fi, Bluetooth, Focus, volume and brightness, quick actions, battery,
+  media and notifications, each tile growing in place into its detail view (networks with passwords, device pairing,
+  sound devices and app volumes, Deep Focus sessions, power profiles, every notification). Fully keyboard-driven.
+- Command bar (Super+Space or Super): apps, open windows, settings, actions, files, maths and unit conversion.
+- Window hints (Super+E), desk overview (Super+D), clipboard carousel (Super+V), Today (click the time), power menu,
+  keyboard sheet (Super+Shift+/), notification toasts, Deep Focus (Super+Shift+F) with a timer.
+- Appearance (Super+P): light / dark / auto (by sunset), accent, wallpaper, glass transparency and frost, dock and bar
+  modes, and an optional switch so COSMIC's own apps follow light and dark.
+- Its own lock screen look on the same lock, password check and safety net as Classic.
+- Safety: Drift is compiled before it is shown and Classic starts instead if it ever fails to load; the lock screen,
+  idle handling and battery warnings are shared; every system change (shortcuts, COSMIC's dark mode) is tracked for
+  `jellyface revert-system`. `tests/drift-check.sh` load-checks every Drift file without touching the running desktop.
+
+### Changes shared by both interfaces
+- `shell.qml` holds only what both interfaces share; Classic moved unchanged into `ClassicShell.qml`.
+- The lock screen opens the session itself if a lock surface ever fails to finish its unlock animation (1.5 s).
+- The window helper (`wind`) also reports each window's workspace (`"ws"`).
+
 ### Fixes
 - Closing the lid showed COSMIC's lock screen after waking instead of JellyFace's. COSMIC's own locker locks on every
   suspend and, as a native host process, always beat the shell to the session lock. JellyFace now handles the lid while

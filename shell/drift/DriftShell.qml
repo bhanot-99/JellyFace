@@ -34,7 +34,6 @@ Scope {
     Wallpaper {}
     TopBar {}
     Dock {}
-    Osd {}
     Toasts {}
     Stage {}
 }

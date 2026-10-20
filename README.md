@@ -38,7 +38,21 @@ COSMIC settings is recorded and can be undone with one command.
 
 ## Features
 
-| | |
+JellyFace has two interfaces. **Classic** (below) is the default. **Drift** is a second, complete look — calm pastel
+glass, keyboard first — that you can switch to and from at any time:
+
+```bash
+jellyface ui drift     # Drift: Super+Space command bar, Super+C Control Center, Super+E window hints, Super+D desks,
+                       # Super+P appearance, Super+Shift+/ every shortcut (restarts the shell)
+jellyface ui classic   # back to Classic
+```
+
+Drift has a living "glass sails" wallpaper, floating top-bar pills, a glass dock, a Control Center whose tiles grow into
+their detail views, a command bar (apps, windows, settings, files, maths, units), window hints, a desk overview, a
+clipboard carousel, Today, Deep Focus, an Appearance window (light / dark / auto, accent, wallpaper, glass) and its own
+lock screen on the same secure lock. See [docs/NEW-UI-PLAN.md](docs/NEW-UI-PLAN.md).
+
+| Classic | |
 |---|---|
 | **Bar** | Slim left bar: JellyFace logo, real COSMIC workspaces, the focused app's name, tray, status icons (Wi-Fi, Bluetooth, sound, battery), clock, power menu. Hides automatically for a fullscreen window on the current workspace. |
 | **Dashboard** | Slides down from the top edge: calendar, weather, media player with lyrics, performance gauges, quick actions (screenshot, record, clipboard, focus mode, keep awake). |
