@@ -46,10 +46,12 @@ Scope {
         onTriggered: root.shown = root.wanted
     }
 
-    // the bottom-edge trigger that calls an auto-hidden dock back
+    // the bottom-edge trigger that calls an auto-hidden dock back. It stays up while the dock is out: a window that is
+    // hidden never hears the cursor leave, so `edge` stayed true and the dock never went away again.
     PanelWindow {
         screen: Quickshell.screens[0]
-        visible: root.mode === "autohide" && !root.shown && !DeepFocus.active && !CosmicWindows.fullscreen
+        visible: root.mode === "autohide" && !DeepFocus.active && !CosmicWindows.fullscreen
+        onVisibleChanged: if (!visible) root.edge = false
         WlrLayershell.namespace: "jellyface-drift-dock-edge"
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
