@@ -680,7 +680,7 @@ Surface {
 
                 SettingRow {
                     label: "Gaps between windows"
-                    sub: "Off: tiled windows fill the screen like a maximized one"
+                    sub: "Tiled windows keep a little space around them; off, they fill the screen edge to edge"
 
                     Toggle {
                         checked: DriftConfig.windowGaps

@@ -199,7 +199,7 @@ Item {
         readonly property real reach: (width - cover.width) / 2 - 10
 
         visible: !root.empty
-        width: 262
+        width: 228
         height: parent.height
 
         Shape {
@@ -245,8 +245,8 @@ Item {
             id: cover
 
             anchors.centerIn: parent
-            width: 176
-            height: 176
+            width: 158
+            height: 158
 
             Item {
                 id: coverMask
@@ -311,9 +311,9 @@ Item {
         id: details
 
         visible: !root.empty
-        x: disc.width + 14
+        x: disc.width + 10
         anchors.verticalCenter: parent.verticalCenter
-        width: 344
+        width: 326
         spacing: 4
 
         Kicker {
@@ -483,7 +483,7 @@ Item {
     // ── lyrics and the player ──
     Tile {
         visible: !root.empty
-        x: details.x + details.width + 22
+        x: details.x + details.width + 18
         width: parent.width - x
         height: parent.height
         interactive: false

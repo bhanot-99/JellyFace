@@ -9,5 +9,5 @@
   "bar": "full",
   "focusMinutes": 25,
   "cosmicSync": false,
-  "windowGaps": false
+  "windowGaps": true
 }
