@@ -7,16 +7,56 @@ import Quickshell.Wayland
 import qs.components.misc
 
 Scope {
+    id: root
+
     property alias lock: lock
+    property alias pam: pam
+
+    // Drift draws its own lock screen (drift/surfaces/DriftLockSurface.qml): only the picture differs, the lock, its
+    // safety flag and the password check below are the same. If Drift's surface ever fails to load, Classic's is used.
+    readonly property Component driftSurface: Quickshell.env("JF_UI") === "drift" ? Qt.createComponent(Qt.resolvedUrl("../../drift/surfaces/DriftLockSurface.qml")) : null
 
     WlSessionLock {
         id: lock
 
         signal unlock
 
+        surface: root.driftSurface?.status === Component.Ready ? root.driftSurface : classicSurface
+    }
+
+    Component.onCompleted: {
+        if (driftSurface && driftSurface.status !== Component.Ready)
+            console.warn(`drift: failed to load the lock surface, using Classic's: ${driftSurface.errorString()}`);
+    }
+
+    Component {
+        id: classicSurface
+
         LockSurface {
             lock: lock
             pam: pam
+        }
+    }
+
+    // The surface lets the session go at the end of its unlock animation. Should it ever fail to (a surface that broke),
+    // a correct password must still open the session: after 1.5 s this does it instead.
+    Connections {
+        function onUnlock(): void {
+            unlockWatchdog.restart();
+        }
+
+        target: lock
+    }
+
+    Timer {
+        id: unlockWatchdog
+
+        interval: 1500
+        onTriggered: {
+            if (lock.locked) {
+                console.warn("lock: the lock surface did not finish unlocking; unlocking directly");
+                lock.locked = false;
+            }
         }
     }
 

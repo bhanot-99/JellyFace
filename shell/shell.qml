@@ -57,6 +57,12 @@ ShellRoot {
         value: lock.lock
     }
 
+    Binding {
+        target: LockBridge
+        property: "pam"
+        value: lock.pam
+    }
+
     GSFLoader {}
     ServiceLoader {}
 
