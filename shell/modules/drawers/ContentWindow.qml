@@ -138,7 +138,10 @@ StyledWindow {
     HyprlandFocusGrab {
         id: focusGrab
 
+        // Hyprland only: on COSMIC it cannot work and logged a warning every time a panel opened
         active: {
+            if (!Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE"))
+                return false;
             const s = root.screenState;
             const conf = root.contentItem.Config;
             if ((s.launcher && conf.launcher.enabled) || (s.session && conf.session.enabled) || (s.sidebar && conf.sidebar.enabled))

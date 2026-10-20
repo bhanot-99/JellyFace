@@ -91,7 +91,7 @@ Item {
     }
 
     HyprlandFocusGrab {
-        active: root.isDetached
+        active: root.isDetached && !!Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") // Hyprland only (warns on COSMIC)
         windows: [QsWindow.window]
         onCleared: root.close()
     }

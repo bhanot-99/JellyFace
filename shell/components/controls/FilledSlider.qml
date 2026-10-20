@@ -14,15 +14,11 @@ Slider {
 
     orientation: Qt.Vertical
 
+    // the same flat tonal track as the rest of the shell's controls (a glass bevel here made the volume and brightness
+    // sliders the only ones with a lit top edge and a sheen)
     background: StyledRect {
-        id: bgRect
-
-        color: Glass.enabled ? Glass.sheet : Colours.layer(Colours.palette.m3surfaceContainer, 2)
+        color: Colours.layer(Colours.palette.m3surfaceContainer, 2)
         radius: Tokens.rounding.full
-
-        GlassBevel {
-            radius: bgRect.radius
-        }
 
         StyledRect {
             anchors.left: parent.left
