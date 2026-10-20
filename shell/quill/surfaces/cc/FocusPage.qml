@@ -38,6 +38,10 @@ ListPage {
         subtitle: "Notifications stay quiet until you turn it off"
         rowHeight: 48
         current: root.current === 0
+        onClicked: {
+            root.current = 0;
+            Notifs.dnd = !Notifs.dnd;
+        }
 
         Toggle {
             checked: Notifs.dnd
@@ -60,7 +64,10 @@ ListPage {
             rowHeight: 48
             current: root.current === index + 1
             trailing: DeepFocus.active ? "Stop" : "Start"
-            onClicked: DeepFocus.active ? DeepFocus.stop() : DeepFocus.start(modelData)
+            onClicked: {
+                root.current = index + 1;
+                DeepFocus.active ? DeepFocus.stop() : DeepFocus.start(modelData);
+            }
         }
     }
 
@@ -72,6 +79,10 @@ ListPage {
         subtitle: "The screen stays on and never locks by itself"
         rowHeight: 48
         current: root.current === root.sessions.length + 1
+        onClicked: {
+            root.current = root.sessions.length + 1;
+            IdleInhibitor.enabled = !IdleInhibitor.enabled;
+        }
 
         Toggle {
             checked: IdleInhibitor.enabled

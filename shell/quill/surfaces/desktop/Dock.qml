@@ -11,7 +11,8 @@ import qs.quill.components
 
 // Quill's dock: a glass capsule of app icons at the bottom centre, from the same dock.json as Classic's dock.
 // A dot under an app shows it is running (a longer accent bar: it has focus). Click opens or cycles its windows;
-// right-click offers "Close windows" and "Remove from dock". The last button opens the command bar (every app).
+// right-click offers "Close windows" and "Remove from dock" (it folds away when the pointer leaves the dock, or on a
+// right-click again). The last button opens the command bar (every app).
 //   always    stays up and windows keep clear of it
 //   autohide  slides away while a window is on the desk; the bottom edge calls it back
 //   off       never shown (Super+Space finds every app)
@@ -44,6 +45,35 @@ Scope {
 
         interval: 450
         onTriggered: root.shown = root.wanted
+    }
+
+    // the dock window never has the keyboard, so its menu can't take Esc or a click elsewhere: it closes once the
+    // pointer has left the dock for a moment, or when a Quill surface opens
+    Timer {
+        id: menuTimer
+
+        interval: 700
+        onTriggered: root.menuIndex = -1
+    }
+
+    Connections {
+        function onHoveredChanged(): void {
+            if (hover.hovered)
+                menuTimer.stop();
+            else if (root.menuIndex >= 0)
+                menuTimer.restart();
+        }
+
+        target: hover
+    }
+
+    Connections {
+        function onOpenChanged(): void {
+            if (QuillState.open !== "")
+                root.menuIndex = -1;
+        }
+
+        target: QuillState
     }
 
     // the bottom-edge trigger that calls an auto-hidden dock back. It stays up while the dock is out: a window that is
@@ -259,14 +289,26 @@ Scope {
             id: menu
 
             property real anchorX
+            readonly property bool open: root.menuIndex >= 0
 
-            visible: root.menuIndex >= 0
+            visible: opacity > 0
+            enabled: open
+            opacity: open ? 1 : 0
+            scale: open ? 1 : 0.94
+            transformOrigin: Item.Bottom
             color: Theme.sheet
             radius: 16
             width: 200
             height: menuCol.implicitHeight + 12
             x: Math.max(8, Math.min(parent.width - width - 8, anchorX - width / 2))
             y: capsule.y - height - 10
+
+            Behavior on opacity {
+                Anim { duration: Theme.fast }
+            }
+            Behavior on scale {
+                Anim { duration: Theme.fast }
+            }
 
             Column {
                 id: menuCol

@@ -21,6 +21,8 @@ Rectangle {
     default property alias trailingItems: trail.data
     readonly property alias hovered: area.containsMouse
     signal clicked
+    // the pointer moved over the row (unlike `hovered`, not when the list scrolls under a resting pointer)
+    signal pointed
 
     implicitHeight: rowHeight
     radius: Theme.radiusRow
@@ -41,10 +43,11 @@ Rectangle {
         width: 26
         height: 26
         radius: 8
-        color: root.iconSource !== "" ? "transparent" : root.current ? Qt.rgba(1, 1, 1, 0.22) : Qt.alpha(root.iconTint, 0.14)
+        color: picture.visible ? "transparent" : root.current ? Qt.rgba(1, 1, 1, 0.22) : Qt.alpha(root.iconTint, 0.14)
 
+        // the glyph until the app's picture is there, and instead of one that can't be loaded
         Icon {
-            visible: root.iconSource === ""
+            visible: !picture.visible
             anchors.centerIn: parent
             name: root.icon
             size: 16
@@ -52,7 +55,9 @@ Rectangle {
         }
 
         Image {
-            visible: root.iconSource !== ""
+            id: picture
+
+            visible: root.iconSource !== "" && status === Image.Ready
             anchors.fill: parent
             source: root.iconSource
             sourceSize: Qt.size(52, 52)
@@ -132,5 +137,6 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.clicked()
+        onPositionChanged: root.pointed()
     }
 }

@@ -51,6 +51,17 @@ Rectangle {
                 width: root.segment
                 height: root.height - 8
 
+                Rectangle {
+                    anchors.fill: parent
+                    radius: height / 2
+                    color: Theme.tileHover
+                    opacity: segArea.containsMouse && root.current !== seg.modelData ? 0.6 : 0
+
+                    Behavior on opacity {
+                        Anim { duration: Theme.fast }
+                    }
+                }
+
                 Label {
                     anchors.centerIn: parent
                     text: root.labels.length > seg.index ? root.labels[seg.index] : seg.modelData
@@ -60,7 +71,10 @@ Rectangle {
                 }
 
                 MouseArea {
+                    id: segArea
+
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.picked(seg.modelData)
                 }

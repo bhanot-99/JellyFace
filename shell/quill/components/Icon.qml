@@ -16,7 +16,8 @@ Text {
     verticalAlignment: Text.AlignVCenter
     renderType: Text.NativeRendering
 
+    // as fast as the highlights behind it (a selected row turning accent), so text never lags a step behind
     Behavior on color {
-        ColorAnim {}
+        ColorAnim { duration: Theme.fast }
     }
 }

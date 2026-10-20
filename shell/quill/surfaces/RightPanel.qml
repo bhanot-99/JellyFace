@@ -27,11 +27,21 @@ Surface {
         n.close();
     }
 
-    onActiveChanged: current = -1
+    // the keyboard selection, kept on the list (one dismissed at the end moves it up) and scrolled into view
+    function select(i: int): void {
+        current = items.length === 0 ? -1 : Math.max(0, Math.min(items.length - 1, i));
+        const card = Array.from(column.children).find(c => c.index === current && c.notif);
+        if (card)
+            list.contentY = Math.max(0, Math.min(card.y + card.height / 2 - list.height / 2, list.contentHeight - list.height));
+    }
 
-    Keys.onUpPressed: current = Math.max(0, current - 1)
-    Keys.onDownPressed: current = Math.min(items.length - 1, current + 1)
+    onActiveChanged: current = -1
+    onItemsChanged: if (current >= items.length) current = items.length - 1
+
+    Keys.onUpPressed: select(current - 1)
+    Keys.onDownPressed: select(current + 1)
     Keys.onReturnPressed: if (items[current]) open(items[current])
+    Keys.onEnterPressed: if (items[current]) open(items[current])
     Keys.onDeletePressed: if (items[current]) items[current].close()
 
     blur: Region {
@@ -142,14 +152,27 @@ Surface {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
 
+            Behavior on contentY {
+                enabled: !list.moving
+                Anim { duration: Theme.fast }
+            }
+
             Column {
                 id: column
 
                 width: parent.width
                 spacing: 6
 
+                move: Transition {
+                    Anim {
+                        property: "y"
+                    }
+                }
+
                 Repeater {
-                    model: root.items
+                    model: ScriptModel {
+                        values: root.items
+                    }
 
                     NotificationCard {
                         required property var modelData

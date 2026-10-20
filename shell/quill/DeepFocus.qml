@@ -27,10 +27,6 @@ Singleton {
             FocusMode.toggle();
     }
 
-    function extend(minutes: int): void {
-        endsAt += minutes * 60000;
-    }
-
     Connections {
         function onEnabledChanged(): void {
             if (FocusMode.enabled && root.endsAt <= Date.now())

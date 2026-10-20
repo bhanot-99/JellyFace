@@ -3,7 +3,8 @@ import QtQuick.Effects
 import qs.quill
 
 // A horizontal slider (0-1). While it is dragged a dark bubble above the knob shows the value ("62%").
-// `moved(value)` fires while dragging, `released(value)` once at the end; scroll and arrow keys step by 5%.
+// `moved(value)` fires while dragging, `released(value)` once at the end; scrolling steps 5% a notch (a touchpad moves
+// it smoothly).
 Item {
     id: root
 
@@ -21,6 +22,7 @@ Item {
 
     implicitWidth: 220
     implicitHeight: 28
+    opacity: enabled ? 1 : 0.45
 
     Behavior on shown {
         enabled: !root.dragging
@@ -76,7 +78,7 @@ Item {
         Rectangle {
             id: knob
 
-            width: root.dragging ? 22 : 18
+            width: root.dragging ? 22 : area.containsMouse ? 20 : 18
             height: width
             radius: width / 2
             anchors.verticalCenter: parent.verticalCenter
@@ -135,6 +137,7 @@ Item {
         anchors.fill: track
         anchors.topMargin: -12
         anchors.bottomMargin: -12
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         preventStealing: true
         onPressed: e => {
@@ -149,7 +152,9 @@ Item {
         }
         onReleased: root.released(root.dragValue)
         onWheel: w => {
-            const v = Math.max(0, Math.min(1, root.value + (w.angleDelta.y > 0 ? 0.05 : -0.05)));
+            if (w.angleDelta.y === 0)
+                return;
+            const v = Math.max(0, Math.min(1, root.value + w.angleDelta.y / 120 * 0.05));
             root.moved(v);
             root.released(v);
         }

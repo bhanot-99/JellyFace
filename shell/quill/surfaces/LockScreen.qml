@@ -5,7 +5,6 @@ import QtQuick.Effects
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 import M3Shapes
 import Jellyface.Services
 import qs.components.effects
@@ -26,12 +25,12 @@ import qs.quill.components
 Item {
     id: root
 
-    property var lock: LockBridge.lock
     property var pam: LockBridge.pam
     readonly property var player: Players.active
     property real shown: 1
-    // the next few events (scripts/agenda.py keeps them in agenda.json)
-    property var agenda: []
+    // the next few events (scripts/agenda.py keeps them in agenda.json), dropping each as it ends
+    property var events: []
+    readonly property var agenda: events.filter(e => new Date(e.end) > Time.date).slice(0, 4)
 
     function shakePassword(): void {
         shake.restart();
@@ -44,10 +43,9 @@ Item {
         onFileChanged: reload()
         onLoaded: {
             try {
-                const now = new Date();
-                root.agenda = (JSON.parse(text()).events ?? []).filter(e => new Date(e.end) > now).slice(0, 4);
+                root.events = JSON.parse(text()).events ?? [];
             } catch (e) {
-                root.agenda = [];
+                root.events = [];
             }
         }
     }
@@ -250,9 +248,9 @@ Item {
                     Row {
                         spacing: 8
 
-                        IconButton { size: 40; icon: "skip_previous"; enabled: !!mediaCard.p; opacity: enabled ? 1 : 0.4; onClicked: mediaCard.p.previous() }
+                        IconButton { size: 40; icon: "skip_previous"; enabled: !!mediaCard.p; onClicked: mediaCard.p.previous() }
                         IconButton { size: 48; icon: mediaCard.p?.isPlaying ? "pause" : "play_arrow"; active: !!mediaCard.p; enabled: !!mediaCard.p; onClicked: mediaCard.p.togglePlaying() }
-                        IconButton { size: 40; icon: "skip_next"; enabled: !!mediaCard.p; opacity: enabled ? 1 : 0.4; onClicked: mediaCard.p.next() }
+                        IconButton { size: 40; icon: "skip_next"; enabled: !!mediaCard.p; onClicked: mediaCard.p.next() }
                     }
                 }
 
@@ -683,7 +681,12 @@ Item {
                         width: 38
                         height: 38
                         radius: 19
-                        color: (root.pam?.buffer.length ?? 0) > 0 ? Theme.accent : Theme.well
+                        color: (root.pam?.buffer.length ?? 0) > 0 ? (goArea.containsMouse ? Qt.lighter(Theme.accent, 1.1) : Theme.accent) : Theme.well
+                        scale: goArea.pressed && goArea.ready ? 0.92 : 1
+
+                        Behavior on scale {
+                            Anim { duration: Theme.fast }
+                        }
 
                         Behavior on color {
                             ColorAnim { duration: Theme.fast }
@@ -705,9 +708,16 @@ Item {
                         }
 
                         MouseArea {
+                            id: goArea
+
+                            readonly property bool ready: !!root.pam && !root.pam.passwd.active && root.pam.buffer.length > 0 && root.pam.state !== 2
+
                             anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.pam?.passwd.start()
+                            hoverEnabled: true
+                            cursorShape: ready ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            // the same checks Enter goes through (pam.handleKey): never while a check runs, never empty,
+                            // never after too many tries
+                            onClicked: if (ready) root.pam.passwd.start()
                         }
                     }
                 }

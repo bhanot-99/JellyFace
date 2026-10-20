@@ -32,19 +32,28 @@ ListPage {
 
     onActivate: i => connect(networks[i])
     Component.onCompleted: Nmcli.rescanWifi()
+    // (the page is kept while Control Center is closed: look again whenever it comes back)
+    onVisibleChanged: if (visible) Nmcli.rescanWifi()
 
     header: PageHeader {
         title: "Wi-Fi"
 
         IconButton {
+            id: rescan
+
             anchors.verticalCenter: parent.verticalCenter
             size: 30
             icon: "refresh"
             onClicked: Nmcli.rescanWifi()
-            rotation: Nmcli.scanning ? 360 : 0
 
-            Behavior on rotation {
-                RotationAnimation { duration: 900; direction: RotationAnimation.Clockwise }
+            // turns for as long as the scan runs
+            RotationAnimator on rotation {
+                running: Nmcli.scanning
+                from: 0
+                to: 360
+                duration: 900
+                loops: Animation.Infinite
+                onRunningChanged: if (!running) rescan.rotation = 0
             }
         }
 

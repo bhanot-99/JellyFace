@@ -1,10 +1,10 @@
 import QtQuick
-import Quickshell
 import qs.quill
 import qs.quill.components
 
 // A preview of the lock screen (`jellyface ipc quill open lockpreview`, or Appearance), without locking anything: no
-// password is taken. Any key or click closes it.
+// password is taken. Any key or click closes it. Built only while it shows: the lock screen measures CPU, memory and
+// storage, which the desktop must not keep doing for a preview nobody looks at.
 Surface {
     id: root
 
@@ -17,10 +17,14 @@ Surface {
         e.accepted = true;
     }
 
-    LockScreen {
+    Loader {
         anchors.fill: parent
-        shown: root.progress
-        pam: null
+        active: root.visible
+
+        sourceComponent: LockScreen {
+            shown: root.progress
+            pam: null
+        }
     }
 
     MouseArea {

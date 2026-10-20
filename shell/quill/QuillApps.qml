@@ -30,7 +30,14 @@ Singleton {
             return `file://${i}`;
         if (i.includes("/"))
             return `file://${Quickshell.shellPath(`../${i}`)}`;
-        return Quickshell.iconPath(i, true) || `file://${Paths.home}/.local/share/flatpak/exports/share/icons/hicolor/256x256/apps/${i}.png`;
+        const themed = Quickshell.iconPath(i, true);
+        if (themed)
+            return themed;
+        // an installed app the theme can't see is usually a user flatpak; a window with no app at all (a web app that
+        // shipped no icon) gets the generic one instead of a path that doesn't exist
+        if (entry || app?.icon)
+            return `file://${Paths.home}/.local/share/flatpak/exports/share/icons/hicolor/256x256/apps/${i}.png`;
+        return Quickshell.iconPath("application-x-executable", true);
     }
 
     // the icon for a window, from its class
@@ -103,30 +110,12 @@ Singleton {
         hostApps.running = true;
     }
 
-    function move(from: int, to: int): void {
-        const list = dock.slice();
-        to = Math.max(0, Math.min(list.length - 1, to));
-        if (from === to || from < 0 || from >= list.length)
-            return;
-        const [a] = list.splice(from, 1);
-        list.splice(to, 0, a);
-        dock = list;
-        save();
-    }
-
     function remove(i: int): void {
+        if (i < 0 || i >= dock.length)
+            return;
         const list = dock.slice();
         list.splice(i, 1);
         dock = list;
-        save();
-    }
-
-    function add(entry: var): void {
-        if (dock.some(a => a.id === entry.id))
-            return;
-        dock = dock.concat([{
-                id: entry.id
-            }]);
         save();
     }
 

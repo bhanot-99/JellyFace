@@ -11,7 +11,6 @@ Rectangle {
     readonly property alias hovered: area.containsMouse
     readonly property alias pressed: area.pressed
     signal clicked
-    signal rightClicked
 
     radius: Theme.radiusTile
     color: selected ? Theme.accentSoft : hovered && interactive ? Theme.tileHover : Theme.tile
@@ -37,7 +36,6 @@ Rectangle {
         enabled: root.interactive
         hoverEnabled: true
         cursorShape: root.interactive ? Qt.PointingHandCursor : Qt.ArrowCursor
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: e => e.button === Qt.RightButton ? root.rightClicked() : root.clicked()
+        onClicked: root.clicked()
     }
 }

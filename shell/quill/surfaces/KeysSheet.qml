@@ -40,8 +40,11 @@ Surface {
 
     Keys.onUpPressed: current = Math.max(0, current - 1)
     Keys.onDownPressed: current = Math.min(shortcuts.length - 1, current + 1)
-    Keys.onReturnPressed: {
-        const s = shortcuts[current];
+    Keys.onReturnPressed: run(current)
+    Keys.onEnterPressed: run(current)
+
+    function run(i: int): void {
+        const s = shortcuts[i];
         if (s?.run) {
             QuillState.close();
             s.run();
@@ -104,12 +107,10 @@ Surface {
 
                         anchors.fill: parent
                         hoverEnabled: true
+                        cursorShape: row.modelData.run ? Qt.PointingHandCursor : Qt.ArrowCursor
                         onClicked: {
                             root.current = row.index;
-                            if (row.modelData.run) {
-                                QuillState.close();
-                                row.modelData.run();
-                            }
+                            root.run(row.index);
                         }
                     }
 

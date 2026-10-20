@@ -38,6 +38,7 @@ Surface {
     }
     onQueryChanged: {
         current = 0;
+        list.positionViewAtBeginning();
         files = [];
         if (query.length >= 3 && !Calc.evaluate(query) && !Calc.convert(query))
             fileTimer.restart();
@@ -198,17 +199,22 @@ Surface {
 
         interval: 220
         onTriggered: {
-            findProc.running = false;
-            findProc.command = ["sh", "-c", "find \"$HOME\" -maxdepth 4 \\( -name '.*' -o -name node_modules -o -name target -o -name __pycache__ \\) -prune -o -iname \"*$1*\" -printf '%y\\t%p\\n' 2>/dev/null | head -n 6", "find", root.query];
-            findProc.running = true;
+            findProc.query = root.query;
+            // exec() stops a search still running for an older query before starting this one
+            findProc.exec(["sh", "-c", "find \"$HOME\" -maxdepth 4 \\( -name '.*' -o -name node_modules -o -name target -o -name __pycache__ \\) -prune -o -iname \"*$1*\" -printf '%y\\t%p\\n' 2>/dev/null | head -n 6", "find", root.query]);
         }
     }
 
     Process {
         id: findProc
 
+        property string query
+
         stdout: StdioCollector {
             onStreamFinished: {
+                // a search that finished after the text changed again is for a query no longer shown
+                if (findProc.query !== root.query)
+                    return;
                 const home = Quickshell.env("HOME");
                 root.files = text.split("\n").filter(l => l).map(l => {
                     const [type, path] = l.split("\t");
@@ -293,14 +299,16 @@ Surface {
                     width: ListView.view.width
                     rowHeight: modelData.big ? 64 : 42
                     titleSize: modelData.big ? Theme.title + 4 : Theme.body
-                    icon: modelData.iconSource ? "" : modelData.icon
+                    icon: modelData.icon
                     iconSource: modelData.iconSource ?? ""
                     title: modelData.title
                     subtitle: modelData.sub ?? ""
                     trailing: modelData.trailing ?? ""
                     current: root.current === index
                     onClicked: root.run(index)
-                    onHoveredChanged: if (hovered) root.current = index
+                    // only a moving pointer selects: the list scrolling under a resting one must not steal the
+                    // keyboard's choice
+                    onPointed: root.current = index
                 }
             }
         }

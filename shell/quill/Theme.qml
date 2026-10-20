@@ -113,7 +113,6 @@ Singleton {
     readonly property int radiusPane: 28
     readonly property int radiusTile: 20
     readonly property int radiusRow: 14
-    readonly property int radiusSmall: 10
     readonly property int s1: 4
     readonly property int s2: 8
     readonly property int s3: 12
@@ -138,5 +137,4 @@ Singleton {
     readonly property int fast: 120
     readonly property int normal: 220
     readonly property int slow: 380
-    readonly property int stagger: 30
 }

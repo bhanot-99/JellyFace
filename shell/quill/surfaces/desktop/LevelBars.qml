@@ -90,6 +90,8 @@ Scope {
     PanelWindow {
         screen: Quickshell.screens[0]
         visible: !CosmicWindows.fullscreen && QuillState.open === ""
+        // a hidden window never hears the pointer leave: without this the bars stayed out for good
+        onVisibleChanged: if (!visible) root.edgeHover = false
         WlrLayershell.namespace: "jellyface-quill-right-edge"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.exclusionMode: ExclusionMode.Ignore

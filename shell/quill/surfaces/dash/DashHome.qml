@@ -17,12 +17,15 @@ Item {
     property date month: new Date()
     property date chosen: new Date()
     property var dayEvents: ({})
-    property var upcoming: []
+    property var events: []
+    // what's up next, dropping each event as it ends (Time.date ticks once a minute)
+    readonly property var upcoming: events.filter(e => new Date(e.end) > Time.date).slice(0, 3)
+    readonly property string todayKey: key(Time.date)
     readonly property string stateDir: `${Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"}/jellyface`
     readonly property var player: Players.active
 
     implicitWidth: 820
-    implicitHeight: Math.max(left.implicitHeight, right.implicitHeight)
+    implicitHeight: Math.max(leftColumn.implicitHeight, rightColumn.implicitHeight)
 
     function key(d: date): string {
         return Qt.formatDate(d, "yyyy-MM-dd");
@@ -64,10 +67,9 @@ Item {
         onFileChanged: reload()
         onLoaded: {
             try {
-                const now = new Date();
-                root.upcoming = (JSON.parse(text()).events ?? []).filter(e => new Date(e.end) > now).slice(0, 3);
+                root.events = JSON.parse(text()).events ?? [];
             } catch (e) {
-                root.upcoming = [];
+                root.events = [];
             }
         }
     }
@@ -87,7 +89,7 @@ Item {
 
     // ── left: the date and the month ──
     Column {
-        id: left
+        id: leftColumn
 
         width: 330
         spacing: Theme.s3
@@ -118,8 +120,18 @@ Item {
             height: cal.implicitHeight + 24
             interactive: false
 
+            // a notch is a month; a touchpad's small deltas add up to one instead of racing through the year
             WheelHandler {
-                onWheel: e => root.shiftMonth(e.angleDelta.y > 0 ? -1 : 1)
+                property real pending
+
+                onWheel: e => {
+                    pending += e.angleDelta.y;
+                    const steps = Math.trunc(pending / 120);
+                    if (steps !== 0) {
+                        pending -= steps * 120;
+                        root.shiftMonth(-steps);
+                    }
+                }
             }
 
             Column {
@@ -188,7 +200,7 @@ Item {
                             required property int index
                             readonly property date d: new Date(days.first.getFullYear(), days.first.getMonth(), index - days.lead + 1)
                             readonly property bool inMonth: d.getMonth() === root.month.getMonth()
-                            readonly property bool today: root.key(d) === root.key(new Date())
+                            readonly property bool today: root.key(d) === root.todayKey
                             readonly property bool picked: root.key(d) === root.key(root.chosen)
                             readonly property var events: root.dayEvents[root.key(d)] ?? []
 
@@ -203,6 +215,10 @@ Item {
                                 color: day.today ? Theme.accent : day.picked ? Theme.accentSoft : dayArea.containsMouse ? Theme.tileHover : "transparent"
                                 border.width: day.picked && !day.today ? 1 : 0
                                 border.color: Theme.accent
+
+                                Behavior on color {
+                                    ColorAnim { duration: Theme.fast }
+                                }
                             }
 
                             Label {
@@ -246,7 +262,7 @@ Item {
             spacing: 4
 
             Kicker {
-                text: root.key(root.chosen) === root.key(new Date()) ? "On today" : `On ${Qt.formatDate(root.chosen, "ddd, MMM d")}`
+                text: root.key(root.chosen) === root.todayKey ? "On today" : `On ${Qt.formatDate(root.chosen, "ddd, MMM d")}`
             }
 
             Label {
@@ -284,9 +300,9 @@ Item {
 
     // ── right: weather, up next, media ──
     Column {
-        id: right
+        id: rightColumn
 
-        x: left.width + 24
+        x: leftColumn.width + 24
         width: root.width - x
         spacing: Theme.s3
 

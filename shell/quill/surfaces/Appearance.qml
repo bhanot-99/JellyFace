@@ -74,6 +74,23 @@ Surface {
         }
     }
 
+    // one page of the content: the chosen one fades and settles in, the one left fades out quickly
+    component Page: Column {
+        property string name
+        readonly property bool current: root.page === name
+
+        visible: opacity > 0
+        opacity: current ? 1 : 0
+        y: current ? 0 : 8
+
+        Behavior on opacity {
+            Anim { duration: current ? Theme.normal : Theme.fast }
+        }
+        Behavior on y {
+            Anim {}
+        }
+    }
+
     component Choice: Column {
         id: choice
 
@@ -92,12 +109,20 @@ Surface {
             radius: 16
             color: "transparent"
             clip: true
-            border.width: choice.chosen ? 2.5 : 1
-            border.color: choice.chosen ? Theme.accent : Theme.rimSoft
+            border.width: choice.chosen ? 2.5 : choiceArea.containsMouse ? 2 : 1
+            border.color: choice.chosen ? Theme.accent : choiceArea.containsMouse ? Qt.alpha(Theme.accent, 0.5) : Theme.rimSoft
+            scale: choiceArea.pressed ? 0.97 : 1
+
+            Behavior on scale {
+                Anim { duration: Theme.fast }
+            }
 
             MouseArea {
+                id: choiceArea
+
                 anchors.fill: parent
                 z: 10
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: choice.picked()
             }
@@ -271,8 +296,8 @@ Surface {
             height: sheet.height - 52
 
             // Theme
-            Column {
-                visible: root.page === "theme"
+            Page {
+                name: "theme"
                 width: parent.width
 
                 Heading {
@@ -346,8 +371,8 @@ Surface {
             }
 
             // Accent
-            Column {
-                visible: root.page === "accent"
+            Page {
+                name: "accent"
                 width: parent.width
                 spacing: Theme.s5
 
@@ -453,8 +478,8 @@ Surface {
             }
 
             // Wallpaper
-            Column {
-                visible: root.page === "wallpaper"
+            Page {
+                name: "wallpaper"
                 width: parent.width
 
                 Heading {
@@ -531,8 +556,8 @@ Surface {
             }
 
             // Glass
-            Column {
-                visible: root.page === "glass"
+            Page {
+                name: "glass"
                 width: parent.width
                 spacing: Theme.s3
 
@@ -632,8 +657,8 @@ Surface {
             }
 
             // Dock & bar
-            Column {
-                visible: root.page === "dock"
+            Page {
+                name: "dock"
                 width: parent.width
 
                 Heading {
@@ -706,8 +731,8 @@ Surface {
             }
 
             // Keyboard
-            Column {
-                visible: root.page === "keyboard"
+            Page {
+                name: "keyboard"
                 width: parent.width
                 spacing: 2
 
@@ -754,8 +779,8 @@ Surface {
             }
 
             // About
-            Column {
-                visible: root.page === "about"
+            Page {
+                name: "about"
                 width: parent.width
                 spacing: Theme.s4
 

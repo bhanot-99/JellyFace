@@ -38,6 +38,9 @@ Item {
     implicitWidth: 820
     implicitHeight: 340
 
+    // the player list never stays open behind a closed dashboard or another tab
+    onVisibleChanged: if (!visible) picker.open = false
+
     function move(dx: int, dy: int): void {
         if (dx < 0)
             player?.previous();
@@ -202,8 +205,10 @@ Item {
         width: 228
         height: parent.height
 
+        // tessellated off the UI thread, as Classic's: the rays change every frame while music plays
         Shape {
             anchors.fill: parent
+            asynchronous: true
             preferredRendererType: Shape.CurveRenderer
             data: rays.instances
         }
@@ -228,6 +233,7 @@ Item {
                 readonly property real cos: Math.cos(angle)
                 readonly property real sin: Math.sin(angle)
 
+                asynchronous: true
                 capStyle: ShapePath.RoundCap
                 strokeWidth: Math.max(2, 360 / disc.bars - 2)
                 strokeColor: Qt.alpha(Theme.accent, 0.35 + value * 0.65)
@@ -399,7 +405,6 @@ Item {
                 size: 44
                 icon: "shuffle"
                 active: !!root.player?.shuffle
-                opacity: root.player?.shuffleSupported ? 1 : 0.4
                 enabled: !!root.player?.shuffleSupported
                 onClicked: root.player.shuffle = !root.player.shuffle
             }
@@ -408,7 +413,6 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 size: 50
                 icon: "skip_previous"
-                opacity: root.player?.canGoPrevious ? 1 : 0.4
                 enabled: !!root.player?.canGoPrevious
                 onClicked: root.player.previous()
             }
@@ -419,11 +423,18 @@ Item {
                 width: parent.width - 44 * 2 - 50 * 2 - 8 * 4
                 height: 56
                 radius: root.playing ? 18 : 28
-                color: playArea.pressed ? Qt.darker(Theme.accent, 1.15) : Theme.accent
-                opacity: root.live || LastMedia.entry ? 1 : 0.4
+                color: playArea.pressed ? Qt.darker(Theme.accent, 1.15) : playArea.containsMouse ? Qt.lighter(Theme.accent, 1.08) : Theme.accent
+                opacity: root.live || LastMedia.entry || LastMedia.url ? 1 : 0.4
+                scale: playArea.pressed ? 0.97 : 1
 
                 Behavior on radius {
                     Anim {}
+                }
+                Behavior on color {
+                    ColorAnim { duration: Theme.fast }
+                }
+                Behavior on scale {
+                    Anim { duration: Theme.fast }
                 }
 
                 Row {
@@ -451,6 +462,7 @@ Item {
                     id: playArea
 
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.press()
                 }
@@ -460,7 +472,6 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 size: 50
                 icon: "skip_next"
-                opacity: root.player?.canGoNext ? 1 : 0.4
                 enabled: !!root.player?.canGoNext
                 onClicked: root.player.next()
             }
@@ -470,7 +481,6 @@ Item {
                 size: 44
                 icon: root.player?.loopState === MprisLoopState.Track ? "repeat_one" : "repeat"
                 active: root.live && root.player.loopState !== MprisLoopState.None
-                opacity: root.player?.loopSupported ? 1 : 0.4
                 enabled: !!root.player?.loopSupported
                 onClicked: {
                     const s = root.player.loopState;

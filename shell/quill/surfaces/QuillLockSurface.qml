@@ -1,18 +1,9 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Effects
-import QtQuick.Shapes
-import Quickshell
-import Quickshell.Io
 import Quickshell.Wayland
-import M3Shapes
-import Jellyface.Services
-import qs.components.effects
 import qs.services
-import qs.utils
 import qs.quill
-import qs.quill.components
 
 // Quill's lock screen: Classic's lock screen layout in Quill's glass. Only the picture is Quill's: the session lock, its
 // safety net and the password check are Classic's (modules/lock: Lock.qml creates this surface and LockBridge hands it
@@ -27,7 +18,6 @@ WlSessionLockSurface {
 
     readonly property var lock: LockBridge.lock
     readonly property var pam: LockBridge.pam
-    readonly property var player: Players.active
     property real shown: 0
     property bool leaving
 

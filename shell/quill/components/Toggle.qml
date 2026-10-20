@@ -14,7 +14,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: root.checked ? Theme.accent : Theme.well
+        color: root.checked ? (area.containsMouse ? Qt.lighter(Theme.accent, 1.08) : Theme.accent) : area.containsMouse ? Qt.alpha(Theme.well, Theme.well.a * 1.6) : Theme.well
         border.width: 1
         border.color: root.checked ? Qt.alpha(Theme.accent, 0.4) : Theme.rimSoft
 
@@ -45,8 +45,11 @@ Item {
     }
 
     MouseArea {
+        id: area
+
         anchors.fill: parent
         anchors.margins: -6
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: root.toggled(!root.checked)
     }

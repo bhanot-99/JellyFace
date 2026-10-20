@@ -15,7 +15,8 @@ Scope {
     id: root
 
     readonly property bool quiet: Notifs.dnd || DeepFocus.active || QuillState.open === "cc"
-    readonly property var cards: quiet ? [] : [...Notifs.popups].reverse().slice(0, 4)
+    // a dismissed card leaves at once, even while the pointer still holds it (its hover lock only delays the cleanup)
+    readonly property var cards: quiet ? [] : [...Notifs.popups].filter(n => !n.closed).reverse().slice(0, 4)
     readonly property var notices: [...Toaster.toasts].filter(t => !t.closed).slice(-2)
 
     PanelWindow {
@@ -43,8 +44,18 @@ Scope {
             width: 360
             spacing: 8
 
+            // the cards below glide up when one above leaves
+            move: Transition {
+                Anim {
+                    property: "y"
+                }
+            }
+
+            // (ScriptModel keeps the cards already shown when the list changes, so they don't flash in again)
             Repeater {
-                model: root.notices
+                model: ScriptModel {
+                    values: root.notices
+                }
 
                 Glass {
                     id: notice
@@ -79,13 +90,16 @@ Scope {
 
                     MouseArea {
                         anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
                         onClicked: notice.modelData.close()
                     }
                 }
             }
 
             Repeater {
-                model: root.cards
+                model: ScriptModel {
+                    values: root.cards
+                }
 
                 Glass {
                     id: card

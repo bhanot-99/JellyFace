@@ -273,6 +273,14 @@ Item {
                     target: NetworkUsage.downloadBuffer
                     ignoreUnknownSignals: true
                 }
+
+                Connections {
+                    function onAccentChanged(): void {
+                        spark.requestPaint();
+                    }
+
+                    target: Theme
+                }
             }
         }
 

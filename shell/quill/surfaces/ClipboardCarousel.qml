@@ -84,8 +84,8 @@ Surface {
                 x: fan.width / 2 - width / 2 + offset * 210 - Math.sign(offset) * Math.min(Math.abs(offset), 3) * 10
                 y: 40 + Math.abs(offset) * 10
                 z: 10 - Math.abs(offset)
-                scale: centre ? 1.08 : 1 - Math.min(0.24, Math.abs(offset) * 0.08)
-                opacity: (1 - Math.min(0.75, Math.abs(offset) * 0.22)) * root.progress
+                scale: (centre ? 1.08 : 1 - Math.min(0.24, Math.abs(offset) * 0.08)) + (cardArea.containsMouse && !centre ? 0.03 : 0)
+                opacity: 1 - Math.min(0.75, Math.abs(offset) * 0.22) + (cardArea.containsMouse && !centre ? 0.15 : 0)
                 rotation: offset * 3
 
                 Behavior on x {
@@ -99,6 +99,9 @@ Surface {
                 }
                 Behavior on rotation {
                     Anim { duration: Theme.normal }
+                }
+                Behavior on opacity {
+                    Anim { duration: Theme.fast }
                 }
 
                 Glass {
@@ -195,7 +198,10 @@ Surface {
                     }
 
                     MouseArea {
+                        id: cardArea
+
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: card.centre ? root.use(card.index) : root.current = card.index
                     }

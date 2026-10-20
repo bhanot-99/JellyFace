@@ -86,21 +86,29 @@ Scope {
             }
 
             WheelHandler {
-                id: wheel
+                id: wheelHandler
+
+                // a notch is one step; a touchpad's small deltas add up to one
+                property real pending
 
                 onWheel: e => {
-                    const up = e.angleDelta.y > 0;
-                    if (wheel.point.position.y > bar.height / 2) {
-                        root.monitor?.setBrightness(Math.max(0.01, Math.min(1, root.monitor.brightness + (up ? 0.05 : -0.05))));
+                    pending += e.angleDelta.y;
+                    const steps = Math.trunc(pending / 120);
+                    if (steps === 0)
+                        return;
+                    pending -= steps * 120;
+                    if (wheelHandler.point.position.y > bar.height / 2) {
+                        root.monitor?.setBrightness(Math.max(0.01, Math.min(1, root.monitor.brightness + steps * 0.05)));
                     } else {
-                        up ? Audio.incrementVolume() : Audio.decrementVolume();
+                        for (let i = 0; i < Math.abs(steps); i++)
+                            steps > 0 ? Audio.incrementVolume() : Audio.decrementVolume();
                     }
                 }
             }
 
             // ── top ──
             Column {
-                id: top
+                id: upper
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: 14
@@ -171,8 +179,12 @@ Scope {
                             MouseArea {
                                 id: deskArea
 
+                                // wide, but only half the gap above and below, so neighbouring desks never overlap
                                 anchors.fill: parent
-                                anchors.margins: -6
+                                anchors.leftMargin: -10
+                                anchors.rightMargin: -10
+                                anchors.topMargin: -3
+                                anchors.bottomMargin: -3
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: CosmicWs.activate(desk.index)
@@ -188,7 +200,7 @@ Scope {
 
                 visible: root.full && !!CosmicWindows.active
                 anchors.horizontalCenter: parent.horizontalCenter
-                anchors.top: top.bottom
+                anchors.top: upper.bottom
                 anchors.topMargin: 22
                 spacing: 10
 
@@ -202,7 +214,7 @@ Scope {
                 Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: 18
-                    height: Math.min(title.implicitWidth, Math.max(0, bottom.y - top.y - top.height - 90))
+                    height: Math.min(title.implicitWidth, Math.max(0, lower.y - upper.y - upper.height - 90))
 
                     Text {
                         id: title
@@ -226,7 +238,7 @@ Scope {
 
             // ── bottom ──
             Column {
-                id: bottom
+                id: lower
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
@@ -250,6 +262,18 @@ Scope {
                             width: 20
                             height: 20
 
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.margins: -6
+                                radius: 10
+                                color: Theme.accentSoft
+                                opacity: trayArea.containsMouse ? 1 : 0
+
+                                Behavior on opacity {
+                                    Anim { duration: Theme.fast }
+                                }
+                            }
+
                             IconImage {
                                 anchors.fill: parent
                                 source: Icons.getTrayIcon(tray.modelData.id, tray.modelData.icon)
@@ -257,8 +281,11 @@ Scope {
                             }
 
                             MouseArea {
+                                id: trayArea
+
                                 anchors.fill: parent
                                 anchors.margins: -4
+                                hoverEnabled: true
                                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: e => {
@@ -342,7 +369,11 @@ Scope {
                     width: 40
                     height: 40
                     radius: 20
-                    color: Theme.accentSoft
+                    color: focusArea.containsMouse || (QuillState.open === "cc" && QuillState.ccPage === "focus") ? Qt.alpha(Theme.accent, Theme.dark ? 0.4 : 0.26) : Theme.accentSoft
+
+                    Behavior on color {
+                        ColorAnim { duration: Theme.fast }
+                    }
 
                     Text {
                         anchors.centerIn: parent
@@ -354,7 +385,10 @@ Scope {
                     }
 
                     MouseArea {
+                        id: focusArea
+
                         anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: root.openCc("focus")
                     }

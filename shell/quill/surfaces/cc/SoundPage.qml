@@ -49,7 +49,10 @@ ListPage {
             title: modelData.description || modelData.nickname || modelData.name
             current: root.current === index
             checked: Audio.sink?.id === modelData.id
-            onClicked: Audio.setAudioSink(modelData)
+            onClicked: {
+                root.current = index;
+                Audio.setAudioSink(modelData);
+            }
         }
     }
 
@@ -82,7 +85,10 @@ ListPage {
             title: modelData.description || modelData.nickname || modelData.name
             current: root.current === index + root.outputs.length
             checked: Audio.source?.id === modelData.id
-            onClicked: Audio.setAudioSource(modelData)
+            onClicked: {
+                root.current = index + root.outputs.length;
+                Audio.setAudioSource(modelData);
+            }
         }
     }
 

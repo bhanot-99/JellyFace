@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell.Widgets
+import Quickshell
 import qs.services
 import qs.quill
 import qs.quill.components
@@ -15,6 +15,7 @@ ListPage {
     count: items.length
     maxListHeight: 440
     onActivate: i => open(items[i])
+    onCountChanged: if (current >= count) current = count - 1
 
     function open(n: var): void {
         const a = n.actions?.find(a => a.identifier === "default") ?? (n.actions?.length === 1 ? n.actions[0] : null);
@@ -73,7 +74,9 @@ ListPage {
     }
 
     Repeater {
-        model: root.items
+        model: ScriptModel {
+            values: root.items
+        }
 
         NotificationCard {
             required property var modelData

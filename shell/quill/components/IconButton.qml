@@ -9,8 +9,6 @@ Rectangle {
     property bool active
     property color activeColor: Theme.accent
     property int size: 44
-    property bool focused
-    property string tip
     readonly property alias hovered: area.containsMouse
     signal clicked
 
@@ -18,8 +16,9 @@ Rectangle {
     implicitHeight: size
     radius: size / 2
     color: active ? activeColor : area.containsMouse ? Theme.tileHover : Theme.tile
-    border.width: focused ? 2 : 1
-    border.color: focused ? Theme.accent : active ? Qt.alpha(activeColor, 0.6) : Theme.rimSoft
+    border.width: 1
+    border.color: active ? Qt.alpha(activeColor, 0.6) : area.containsMouse ? Theme.rim : Theme.rimSoft
+    opacity: enabled ? 1 : 0.4
     scale: area.pressed ? 0.92 : 1
 
     Behavior on color {
@@ -42,7 +41,7 @@ Rectangle {
 
         anchors.fill: parent
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: root.clicked()
     }
 }

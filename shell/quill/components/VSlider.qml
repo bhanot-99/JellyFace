@@ -35,8 +35,12 @@ Item {
             width: parent.width
             height: Math.max(parent.width, parent.height * Math.max(0, Math.min(1, root.shown)))
             radius: parent.radius
-            color: Theme.accent
+            color: area.containsMouse || root.dragging ? Qt.lighter(Theme.accent, 1.08) : Theme.accent
             opacity: root.shown > 0.001 ? 1 : 0.35
+
+            Behavior on color {
+                ColorAnim { duration: Theme.fast }
+            }
         }
     }
 
@@ -70,6 +74,7 @@ Item {
         }
 
         anchors.fill: parent
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         preventStealing: true
         onPressed: e => {
@@ -82,6 +87,10 @@ Item {
                 root.moved(root.dragValue);
             }
         }
-        onWheel: w => root.moved(Math.max(0, Math.min(1, root.value + (w.angleDelta.y > 0 ? root.step : -root.step))))
+        // a notch is one step; a touchpad's small deltas move it smoothly
+        onWheel: w => {
+            if (w.angleDelta.y !== 0)
+                root.moved(Math.max(0, Math.min(1, root.value + w.angleDelta.y / 120 * root.step)));
+        }
     }
 }

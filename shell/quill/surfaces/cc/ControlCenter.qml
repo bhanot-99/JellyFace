@@ -128,6 +128,8 @@ Surface {
     }
 
     onActiveChanged: if (!active) focusIndex = -1
+    // a tile that disappears (the media tile when the player closes) must not leave the ring on nothing
+    onTargetsChanged: if (focusIndex >= targets.length) focusIndex = targets.length - 1
 
     // ── expand in place ──
     function sourceOf(p: string): Item {
@@ -292,11 +294,14 @@ Surface {
                                     anchors.verticalCenter: parent.verticalCenter
                                     name: "chevron_right"
                                     size: 18
-                                    color: Theme.textSecondary
+                                    color: soundMoreArea.containsMouse ? Theme.accent : Theme.textSecondary
 
                                     MouseArea {
+                                        id: soundMoreArea
+
                                         anchors.fill: parent
                                         anchors.margins: -6
+                                        hoverEnabled: true
                                         cursorShape: Qt.PointingHandCursor
                                         onClicked: QuillState.ccPage = "sound"
                                     }
@@ -341,7 +346,15 @@ Surface {
                             width: 32
                             height: 32
                             radius: 16
-                            color: focusTile.selected ? Theme.accent : Theme.well
+                            color: focusTile.selected ? Theme.accent : moonArea.containsMouse ? Theme.tileHover : Theme.well
+                            scale: moonArea.pressed ? 0.9 : 1
+
+                            Behavior on color {
+                                ColorAnim { duration: Theme.fast }
+                            }
+                            Behavior on scale {
+                                Anim { duration: Theme.fast }
+                            }
 
                             Icon {
                                 anchors.centerIn: parent
@@ -352,7 +365,10 @@ Surface {
                             }
 
                             MouseArea {
+                                id: moonArea
+
                                 anchors.fill: parent
+                                hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: Notifs.dnd = !Notifs.dnd
                             }
@@ -447,6 +463,10 @@ Surface {
                             height: 56
                             radius: Theme.radiusRow
                             color: batteryArea.containsMouse ? Theme.tileHover : "transparent"
+
+                            Behavior on color {
+                                ColorAnim { duration: Theme.fast }
+                            }
 
                             MouseArea {
                                 id: batteryArea
@@ -640,7 +660,9 @@ Surface {
                     spacing: 2
 
                     Repeater {
-                        model: notifTile.latest
+                        model: ScriptModel {
+                            values: notifTile.latest
+                        }
 
                         Rectangle {
                             id: n
@@ -651,6 +673,10 @@ Surface {
                             height: 50
                             radius: Theme.radiusRow
                             color: nArea.containsMouse ? Theme.tileHover : "transparent"
+
+                            Behavior on color {
+                                ColorAnim { duration: Theme.fast }
+                            }
 
                             MouseArea {
                                 id: nArea
@@ -790,6 +816,10 @@ Surface {
         radius: Theme.radiusRow
         color: rowArea.containsMouse ? Theme.tileHover : "transparent"
 
+        Behavior on color {
+            ColorAnim { duration: Theme.fast }
+        }
+
         MouseArea {
             id: rowArea
 
@@ -808,10 +838,14 @@ Surface {
             width: 32
             height: 32
             radius: 16
-            color: row.on ? Theme.accent : Theme.well
+            color: row.on ? (dotArea.containsMouse ? Qt.lighter(Theme.accent, 1.1) : Theme.accent) : dotArea.containsMouse ? Theme.tileHover : Theme.well
+            scale: dotArea.pressed ? 0.9 : 1
 
             Behavior on color {
-                ColorAnim {}
+                ColorAnim { duration: Theme.fast }
+            }
+            Behavior on scale {
+                Anim { duration: Theme.fast }
             }
 
             Icon {
@@ -823,7 +857,10 @@ Surface {
             }
 
             MouseArea {
+                id: dotArea
+
                 anchors.fill: parent
+                hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: row.toggle()
             }

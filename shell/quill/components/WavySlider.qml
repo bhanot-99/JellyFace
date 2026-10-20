@@ -3,6 +3,8 @@ import qs.quill
 
 // A progress bar whose played part is a gentle wave that flows while `flowing` (Classic's media slider, in Quill's
 // colours); the rest is a flat track. Click or drag to seek: `released(value)` once, at the end.
+// The wave is painted once (a period wider than the bar) and slid sideways by the render thread, so a playing track
+// costs no repaint per frame.
 Item {
     id: root
 
@@ -14,23 +16,10 @@ Item {
     readonly property bool dragging: area.pressed
     readonly property real shown: dragging ? dragValue : Math.max(0, Math.min(1, value))
     property real dragValue
-    property real phase
     signal released(real value)
 
     implicitWidth: 300
     implicitHeight: 24
-
-    NumberAnimation on phase {
-        running: root.flowing && root.visible
-        from: 0
-        to: Math.PI * 2
-        duration: 1800
-        loops: Animation.Infinite
-    }
-
-    onPhaseChanged: wave.requestPaint()
-    onShownChanged: wave.requestPaint()
-    onFillChanged: wave.requestPaint()
 
     // the flat track ahead
     Rectangle {
@@ -42,26 +31,74 @@ Item {
         color: Theme.well
     }
 
-    Canvas {
-        id: wave
+    // the played part: the wave (or a flat line while paused), cut off just before the knob
+    Item {
+        id: played
 
-        anchors.fill: parent
-        onPaint: {
-            const c = getContext("2d");
-            c.reset();
-            const end = Math.max(0, knob.x - 4);
-            if (end < 2)
-                return;
-            c.strokeStyle = root.fill;
-            c.lineWidth = 4;
-            c.lineCap = "round";
-            c.beginPath();
-            const mid = height / 2, a = root.flowing ? root.amplitude : 0;
-            for (let x = 2; x <= end; x += 1.5) {
-                const y = mid + Math.sin(x / root.wavelength * Math.PI * 2 - root.phase) * a;
-                x === 2 ? c.moveTo(x, y) : c.lineTo(x, y);
+        x: 2
+        width: Math.max(0, knob.x - 4 - x)
+        height: root.height
+        clip: true
+
+        Rectangle {
+            visible: !root.flowing
+            anchors.verticalCenter: parent.verticalCenter
+            width: parent.width
+            height: 4
+            radius: 2
+            color: root.fill
+        }
+
+        Canvas {
+            id: wave
+
+            visible: root.flowing
+            width: root.width + root.wavelength
+            height: root.height
+
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
+            onVisibleChanged: if (visible) requestPaint()
+
+            Connections {
+                function onFillChanged(): void {
+                    wave.requestPaint();
+                }
+
+                function onAmplitudeChanged(): void {
+                    wave.requestPaint();
+                }
+
+                function onWavelengthChanged(): void {
+                    wave.requestPaint();
+                }
+
+                target: root
             }
-            c.stroke();
+
+            onPaint: {
+                const c = getContext("2d");
+                c.reset();
+                c.strokeStyle = root.fill;
+                c.lineWidth = 4;
+                c.lineCap = "round";
+                c.beginPath();
+                const mid = height / 2;
+                for (let x = 0; x <= width; x += 1.5) {
+                    const y = mid + Math.sin(x / root.wavelength * Math.PI * 2) * root.amplitude;
+                    x === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+                }
+                c.stroke();
+            }
+
+            // one wavelength to the right and back to the start, which looks the same: an endless flow
+            XAnimator on x {
+                running: root.flowing && root.visible
+                from: -root.wavelength
+                to: 0
+                duration: 1800
+                loops: Animation.Infinite
+            }
         }
     }
 
@@ -72,7 +109,7 @@ Item {
         x: root.shown * (root.width - width)
         anchors.verticalCenter: parent.verticalCenter
         width: 5
-        height: root.dragging ? 24 : 20
+        height: root.dragging ? 24 : area.containsMouse ? 22 : 20
         radius: 2.5
         color: root.fill
 
@@ -88,6 +125,7 @@ Item {
         anchors.topMargin: -6
         anchors.bottomMargin: -6
         enabled: root.enabled
+        hoverEnabled: true
         cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         preventStealing: true
         onPressed: e => root.dragValue = Math.max(0, Math.min(1, e.x / width))

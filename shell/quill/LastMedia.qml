@@ -27,6 +27,7 @@ Singleton {
             return;
         const cover = Players.getArtUrl(p);
         const changed = root.title !== p.trackTitle || root.artist !== (p.trackArtist ?? "") || root.identity !== Players.getIdentity(p);
+        const before = [root.title, root.artist, root.album, root.art, root.identity, root.entry, root.url, root.length].join("\n");
         root.title = p.trackTitle;
         root.artist = p.trackArtist ?? "";
         root.album = p.trackAlbum ?? "";
@@ -37,7 +38,9 @@ Singleton {
         root.length = p.length > 0 && p.length < 2147483647 ? p.length : 0;
         root.position = p.position ?? 0;
         root.url = String(p.metadata?.["xesam:url"] ?? "");
-        saveTimer.restart();
+        // the track itself is written at once; only the position moving on waits for the next save (every 30 s)
+        if ([root.title, root.artist, root.album, root.art, root.identity, root.entry, root.url, root.length].join("\n") !== before)
+            saveTimer.restart();
     }
 
     function resume(): void {
@@ -65,6 +68,12 @@ Singleton {
             root.remember(Players.active);
         }
 
+        // paused or stopped: keep where it stopped
+        function onIsPlayingChanged(): void {
+            root.remember(Players.active);
+            saveTimer.restart();
+        }
+
         target: Players.active
         ignoreUnknownSignals: true
     }
@@ -77,14 +86,18 @@ Singleton {
         target: Players
     }
 
-    // the position, now and then, so "last played" can say where it stopped
+    // the position, now and then, so "last played" can say where it stopped (and the file follows every 30 s: no need
+    // to write the disk every few seconds for as long as music plays)
     Timer {
         running: !!Players.active?.isPlaying
         interval: 5000
         repeat: true
+        property int ticks
         onTriggered: {
             Players.active?.positionChanged();
             root.remember(Players.active);
+            if (++ticks % 6 === 0)
+                saveTimer.restart();
         }
     }
 

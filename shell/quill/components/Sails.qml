@@ -11,6 +11,8 @@ Item {
     property string mood: QuillConfig.wallpaper
     // "system": COSMIC's own wallpaper is shown instead of the sails (the sails stay as the fallback)
     readonly property bool system: mood === "system" && Moods.systemWallpaper !== ""
+    // the sails are drawn only while the system picture is not covering them (it loads asynchronously)
+    readonly property bool sails: !system || picture.status !== Image.Ready
     property bool living: QuillConfig.living
     property bool darken: Theme.dark
     readonly property var m: Moods.mood(mood)
@@ -23,6 +25,7 @@ Item {
     readonly property var geometry: [[-0.12, 0.2, 0.52, 0.12], [0.18, 0.47, 0.8, 0.05], [0.42, 0.68, 1.02, 0.22], [-0.06, 0.16, 0.5, 0.36], [0.52, 0.86, 1.18, 0.34]]
 
     Rectangle {
+        visible: root.sails
         anchors.fill: parent
         gradient: Gradient {
             GradientStop { position: 0; color: root.m.sky[0] }
@@ -33,6 +36,7 @@ Item {
 
     // a horizontal wash so the sky is not one flat vertical ramp
     Rectangle {
+        visible: root.sails
         anchors.fill: parent
         opacity: 0.55
         gradient: Gradient {
@@ -88,6 +92,7 @@ Item {
     }
 
     Shape {
+        visible: root.sails
         anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
 
@@ -101,7 +106,7 @@ Item {
     // the time of day (living) and the dark theme's night shade, only over light moods
     Rectangle {
         anchors.fill: parent
-        visible: !root.m.dark
+        visible: root.sails && !root.m.dark
         color: {
             const t = root.living ? Moods.tint : [0, 0, 0, 0];
             const night = root.darken ? 0.5 : 0;
@@ -116,6 +121,8 @@ Item {
     }
 
     Image {
+        id: picture
+
         visible: root.system
         anchors.fill: parent
         source: root.system ? Moods.systemWallpaper : ""
