@@ -67,6 +67,9 @@ done
 [ -n "$why" ] && echo "  detail:$why"
 check "$cycles cycles: no leftovers after stop, healthy after start" '[ "$leak" -eq 0 ]'
 check "exactly one of each at the end" '[ "$(n_sup)" -eq 1 ] && [ "$(n_shell)" -eq 1 ] && [ "$(n_wsd)" -eq 1 ]'
+# the shell's clipboard watcher and network monitor used to survive every restart and pile up
+sleep 3
+check "no leftover clipboard watchers / network monitors" '[ "$(pgrep -fc "$JF_ORPHAN_RE")" -le 2 ]'
 
 echo "6. invalid config does not prevent startup"
 "$JF" stop >/dev/null; sleep 1
@@ -102,7 +105,34 @@ errs=$(runlog | grep -E "TypeError|ReferenceError|Unable to assign|is not a func
 check "no QML runtime errors in the log" '[ -z "$errs" ]'
 [ -n "$errs" ] && echo "$errs" | head -8 | cut -c1-200
 
-echo "9. memory"
+echo "9. window and workspace switching (fullscreen glitches)"
+# The window helper's first line must already know which window is focused and on which workspace (it used to print
+# every window unfocused and on the shown workspace, so the shell drew its bar over a fullscreen app for a moment).
+lines=$(timeout 1.5 "$JF_ROOT/helpers/cosmic-windows/wind" </dev/null 2>/dev/null)
+first=$(echo "$lines" | head -1)
+# (focus, fullscreen and workspaces only: titles change on their own, e.g. a terminal's spinner)
+state() { python3 -I -c 'import json,sys; d=json.loads(sys.argv[1]); print(d["active"], d["fullscreen"], [(w["id"], w["activated"], w["fullscreen"], w["minimized"], w["workspace_active"]) for w in d["windows"]])' "$1" 2>/dev/null; }
+check "window helper's first line is complete (same state as a second later)" '[ -n "$first" ] && [ "$(state "$first")" = "$(state "$(echo "$lines" | tail -1)")" ]'
+ids=$(python3 -I -c 'import json,sys; d=json.loads(sys.argv[1]); print(" ".join(str(w["id"]) for w in d["windows"] if not w["minimized"]))' "$first" 2>/dev/null)
+back=$(python3 -I -c 'import json,sys; print(json.loads(sys.argv[1])["active"])' "$first" 2>/dev/null)
+if [ "$(echo "$ids" | wc -w)" -ge 2 ]; then
+    runlog_start
+    fifo="$(mktemp -u)"; mkfifo "$fifo"
+    timeout 60 "$JF_ROOT/helpers/cosmic-windows/wind" <"$fifo" >/dev/null 2>&1 &
+    exec 8>"$fifo"
+    rounds=$([ $QUICK = 1 ] && echo 3 || echo 10)
+    for i in $(seq 1 "$rounds"); do for id in $ids; do echo "activate $id" >&8; sleep 0.2; done; done
+    [ -n "$back" ] && [ "$back" != 0 ] && echo "activate $back" >&8
+    sleep 1; exec 8>&-; rm -f "$fifo"; sleep 2
+    check "shell survived $((rounds * $(echo "$ids" | wc -w))) window switches" '[ "$(n_shell)" -eq 1 ] && [ "$(n_wind)" -eq 1 ]'
+    errs=$(runlog | grep -E "TypeError|ReferenceError|Unable to assign|is not a function|Cannot read property|Binding loop" | sed 's/\x1b\[[0-9;]*m//g' | sort | uniq -c | sort -rn)
+    check "no QML runtime errors while switching" '[ -z "$errs" ]'
+    [ -n "$errs" ] && echo "$errs" | head -8 | cut -c1-200
+else
+    echo "  (skipped: needs at least two open windows)"
+fi
+
+echo "10. memory"
 pid=$(pgrep -f "$JF_QS_RE" | head -1); rss1=$(awk '/VmRSS/{print $2}' /proc/$pid/status 2>/dev/null || echo 0)
 if [ $QUICK = 0 ]; then
     for i in $(seq 1 30); do for d in launcher dashboard sidebar session utilities; do "$JF" ipc drawers toggle "$d" >/dev/null 2>&1; done; sleep 0.2; done
