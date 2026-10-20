@@ -14,7 +14,7 @@ exec 9>"$LOCK"
 flock -n 9 || { log "already running"; exit 0; }
 echo $$ > "$PIDFILE"
 
-child=0 guard=0 rotator=0
+child=0 guard=0 rotator=0 lid=0
 # set while COSMIC's notification daemon has been displaced; kept across a restart, so the final stop still hands back
 TOOK="$RUNTIME/jellyface.took-notifications"
 RESTARTING="$RUNTIME/jellyface.restarting"
@@ -22,6 +22,8 @@ cleanup() {   # stop our own children and the shell, never anything else
     rm -f "$PIDFILE"
     [ "$guard" -gt 0 ] && { pkill -P "$guard" 2>/dev/null; kill "$guard" 2>/dev/null; }
     [ "$rotator" -gt 0 ] && { pkill -P "$rotator" 2>/dev/null; kill "$rotator" 2>/dev/null; }   # and its `sleep`
+    # the lid handler (and with it logind's lid inhibitor: the lid goes back to logind at once)
+    [ "$lid" -gt 0 ] && { pkill -P "$lid" 2>/dev/null; kill "$lid" 2>/dev/null; }
     [ "$child" -gt 0 ] && kill "$child" 2>/dev/null
     pkill -P $$ 2>/dev/null
     pkill -f "$JF_QS_RE" 2>/dev/null
@@ -125,6 +127,9 @@ rotator=$!
 watcher=0
 notif_guard 9>&- >/dev/null 2>&1 &
 guard=$!
+# closing the lid locks with JellyFace's lock screen before suspending (COSMIC's locker won the race; see lid.sh)
+"$JF_ROOT/scripts/lid.sh" $$ 9>&- &
+lid=$!
 # --- supervise ---------------------------------------------------------------
 end=$((SECONDS + T))
 fast_fails=0

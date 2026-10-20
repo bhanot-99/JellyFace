@@ -86,7 +86,7 @@ Column {
         required property list<string> command
 
         function exec(): void {
-            if (!SessionManager.exec(command))
+            if (!SleepGuard.run(command) && !SessionManager.exec(command))
                 Quickshell.execDetached(command);
         }
 

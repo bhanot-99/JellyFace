@@ -61,7 +61,7 @@ Searcher {
                 Colours.setMode(command[1]);
             } else {
                 list.screenState.launcher = false;
-                if (!SessionManager.exec(command))
+                if (!SleepGuard.run(command) && !SessionManager.exec(command))
                     Quickshell.execDetached(root.runnable(command));
             }
         }

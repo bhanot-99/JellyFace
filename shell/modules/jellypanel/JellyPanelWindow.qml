@@ -106,7 +106,7 @@ Scope {
                 if (action.command[0] === "setMode" && action.command.length > 1) {
                     Colours.setMode(action.command[1]);
                 } else {
-                    if (!SessionManager.exec(action.command))
+                    if (!SleepGuard.run(action.command) && !SessionManager.exec(action.command))
                         Quickshell.execDetached(Actions.runnable(action.command));
                 }
                 JellyPanel.open = false;

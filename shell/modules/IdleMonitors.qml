@@ -37,6 +37,47 @@ Scope {
             Quickshell.execDetached(action);
     }
 
+    // A sleep asked for from JellyFace (services/SleepGuard): lock first, sleep once the lock screen is up. If the lock
+    // does not come up within 3 s the machine sleeps anyway (COSMIC's locker then locks): it is never kept awake.
+    property var pendingSleep: null
+
+    function sleepNow(): void {
+        const command = pendingSleep;
+        pendingSleep = null;
+        sleepTimeout.stop();
+        if (command && !SessionManager.exec(command))
+            Quickshell.execDetached(command);
+    }
+
+    Connections {
+        function onRequested(command: list<string>): void {
+            root.pendingSleep = command;
+            sleepTimeout.restart();
+            if (root.lock.lock.secure)
+                root.sleepNow();
+            else
+                root.lock.lock.locked = true;
+        }
+
+        target: SleepGuard
+    }
+
+    Connections {
+        function onSecureChanged(): void {
+            if (root.lock.lock.secure && root.pendingSleep)
+                root.sleepNow();
+        }
+
+        target: root.lock.lock
+    }
+
+    Timer {
+        id: sleepTimeout
+
+        interval: 3000
+        onTriggered: root.sleepNow()
+    }
+
     Connections {
         function onAboutToSleep(): void {
             if (GlobalConfig.general.idle.lockBeforeSleep)

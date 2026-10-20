@@ -95,6 +95,11 @@ Scope {
             return lock.locked;
         }
 
+        // true once the compositor has confirmed the lock and the lock screen is up (scripts/lid.sh waits for this)
+        function isSecure(): bool {
+            return lock.secure;
+        }
+
         target: "lock"
     }
 }
