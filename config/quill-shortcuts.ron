@@ -1,0 +1,9 @@
+{
+    (modifiers: [Super], key: "space"): Spawn("@JF_ROOT@/bin/jellyface ipc quill toggle command"),
+    (modifiers: [Super], key: "c"): Spawn("@JF_ROOT@/bin/jellyface ipc quill toggle cc"),
+    (modifiers: [Super], key: "e"): Spawn("@JF_ROOT@/bin/jellyface ipc quill toggle hints"),
+    (modifiers: [Super], key: "d"): Spawn("@JF_ROOT@/bin/jellyface ipc quill toggle desks"),
+    (modifiers: [Super], key: "w"): Spawn("@JF_ROOT@/bin/jellyface ipc quill toggle desks"),
+    (modifiers: [Super], key: "p"): Spawn("@JF_ROOT@/bin/jellyface ipc quill toggle appearance"),
+    (modifiers: [Super, Shift], key: "slash"): Spawn("@JF_ROOT@/bin/jellyface ipc quill toggle keys"),
+}

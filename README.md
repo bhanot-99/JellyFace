@@ -38,16 +38,17 @@ COSMIC settings is recorded and can be undone with one command.
 
 ## Features
 
-JellyFace has two interfaces. **Classic** (below) is the default. **Drift** is a second, complete look — calm pastel
+JellyFace has two interfaces. **Classic** (below) is the default. **Quill UI** is a second, complete look — calm pastel
 glass, keyboard first — that you can switch to and from at any time:
 
 ```bash
-jellyface ui drift     # Drift: Super+Space command bar, Super+C Control Center, Super+E window hints, Super+D desks,
+jellyface switch       # Quill UI <-> Classic (restarts the shell)
+jellyface ui quill     # Quill UI: Super+Space command bar, Super+C Control Center, Super+E window hints, Super+D desks,
                        # Super+P appearance, Super+Shift+/ every shortcut (restarts the shell)
 jellyface ui classic   # back to Classic
 ```
 
-Drift works like Classic (side bar on the left, Dynamic Island at the top, dashboard from the top edge, notification
+Quill UI works like Classic (side bar on the left, Dynamic Island at the top, dashboard from the top edge, notification
 panel and volume/brightness bars on the right, an auto-hiding dock) but looks new: a living "glass sails" wallpaper,
 glass everywhere, a Control Center whose tiles grow into their detail views, a command bar (apps, windows, settings, files, maths, units), window hints, a desk overview, a
 clipboard carousel, Today, Deep Focus, an Appearance window (light / dark / auto, accent, wallpaper, glass) and its own

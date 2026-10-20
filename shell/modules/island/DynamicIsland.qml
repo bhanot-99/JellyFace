@@ -86,7 +86,7 @@ Scope {
     readonly property ScreenState activeScreenState: ShellState.forScreen(win.screen) ?? ShellState.forActive()
     readonly property bool dashboardOpen: activeScreenState?.dashboard ?? false
     readonly property bool appDrawerOpen: JellyPanel.open
-    // set by an interface that covers the top centre with something of its own (Drift's Today)
+    // set by an interface that covers the top centre with something of its own (Quill's Today)
     property bool hidden: false
     readonly property bool suppressed: dashboardOpen || appDrawerOpen || hidden
 

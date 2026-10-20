@@ -101,9 +101,9 @@ cmd_ipc() {
     if [ "${1:-}" = jellypanel ] && [[ "${2:-}" =~ ^(toggle|open|close)$ ]] && [ -S "$sock" ] && command -v nc >/dev/null; then
         printf '%s\n' "$2" | nc -NU "$sock" 2>/dev/null && return 0
     fi
-    # the same for Drift's surfaces (shortcuts: config/drift-shortcuts.ron)
-    sock="${XDG_RUNTIME_DIR:-/tmp}/jellyface-drift.sock"
-    if [ "${1:-}" = drift ] && [[ "${2:-}" =~ ^(toggle|open|close)$ ]] && [[ "${3:-}" =~ ^[a-z]*$ ]] && [ -S "$sock" ] && command -v nc >/dev/null; then
+    # the same for Quill's surfaces (shortcuts: config/quill-shortcuts.ron)
+    sock="${XDG_RUNTIME_DIR:-/tmp}/jellyface-quill.sock"
+    if [ "${1:-}" = quill ] && [[ "${2:-}" =~ ^(toggle|open|close)$ ]] && [[ "${3:-}" =~ ^[a-z]*$ ]] && [ -S "$sock" ] && command -v nc >/dev/null; then
         printf '%s %s\n' "$2" "${3:-}" | nc -NU "$sock" 2>/dev/null && return 0
     fi
     in_container 'quickshell ipc -p "$1" call "${@:2}"' "$JF_SHELL" "$@"
@@ -138,11 +138,11 @@ cmd_doctor() {
     for f in "$JF_CONFIG_DIR/shell.json" "$JF_CONFIG_DIR/shell-tokens.json" "$JF_STATE_DIR/scheme.json"; do
         chk "valid JSON: ${f/#$HOME/~}" "python3 -I -c 'import json,sys;json.load(open(sys.argv[1]))' $(printf %q "$f")" "fix or restore from config/"
     done
-    log "info  interface: $(jf_ui) (jellyface ui drift|classic)"
-    if [ "$(jf_ui)" = drift ]; then
-        chk "valid JSON: ~/.config/jellyface/drift.json" "python3 -I -c 'import json,sys;json.load(open(sys.argv[1]))' $(printf %q "$JF_CONFIG_DIR/drift.json")" "delete it; the default comes back at the next start"
-        chk "Drift's shortcuts installed" "grep -q 'ipc drift toggle command' \"\${XDG_CONFIG_HOME:-\$HOME/.config}/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom\"" "run: jellyface ui drift"
-        chk "Drift loaded (not fallen back to Classic)" "! grep -a 'drift: failed' \"$LOG\" | tail -1 | grep -q . || [ \"\$(grep -an 'drift: loaded' \"$LOG\" | tail -1 | cut -d: -f1)\" -gt \"\$(grep -an 'drift: failed' \"$LOG\" | tail -1 | cut -d: -f1)\" ]" "run tests/drift-check.sh to see the error"
+    log "info  interface: $(jf_ui) (jellyface ui quill|classic)"
+    if [ "$(jf_ui)" = quill ]; then
+        chk "valid JSON: ~/.config/jellyface/quill.json" "python3 -I -c 'import json,sys;json.load(open(sys.argv[1]))' $(printf %q "$JF_CONFIG_DIR/quill.json")" "delete it; the default comes back at the next start"
+        chk "Quill's shortcuts installed" "grep -q 'ipc quill toggle command' \"\${XDG_CONFIG_HOME:-\$HOME/.config}/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom\"" "run: jellyface ui quill"
+        chk "Quill loaded (not fallen back to Classic)" "! grep -a 'quill: failed' \"$LOG\" | tail -1 | grep -q . || [ \"\$(grep -an 'quill: loaded' \"$LOG\" | tail -1 | cut -d: -f1)\" -gt \"\$(grep -an 'quill: failed' \"$LOG\" | tail -1 | cut -d: -f1)\" ]" "run tests/quill-check.sh to see the error"
     fi
     chk "lock screen rejects a wrong password" 'd=$(mktemp -d); ! printf "wrong-password\0" | XDG_RUNTIME_DIR="$d" PAM_USER="$USER" "$JF_ROOT/scripts/pam-host-check.sh"; rc=$?; rm -rf "$d"; [ $rc -eq 0 ]' "the lock screen would accept anything; do not rely on it"
     chk "lock screen PAM stack is the host-checking one" 'grep -q pam-host-check.sh "$JF_SHELL/assets/pam.d/passwd" && ! grep -q nullok "$JF_SHELL/assets/pam.d/passwd"' "run: jellyface restart (regenerates it)"
@@ -168,7 +168,8 @@ JellyFace -- a desktop shell for COSMIC (Pop!_OS)
                                   start the shell (--timeout N exits after N seconds: safe for testing)
   jellyface stop | restart | status
   jellyface ipc <target> <fn> [args]   e.g.  jellyface ipc drawers toggle launcher
-  jellyface ui drift|classic|status   choose the interface: Drift (new) or Classic (see docs/NEW-UI-PLAN.md)
+  jellyface switch                switch between Quill UI and Classic (restarts the shell)
+  jellyface ui quill|classic|toggle|status   choose the interface: Quill UI (new) or Classic
   jellyface lock                  lock the screen with JellyFace's own lock screen (Super+L does the same)
   jellyface notify [-u low|normal|critical] [-a app] [-i icon] SUMMARY [BODY]
                                   send a desktop notification (e.g. to test the notification panel)
@@ -209,6 +210,7 @@ case "${1:-help}" in
     autostart)     shift; cmd_autostart "$@" ;;
     lock)          exec "$0" ipc lock lock ;;
     ui)            shift; exec "$JF_ROOT/scripts/ui.sh" "$@" ;;
+    switch)        exec "$JF_ROOT/scripts/ui.sh" toggle ;;
     overview)      shift; exec cosmic-workspaces "$@" ;;
     cosmic-dock)   shift; exec "$JF_ROOT/scripts/cosmic-dock.sh" "$@" ;;
     cosmic-panel)  shift; exec "$JF_ROOT/scripts/cosmic-panel.sh" "$@" ;;

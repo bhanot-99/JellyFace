@@ -12,21 +12,21 @@ Scope {
     property alias lock: lock
     property alias pam: pam
 
-    // Drift draws its own lock screen (drift/surfaces/DriftLockSurface.qml): only the picture differs, the lock, its
-    // safety flag and the password check below are the same. If Drift's surface ever fails to load, Classic's is used.
-    readonly property Component driftSurface: Quickshell.env("JF_UI") === "drift" ? Qt.createComponent(Qt.resolvedUrl("../../drift/surfaces/DriftLockSurface.qml")) : null
+    // Quill draws its own lock screen (quill/surfaces/QuillLockSurface.qml): only the picture differs, the lock, its
+    // safety flag and the password check below are the same. If Quill's surface ever fails to load, Classic's is used.
+    readonly property Component quillSurface: Quickshell.env("JF_UI") === "quill" ? Qt.createComponent(Qt.resolvedUrl("../../quill/surfaces/QuillLockSurface.qml")) : null
 
     WlSessionLock {
         id: lock
 
         signal unlock
 
-        surface: root.driftSurface?.status === Component.Ready ? root.driftSurface : classicSurface
+        surface: root.quillSurface?.status === Component.Ready ? root.quillSurface : classicSurface
     }
 
     Component.onCompleted: {
-        if (driftSurface && driftSurface.status !== Component.Ready)
-            console.warn(`drift: failed to load the lock surface, using Classic's: ${driftSurface.errorString()}`);
+        if (quillSurface && quillSurface.status !== Component.Ready)
+            console.warn(`quill: failed to load the lock surface, using Classic's: ${quillSurface.errorString()}`);
     }
 
     Component {

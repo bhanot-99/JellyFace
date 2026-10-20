@@ -7,9 +7,9 @@
 import "modules"
 import "modules/areapicker"
 import "modules/lock"
-// never used as a type here (Drift is compiled by path below); this import is only how Quickshell finds drift/ and
-// its qs.drift module
-import "drift" as DriftFiles
+// never used as a type here (Quill is compiled by path below); this import is only how Quickshell finds quill/ and
+// its qs.quill module
+import "quill" as QuillFiles
 import QtQuick
 import Quickshell
 import qs.services
@@ -17,30 +17,30 @@ import qs.services
 ShellRoot {
     id: root
 
-    // Which interface runs: "drift" (the new one, drift/) or Classic. Set by `jellyface ui`, which writes
+    // Which interface runs: "quill" (the new one, quill/) or Classic. Set by `jellyface ui`, which writes
     // ~/.config/jellyface/ui and restarts the shell; scripts/run.sh passes it in as JF_UI.
-    readonly property bool wantDrift: Quickshell.env("JF_UI") === "drift"
-    // Drift is compiled separately: if it ever fails to load, Classic comes up instead of a desktop with nothing on it
-    readonly property Component driftShell: wantDrift ? Qt.createComponent(Qt.resolvedUrl("drift/DriftShell.qml")) : null
-    readonly property bool drift: driftShell !== null && driftShell.status === Component.Ready
+    readonly property bool wantQuill: Quickshell.env("JF_UI") === "quill"
+    // Quill is compiled separately: if it ever fails to load, Classic comes up instead of a desktop with nothing on it
+    readonly property Component quillShell: wantQuill ? Qt.createComponent(Qt.resolvedUrl("quill/QuillShell.qml")) : null
+    readonly property bool quill: quillShell !== null && quillShell.status === Component.Ready
 
     // Live reload on every saved QML file is a development aid: for everyone else it only meant half-saved edits (or a
     // `git pull`) briefly loading a broken shell. JF_DEV=1 jellyface start turns it back on.
     settings.watchFiles: Quickshell.env("JF_DEV") === "1"
 
     Component.onCompleted: {
-        if (wantDrift && !drift)
-            console.warn(`drift: failed to load, starting Classic instead: ${driftShell?.errorString() ?? ""}`);
-        // tests/drift-check.sh: compile every Drift type through its module, wrapped in a Component so nothing is
+        if (wantQuill && !quill)
+            console.warn(`quill: failed to load, starting Classic instead: ${quillShell?.errorString() ?? ""}`);
+        // tests/quill-check.sh: compile every Quill type through its module, wrapped in a Component so nothing is
         // created or shown. This also covers surfaces that are only built when opened, and gives the real error behind
         // "Type X unavailable".
-        for (const f of (Quickshell.env("JF_DRIFT_PROBE") ?? "").split(" ").filter(f => f)) {
+        for (const f of (Quickshell.env("JF_QUILL_PROBE") ?? "").split(" ").filter(f => f)) {
             const parts = f.replace(/\.qml$/, "").split("/");
             const type = parts.pop();
             try {
                 Qt.createQmlObject(`import QtQuick\nimport qs.${parts.join(".")}\nComponent { ${type} {} }`, root, "probe").destroy();
             } catch (e) {
-                console.warn(`drift: probe ${f}: ${(e.qmlErrors ?? []).map(q => `${q.fileName.replace(/^.*\/qs\//, "")}:${q.lineNumber}: ${q.message}`).join(" | ") || e.message}`);
+                console.warn(`quill: probe ${f}: ${(e.qmlErrors ?? []).map(q => `${q.fileName.replace(/^.*\/qs\//, "")}:${q.lineNumber}: ${q.message}`).join(" | ") || e.message}`);
             }
         }
     }
@@ -77,13 +77,13 @@ ShellRoot {
     }
 
     LazyLoader {
-        active: !root.drift
+        active: !root.quill
 
         ClassicShell {}
     }
 
     LazyLoader {
-        active: root.drift
-        component: root.driftShell
+        active: root.quill
+        component: root.quillShell
     }
 }

@@ -7,7 +7,7 @@ import "modules/island"
 import "modules/agenda"
 import Quickshell
 
-// The original JellyFace interface ("Classic"). shell.qml loads this or Drift (drift/DriftShell.qml), never both; the
+// The original JellyFace interface ("Classic"). shell.qml loads this or Quill (quill/QuillShell.qml), never both; the
 // lock screen, idle handling and battery warnings live in shell.qml and serve both.
 Scope {
     Dock {}

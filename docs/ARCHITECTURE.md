@@ -146,38 +146,38 @@ container (about 230 ms). It lists the host's desktop entries only.
 
 The launcher slides out of the bar at the left; hover or click the bar logo to open it.
 
-## Two interfaces: Classic and Drift
+## Two interfaces: Classic and Quill
 
 ```
 shell.qml        shared: services, lock screen (modules/lock), idle, battery warnings, area picker
  ├─ ClassicShell.qml        the original interface (bar, drawers, dock, island, JellyPanel ...), unchanged
- └─ drift/DriftShell.qml    Drift (docs/NEW-UI-PLAN.md), compiled first; Classic starts instead if it fails to load
+ └─ quill/QuillShell.qml    Quill (docs/NEW-UI-PLAN.md), compiled first; Classic starts instead if it fails to load
 ```
 
-`jellyface ui drift|classic` (scripts/ui.sh) writes `~/.config/jellyface/ui`, adds or removes Drift's COSMIC shortcuts
-(`config/drift-shortcuts.ron`, tracked) and restarts; `run.sh` passes the choice in as `JF_UI`.
+`jellyface ui quill|classic` (scripts/ui.sh) writes `~/.config/jellyface/ui`, adds or removes Quill's COSMIC shortcuts
+(`config/quill-shortcuts.ron`, tracked) and restarts; `run.sh` passes the choice in as `JF_UI`.
 
 ```
-drift/
+quill/
 ├── Theme.qml  Moods.qml        design tokens (colour, glass, type, motion) and wallpaper moods
-├── DriftConfig.qml             ~/.config/jellyface/drift.json (defaults: config/drift.json)
-├── DriftState.qml              which surface is open; socket jellyface-drift.sock + IPC "drift" and Classic's "drawers"
-├── DriftApps  DeepFocus  Power  Session  Calc    apps and windows, focus timer, battery/profile, session, maths/units
+├── QuillConfig.qml             ~/.config/jellyface/quill.json (defaults: config/quill.json)
+├── QuillState.qml              which surface is open; socket jellyface-quill.sock + IPC "quill" and Classic's "drawers"
+├── QuillApps  DeepFocus  Power  Session  Calc    apps and windows, focus timer, battery/profile, session, maths/units
 ├── components/                 Glass, Tile, Slider, Toggle, ListRow, Segmented, Keycap, Sails (the wallpaper art) ...
 ├── stage/Stage.qml             one full-screen overlay window holding every pop-up surface (built once, shown/hidden)
 └── surfaces/                   ControlCenter (cc/), CommandBar, Today, Appearance, Hints, Desks, ClipboardCarousel,
-                                SessionMenu, KeysSheet, Gallery, RightPanel, DriftLockSurface, desktop/ (Wallpaper,
+                                SessionMenu, KeysSheet, Gallery, RightPanel, QuillLockSurface, desktop/ (Wallpaper,
                                 SideBar, Dock, LevelBars, TopEdge, Toasts); Classic's DynamicIsland (unchanged)
 ```
 
-- **Shortcuts** go through `jellyface ipc drift toggle <surface>`, which writes to Drift's socket from the host (a few ms).
+- **Shortcuts** go through `jellyface ipc quill toggle <surface>`, which writes to Quill's socket from the host (a few ms).
   Classic's own shortcuts keep working: Super opens the command bar, Super+V the clipboard, Super+Shift+F Deep Focus.
-- **Lock screen:** `modules/lock/Lock.qml` creates Drift's surface when Drift is chosen (Classic's if it fails to load);
+- **Lock screen:** `modules/lock/Lock.qml` creates Quill's surface when Quill is chosen (Classic's if it fails to load);
   `services/LockBridge.qml` hands it the lock and the PAM check. The safety flag, lid handling and COSMIC hand-over are
   the same for both. A watchdog opens the session if a surface does not finish unlocking within 1.5 s.
-- **Limits of a shell on COSMIC**, planned around: Drift cannot move, tile, snapshot or capture windows. Window hints
+- **Limits of a shell on COSMIC**, planned around: Quill cannot move, tile, snapshot or capture windows. Window hints
   and desks use the positions `wind` reports (desks show outlines with icons, not pictures); hints are a toggle because
   shortcuts only report key presses; tiling stays COSMIC's own.
-- **Checking:** `tests/drift-check.sh` runs a throwaway copy of the shell with its own runtime directory and compiles
-  every Drift type through its module (nothing is shown), printing any QML error. `tests/stability.sh` works in both
-  interfaces (Drift answers the `drawers` IPC it uses).
+- **Checking:** `tests/quill-check.sh` runs a throwaway copy of the shell with its own runtime directory and compiles
+  every Quill type through its module (nothing is shown), printing any QML error. `tests/stability.sh` works in both
+  interfaces (Quill answers the `drawers` IPC it uses).

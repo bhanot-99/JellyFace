@@ -22,9 +22,15 @@ JF_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/jellyface"
 JF_STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/jellyface"
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
 
-# Which interface the shell shows: "drift" or "classic" (the default). `jellyface ui` sets it.
+# Which interface the shell shows: "quill" or "classic" (the default). `jellyface ui` / `jellyface switch` set it.
 JF_UI_FILE="$JF_CONFIG_DIR/ui"
-jf_ui() { [ "$(tr -d '[:space:]' < "$JF_UI_FILE" 2>/dev/null)" = drift ] && echo drift || echo classic; }
+# (Quill was called "Drift" during its development: its old setting still means Quill)
+jf_ui() { case "$(tr -d '[:space:]' < "$JF_UI_FILE" 2>/dev/null)" in quill|drift) echo quill ;; *) echo classic ;; esac; }
+# Quill's files under their development name (drift-*) move to their new names once, so nothing set up is lost
+for _jf_old in "$JF_CONFIG_DIR/drift.json:$JF_CONFIG_DIR/quill.json" "$JF_STATE_DIR/drift-last-media.json:$JF_STATE_DIR/quill-last-media.json" "$JF_STATE_DIR/drift-gaps:$JF_STATE_DIR/quill-gaps"; do
+    [ -e "${_jf_old%%:*}" ] && [ ! -e "${_jf_old#*:}" ] && mv "${_jf_old%%:*}" "${_jf_old#*:}" 2>/dev/null
+done
+unset _jf_old
 
 log()  { printf '\033[1;35m[jellyface]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[jellyface] warning:\033[0m %s\n' "$*" >&2; }

@@ -1,0 +1,170 @@
+pragma Singleton
+
+import QtQuick
+import Quickshell
+import Quickshell.Io
+import qs.services
+
+// Which Quill surface is open. Only one at a time: opening one closes the other, Esc closes it.
+//   cc          Control Center              command   command bar        hints   window hints
+//   desks       desk (workspace) overview    clipboard clipboard history  today   calendar, weather, media
+//   appearance  Quill settings               keys      keyboard sheet     session power menu
+//   panel       the right panel (notifications and quick toggles)
+// Shortcuts reach it through `jellyface ipc quill toggle <name>`, which writes to the socket below from the host (a few
+// ms) instead of a `quickshell ipc` call through the container (about 230 ms).
+Singleton {
+    id: root
+
+    property string open: ""
+    // Control Center's expanded tile ("" = the grid), so a shortcut can open straight into a detail view
+    property string ccPage: ""
+    // Appearance's page
+    property string appearancePage: "theme"
+    // the dashboard's tab: 0 Dashboard, 1 Media, 2 Performance, 3 Weather (as Classic's)
+    property int dashTab: 0
+    // text the command bar opens with (`jellyface ipc quill search <text>`)
+    property string commandText: ""
+
+    readonly property var surfaces: ["cc", "command", "hints", "desks", "clipboard", "today", "appearance", "keys", "session", "gallery", "panel", "lockpreview"]
+
+    function toggle(name: string): void {
+        if (open === name)
+            close();
+        else
+            show(name);
+    }
+
+    function show(name: string): void {
+        if (!surfaces.includes(name)) {
+            console.warn(`quill: no surface called "${name}"`);
+            return;
+        }
+        if (name !== "cc")
+            ccPage = "";
+        open = name;
+    }
+
+    function close(): void {
+        open = "";
+        ccPage = "";
+    }
+
+    function command(line: string): void {
+        const [verb, arg] = line.trim().split(/\s+/);
+        if (verb === "toggle")
+            toggle(arg);
+        else if (verb === "open")
+            show(arg);
+        else if (verb === "close")
+            close();
+    }
+
+    // Classic's shortcuts keep working in Quill: Super (JellyPanel) opens the command bar, Super+V the clipboard.
+    Connections {
+        function onOpenChanged(): void {
+            if (JellyPanel.open) {
+                JellyPanel.open = false;
+                root.toggle("command");
+            }
+        }
+
+        target: JellyPanel
+    }
+
+    Connections {
+        function onOpenChanged(): void {
+            if (Clipboard.open) {
+                Clipboard.open = false;
+                root.toggle("clipboard");
+            }
+        }
+
+        target: Clipboard
+    }
+
+    SocketServer {
+        active: true
+        path: `${Quickshell.env("XDG_RUNTIME_DIR")}/jellyface-quill.sock`
+        handler: Socket {
+            parser: SplitParser {
+                onRead: line => root.command(line)
+            }
+        }
+    }
+
+    IpcHandler {
+        function toggle(name: string): void {
+            root.toggle(name);
+        }
+
+        function open(name: string): void {
+            root.show(name);
+        }
+
+        function close(): void {
+            root.close();
+        }
+
+        function current(): string {
+            return root.open;
+        }
+
+        // open the command bar with this already typed
+        function search(text: string): void {
+            root.commandText = text;
+            root.show("command");
+        }
+
+        // open the dashboard on a tab: 0 Dashboard, 1 Media, 2 Performance, 3 Weather
+        function dashboard(n: int): void {
+            root.dashTab = Math.max(0, Math.min(3, n));
+            root.show("today");
+        }
+
+        // open Control Center on one of its pages: wifi bluetooth sound focus battery notifications
+        function cc(page: string): void {
+            root.show("cc");
+            root.ccPage = page;
+        }
+
+        target: "quill"
+    }
+
+    // Classic's drawer names, so scripts, the COSMIC applet and tests/stability.sh work in Quill too
+    function fromDrawer(drawer: string): string {
+        return ({
+                launcher: "command",
+                dashboard: "today",
+                sidebar: "panel",
+                session: "session",
+                utilities: "panel"
+            })[drawer] ?? drawer;
+    }
+
+    IpcHandler {
+        function toggle(drawer: string): void {
+            root.toggle(root.fromDrawer(drawer));
+        }
+
+        function open(drawer: string): void {
+            root.show(root.fromDrawer(drawer));
+        }
+
+        function close(drawer: string): void {
+            if (root.open === root.fromDrawer(drawer))
+                root.close();
+        }
+
+        function closeAll(): void {
+            root.close();
+        }
+
+        // Classic's `jellyface ipc drawers dashboardTab <n>`
+        function dashboardTab(n: int): void {
+            root.dashTab = Math.max(0, Math.min(3, n));
+            root.show("today");
+        }
+
+        target: "drawers"
+    }
+}
