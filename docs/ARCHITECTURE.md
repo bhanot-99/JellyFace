@@ -115,6 +115,22 @@ loop and from `jellyface stop` (also the service's `ExecStopPost`). `jellyface s
 while the shell reports itself locked. COSMIC's screen-off and idle-suspend timers are set to never
 (`cosmic-tweaks.sh`), so the lock screen stays visible.
 
+### Lid and suspend
+
+COSMIC's own locker (`cosmic-greeter`, in the session) locks on every suspend with a sleep-delay inhibitor and reaches the
+session lock before the shell can. Whoever locks first keeps the lock, so JellyFace locks *before* the suspend starts:
+
+```
+lid closes ──► scripts/lid.sh (holds logind's handle-lid-switch inhibitor while the shell runs)
+                 ├─ `jellyface ipc lock lock`, wait for `lock isSecure` (at most ~3 s)
+                 └─ then logind's HandleLidSwitch* action (`systemctl suspend`, ...); COSMIC's locker finds the
+                    session locked and stays out
+JellyFace's Suspend / Hibernate ──► services/SleepGuard ──► IdleMonitors: lock, then sleep (same 3 s limit)
+```
+
+The inhibitor ends with `lid.sh` (stopped with the supervisor, and it exits within 30 s of a supervisor that died), so the
+lid always goes back to logind; a lock that fails in time never keeps the machine awake.
+
 ## Dock and JellyPanel (shell/modules/dock, shell/modules/jellypanel)
 
 The dock is a frosted-glass capsule of app pills at the bottom centre, on the Top layer. It slides away while a window

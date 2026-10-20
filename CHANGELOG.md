@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+- Closing the lid showed COSMIC's lock screen after waking instead of JellyFace's. COSMIC's own locker locks on every
+  suspend and, as a native host process, always beat the shell to the session lock. JellyFace now handles the lid while
+  it runs (`scripts/lid.sh` holds logind's lid inhibitor): it locks with its own lock screen, waits until it is up, then
+  suspends (or does whatever logind's `HandleLidSwitch*` settings say). If the shell is not running or cannot lock
+  within ~3 s, the machine suspends anyway and COSMIC's locker locks, as before.
+- Suspend and hibernate from JellyFace's own session menu and actions also lock first (`services/SleepGuard.qml`).
+- New IPC call `lock isSecure` (true once the lock screen is really up); stability test checks the lid inhibitor.
+
 ## 1.1.0 (2026-10-20)
 
 Stability, security and polish since 1.0.0, plus the new Dynamic Island, dashboard calendar events and the yazi file

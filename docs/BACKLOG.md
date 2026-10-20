@@ -26,6 +26,7 @@ File and line references may have moved; check them before relying on them.
 | Clipboard history is plain text with no expiry | `scripts/clipboard-store.py` | Product decision. | Optional expiry for unpinned entries; ignore chosen apps. |
 | `/tmp` fallbacks when `XDG_RUNTIME_DIR` is unset | `scripts/lib.sh`, `bin/jellyface`, `scripts/run.sh`, `modules/lock/Lock.qml` (flag file), `scripts/greeter.sh` (`jf-mock.sock`) | `XDG_RUNTIME_DIR` is always set in a COSMIC session, and the QML side cannot know the uid. | Use `/tmp/jellyface-$UID` (0700) everywhere, QML included. |
 | `greeter.sh window` builds a `bash -c` string from paths | `scripts/greeter.sh` | Test-only helper. | Pass paths as arguments. |
+| `jellyface ipc lock unlock` unlocks without a password | `shell/modules/lock/Lock.qml` (IPC `unlock`) | Any process of yours can already do a lot; kept for scripts and tests. | Remove it or require the password. |
 
 ## Dead code and leftovers
 
@@ -63,6 +64,9 @@ File and line references may have moved; check them before relying on them.
 - **Theme watcher** (`scripts/theme.py watch`) polls every 2 s; use inotify.
 - **Each clipboard copy** starts Python plus three subprocesses.
 - **Greeter:** the heartbeat spawns `touch` every 1.5 s while the login screen is up.
+- **Lock race, seen once:** in the first of five tests, JellyFace's lock dropped when COSMIC's locker was asked to lock
+  (`loginctl lock-session`) while JellyFace held it; the screen ended up unlocked. Not reproduced in four more runs.
+  Suspend from outside JellyFace (COSMIC's power menu, `systemctl suspend`) still races and shows COSMIC's lock screen.
 
 ## Not part of the audit but still open
 
