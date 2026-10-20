@@ -417,8 +417,11 @@ Scope {
         // C1: Screen binding guarded against undefined on monitor hot-plug/unplug
         screen: ShellState.forActive()?.modelData ?? Quickshell.screens[0] ?? null
         name: "dynamic-island"
-        visible: !CosmicWindows.fullscreen && (!root.suppressed || islandCapsule.opacity > 0)
-        WlrLayershell.layer: WlrLayer.Overlay
+        visible: !root.suppressed || islandCapsule.opacity > 0
+        // Top, not Overlay: COSMIC itself draws a fullscreen window over the Top layer, in the same frame as the
+        // switch. On Overlay the island had to be unmapped when the shell heard about the fullscreen window (a helper
+        // line and a QML update later), so it flashed over the video on every window, workspace or tab switch.
+        WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
@@ -439,6 +442,16 @@ Scope {
         onVisibleChanged: {
             if (!visible)
                 islandCapsule.expanded = false;
+        }
+
+        // an open card would otherwise still be open (and polling the player) behind the fullscreen window
+        Connections {
+            function onFullscreenChanged(): void {
+                if (CosmicWindows.fullscreen)
+                    islandCapsule.expanded = false;
+            }
+
+            target: CosmicWindows
         }
 
         // Gooey neck joining the two bubbles: full height while they overlap, pinching off as the gap opens

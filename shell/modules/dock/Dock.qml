@@ -77,16 +77,24 @@ Scope {
         return i >= 0 && i < apps.count ? JSON.parse(apps.get(i).json) : null;
     }
 
-    function windowsOf(app: var): var {
-        if (!app)
+    // the window classes an app's windows can have (looked up once per app, not on every window-list update)
+    function classesOf(app: var, entry: var): var {
+        if (!app || app.match)
             return [];
-        const entry = app.id ? DesktopEntries.heuristicLookup(app.id) : null;
         const ids = [app.id, entry?.startupClass, entry?.id].filter(x => x).map(x => x.toLowerCase().replace(/\.desktop$/, ""));
         if (app.id)
             ids.push(app.id.split(".").pop().toLowerCase());
+        return ids;
+    }
+
+    function windowsOf(app: var, classes: var): var {
+        if (!app)
+            return [];
+        const ids = classes ?? classesOf(app, app.id ? DesktopEntries.heuristicLookup(app.id) : null);
+        const match = app.match?.toLowerCase();
         return CosmicWindows.windows.filter(w => {
             const cls = (w.app_id ?? "").toLowerCase();
-            return app.match ? cls.includes(app.match.toLowerCase()) : ids.includes(cls);
+            return match ? cls.includes(match) : ids.includes(cls);
         });
     }
 
@@ -425,7 +433,8 @@ Scope {
         required property string json
         readonly property var app: JSON.parse(json)
         readonly property var entry: app?.id ? DesktopEntries.heuristicLookup(app.id) : null
-        readonly property var windows: root.windowsOf(app)
+        readonly property var classes: root.classesOf(app, entry)
+        readonly property var windows: root.windowsOf(app, classes)
         readonly property bool running: windows.length > 0
         readonly property bool focused: windows.some(w => w.id === CosmicWindows.activeId)
         readonly property string label: app?.name ?? entry?.name ?? app?.id ?? ""
@@ -437,7 +446,7 @@ Scope {
                 return `file://${i}`;
             if (i.includes("/"))
                 return `file://${Quickshell.shellPath(`../${i}`)}`;
-            return Quickshell.iconPath(i, true) || `file://${Paths.home}/.local/share/flatpak/exports/share/icons/hicolor/256x256/apps/${i}.png` || Quickshell.iconPath("application-x-executable");
+            return Quickshell.iconPath(i, true) || `file://${Paths.home}/.local/share/flatpak/exports/share/icons/hicolor/256x256/apps/${i}.png`;
         }
 
         width: panel.tileW

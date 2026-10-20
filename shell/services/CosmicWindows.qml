@@ -34,8 +34,16 @@ Singleton {
                 try {
                     const d = JSON.parse(data);
                     root.windows = d.windows;
-                    root.activeId = d.active;
                     root.fullscreen = d.fullscreen;
+                    // Switching windows or workspaces passes through "nothing focused" for 20-110 ms before COSMIC
+                    // focuses the next window; showing that gap made the bar's title flick to "Desktop" and back
+                    // (and the dock's focus dots blink) on every switch. A real new focus applies at once.
+                    if (d.active !== 0 || root.activeId === 0) {
+                        focusGap.stop();
+                        root.activeId = d.active;
+                    } else if (!focusGap.running) {
+                        focusGap.restart();
+                    }
                 } catch (e) {}
             }
         }
@@ -44,6 +52,7 @@ Singleton {
         // is retried less and less often (2 s doubling up to 1 min) instead of being respawned every 2 s forever
         onExited: {
             root.windows = [];
+            focusGap.stop();
             root.activeId = 0;
             root.fullscreen = false;
             root.fails = Date.now() - root.startedAt < 10000 ? root.fails + 1 : 0;
@@ -54,6 +63,13 @@ Singleton {
 
     property real startedAt
     property int fails
+
+    Timer {
+        id: focusGap
+
+        interval: 250
+        onTriggered: root.activeId = 0
+    }
 
     Timer {
         id: restartTimer

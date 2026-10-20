@@ -31,6 +31,7 @@ struct win {
     struct ext_workspace_handle_v1 *wsh[4];  // the workspaces this window is on (usually one)
     int nws;
     int x, y, w, h;  // geometry on its output (cosmic-toplevel-info v2)
+    int ready;       // COSMIC has sent this window's state at least once
 };
 
 // workspaces and whether each is the one currently shown
@@ -51,7 +52,17 @@ static int on_current_ws(const struct win *w) {
     return 0;
 }
 static struct win *wins[MAXWIN];
-static int nwins, next_id = 1, dirty;
+// dirty: a batch of changes is complete (the protocols' "done" events), so the state is consistent and may be printed.
+// Property events alone never print: a line written between "workspace A off" and "workspace B on" told the shell
+// for a moment that nothing was fullscreen, and the bar, dock and island flickered on every switch.
+// urgent: the batch changed focus, fullscreen, minimised or which windows are on the shown workspace; it is printed at
+// once instead of waiting out the EMIT_MS throttle (meant for geometry and titles), so the shell reacts in the same frame.
+static int nwins, next_id = 1, dirty, urgent;
+// when a property first changed without its "done" yet (0 = nothing pending): printed anyway after STALE_MS, so a
+// compositor that skips a "done" can never leave the shell with an old state
+static long long changed_at;
+static long long now_ms(void);
+static void touch(void) { if (!changed_at) changed_at = now_ms(); }
 static struct ext_foreign_toplevel_list_v1 *list;
 static struct zcosmic_toplevel_info_v1 *info;
 static struct zcosmic_toplevel_manager_v1 *mgmt;
@@ -120,7 +131,7 @@ static void win_remove(struct win *w) {
     if (w->cosmic) zcosmic_toplevel_handle_v1_destroy(w->cosmic);
     if (w->ext) ext_foreign_toplevel_handle_v1_destroy(w->ext);
     free(w);
-    dirty = 1;
+    dirty = urgent = 1;
 }
 
 // --- ext_foreign_toplevel_handle_v1 -------------------------------------------------------------------------------
@@ -136,8 +147,8 @@ static void copy_utf8(char *dst, size_t size, const char *src) {
     memcpy(dst, src, n);
     dst[n] = 0;
 }
-static void e_title(void *d, struct ext_foreign_toplevel_handle_v1 *h, const char *t) { copy_utf8(((struct win *)d)->title, sizeof(((struct win *)d)->title), t); }
-static void e_app_id(void *d, struct ext_foreign_toplevel_handle_v1 *h, const char *a) { copy_utf8(((struct win *)d)->app_id, sizeof(((struct win *)d)->app_id), a); }
+static void e_title(void *d, struct ext_foreign_toplevel_handle_v1 *h, const char *t) { touch(); copy_utf8(((struct win *)d)->title, sizeof(((struct win *)d)->title), t); }
+static void e_app_id(void *d, struct ext_foreign_toplevel_handle_v1 *h, const char *a) { touch(); copy_utf8(((struct win *)d)->app_id, sizeof(((struct win *)d)->app_id), a); }
 static void e_identifier(void *d, struct ext_foreign_toplevel_handle_v1 *h, const char *i) {}
 static const struct ext_foreign_toplevel_handle_v1_listener ext_listener = {
     .closed = e_closed, .done = e_done, .title = e_title, .app_id = e_app_id, .identifier = e_identifier,
@@ -145,7 +156,7 @@ static const struct ext_foreign_toplevel_handle_v1_listener ext_listener = {
 
 // --- zcosmic_toplevel_handle_v1 (state only; title/app_id come from the ext handle) --------------------------------
 static void c_closed(void *d, struct zcosmic_toplevel_handle_v1 *h) {}
-static void c_done(void *d, struct zcosmic_toplevel_handle_v1 *h) { dirty = 1; }
+static void c_done(void *d, struct zcosmic_toplevel_handle_v1 *h) { ((struct win *)d)->ready = 1; dirty = 1; }
 static void c_title(void *d, struct zcosmic_toplevel_handle_v1 *h, const char *t) {}
 static void c_app_id(void *d, struct zcosmic_toplevel_handle_v1 *h, const char *a) {}
 static void c_output(void *d, struct zcosmic_toplevel_handle_v1 *h, struct wl_output *o) {}
@@ -153,22 +164,22 @@ static void c_ws(void *d, struct zcosmic_toplevel_handle_v1 *h, struct zcosmic_w
 static void c_ext_ws_enter(void *d, struct zcosmic_toplevel_handle_v1 *h, struct ext_workspace_handle_v1 *ws) {
     struct win *w = d;
     for (int i = 0; i < w->nws; i++) if (w->wsh[i] == ws) return;
-    if (w->nws < 4) { w->wsh[w->nws++] = ws; dirty = 1; }
+    if (w->nws < 4) { w->wsh[w->nws++] = ws; urgent = 1; touch(); }
 }
 static void c_ext_ws_leave(void *d, struct zcosmic_toplevel_handle_v1 *h, struct ext_workspace_handle_v1 *ws) {
     struct win *w = d;
     for (int i = 0; i < w->nws; i++)
-        if (w->wsh[i] == ws) { w->wsh[i] = w->wsh[--w->nws]; dirty = 1; return; }
+        if (w->wsh[i] == ws) { w->wsh[i] = w->wsh[--w->nws]; urgent = 1; touch(); return; }
 }
 static void c_geometry(void *d, struct zcosmic_toplevel_handle_v1 *h, struct wl_output *o, int32_t x, int32_t y, int32_t w, int32_t hh) {
     struct win *wn = d;
-    if (wn->x != x || wn->y != y || wn->w != w || wn->h != hh) { wn->x = x; wn->y = y; wn->w = w; wn->h = hh; dirty = 1; }
+    if (wn->x != x || wn->y != y || wn->w != w || wn->h != hh) { wn->x = x; wn->y = y; wn->w = w; wn->h = hh; touch(); }
 }
 static void c_state(void *d, struct zcosmic_toplevel_handle_v1 *h, struct wl_array *arr) {
     struct win *w = d;
     uint32_t mask = 0, *s;
     wl_array_for_each(s, arr) if (*s < 32) mask |= 1u << *s;
-    if (mask != w->state) { w->state = mask; dirty = 1; }
+    if (mask != w->state) { w->state = mask; urgent = 1; touch(); }
 }
 static const struct zcosmic_toplevel_handle_v1_listener cosmic_listener = {
     .closed = c_closed, .done = c_done, .title = c_title, .app_id = c_app_id,
@@ -183,6 +194,8 @@ static void l_toplevel(void *d, struct ext_foreign_toplevel_list_v1 *l, struct e
     if (!w) { ext_foreign_toplevel_handle_v1_destroy(h); return; }
     w->id = next_id++;
     w->ext = h;
+    urgent = 1;
+    touch();
     wins[nwins++] = w;
     ext_foreign_toplevel_handle_v1_add_listener(h, &ext_listener, w);
     if (info) {
@@ -203,7 +216,7 @@ static void wh_name(void *d, struct ext_workspace_handle_v1 *h, const char *n) {
 static void wh_coord(void *d, struct ext_workspace_handle_v1 *h, struct wl_array *c) {}
 static void wh_caps(void *d, struct ext_workspace_handle_v1 *h, uint32_t c) {}
 static void wh_state(void *d, struct ext_workspace_handle_v1 *h, uint32_t st) {
-    for (int i = 0; i < nwss; i++) if (wss[i].h == h) { if (wss[i].state != st) { wss[i].state = st; dirty = 1; } return; }
+    for (int i = 0; i < nwss; i++) if (wss[i].h == h) { if (wss[i].state != st) { wss[i].state = st; urgent = 1; touch(); } return; }
 }
 static void wh_removed(void *d, struct ext_workspace_handle_v1 *h) {
     // windows must not keep a pointer to a destroyed handle (a new handle could reuse the address)
@@ -211,7 +224,7 @@ static void wh_removed(void *d, struct ext_workspace_handle_v1 *h) {
         for (int j = 0; j < wins[i]->nws; j++)
             if (wins[i]->wsh[j] == h) { wins[i]->wsh[j] = wins[i]->wsh[--wins[i]->nws]; j--; }
     for (int i = 0; i < nwss; i++)
-        if (wss[i].h == h) { ext_workspace_handle_v1_destroy(h); memmove(&wss[i], &wss[i + 1], (nwss - i - 1) * sizeof *wss); nwss--; dirty = 1; return; }
+        if (wss[i].h == h) { ext_workspace_handle_v1_destroy(h); memmove(&wss[i], &wss[i + 1], (nwss - i - 1) * sizeof *wss); nwss--; urgent = 1; touch(); return; }
 }
 static const struct ext_workspace_handle_v1_listener wh_listener = { wh_id, wh_name, wh_coord, wh_state, wh_caps, wh_removed };
 static void wg_caps(void *d, struct ext_workspace_group_handle_v1 *g, uint32_t c) {}
@@ -282,14 +295,26 @@ int main(void) {
     if (!list) { fprintf(stderr, "no ext_foreign_toplevel_list_v1\n"); return 2; }
     if (!info) { fprintf(stderr, "no zcosmic_toplevel_info_v1 (window state will be unavailable)\n"); }
     ext_foreign_toplevel_list_v1_add_listener(list, &list_listener, NULL);
+    wl_display_roundtrip(dpy);  // the toplevels (their cosmic handles are requested as they arrive)
     wl_display_roundtrip(dpy);
-    wl_display_roundtrip(dpy);
+    // COSMIC sends those handles' state a little later, not in reply to a roundtrip. The first line used to go out
+    // before it, with every window unfocused, not fullscreen and on the shown workspace (the shell showed the bar
+    // over a fullscreen video for a moment): wait until each window has reported, at most half a second.
+    for (long long until = now_ms() + 500; info && now_ms() < until;) {
+        int all = 1;
+        for (int i = 0; i < nwins; i++) all &= wins[i]->ready;
+        if (all) break;
+        if (wl_display_flush(dpy) < 0 && errno != EAGAIN) return 1;
+        struct pollfd p = { wl_display_get_fd(dpy), POLLIN, 0 };
+        if (poll(&p, 1, (int)(until - now_ms())) > 0 && wl_display_dispatch(dpy) < 0) return 1;
+    }
     emit();
-    dirty = 0;
+    dirty = urgent = 0;
+    changed_at = 0;
     int stdin_ok = 1;
     // a window being dragged or resized sends geometry every frame: write at most one line per EMIT_MS (the last
     // state always goes out, via the poll timeout), so the shell is not re-parsing the window list 60 times a second
-    enum { EMIT_MS = 80 };
+    enum { EMIT_MS = 80, STALE_MS = 250 };
     long long last_emit = 0;
     const pid_t parent = getppid();  // exit when whoever started us goes away (no orphans), without periodic wake-ups
     prctl(PR_SET_PDEATHSIG, SIGTERM);
@@ -298,8 +323,10 @@ int main(void) {
         while (wl_display_prepare_read(dpy) != 0) wl_display_dispatch_pending(dpy);
         if (wl_display_flush(dpy) < 0 && errno != EAGAIN) return 1;
         struct pollfd pp[2] = { { wl_display_get_fd(dpy), POLLIN, 0 }, { stdin_ok ? 0 : -1, POLLIN, 0 } };
-        int timeout = dirty ? (int)(last_emit + EMIT_MS - now_ms()) : -1;
-        poll(pp, 2, dirty && timeout < 0 ? 0 : timeout);
+        if (!dirty && changed_at && now_ms() - changed_at >= STALE_MS) dirty = 1;
+        int timeout = dirty ? (urgent ? 0 : (int)(last_emit + EMIT_MS - now_ms()))
+                    : changed_at ? (int)(changed_at + STALE_MS - now_ms()) : -1;
+        poll(pp, 2, timeout < 0 && (dirty || changed_at) ? 0 : timeout);
         struct pollfd p = pp[0];
         if (p.revents & POLLIN) { if (wl_display_read_events(dpy) < 0) return 1; } else wl_display_cancel_read(dpy);
         if (wl_display_dispatch_pending(dpy) < 0 || wl_display_get_error(dpy)) return 1;
@@ -322,6 +349,6 @@ int main(void) {
                 if (have == sizeof cmd - 1) have = 0;  // overlong garbage line: drop it
             }
         }
-        if (dirty && now_ms() - last_emit >= EMIT_MS) { dirty = 0; emit(); last_emit = now_ms(); }
+        if (dirty && (urgent || now_ms() - last_emit >= EMIT_MS)) { dirty = urgent = 0; changed_at = 0; emit(); last_emit = now_ms(); }
     }
 }
