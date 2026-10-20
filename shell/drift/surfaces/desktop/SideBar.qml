@@ -24,6 +24,10 @@ Scope {
     readonly property bool full: DriftConfig.bar === "full"
     readonly property int barWidth: 52
     readonly property int margin: 8
+    // A maximized window, or one reaching the bar, on this desk: the bar stops floating and fills the strip it already
+    // reserves (square corners, full height, solid glass), so it reads as part of the window's frame instead of a pill
+    // with the wallpaper peeking round it. The reserved width never changes, so windows never move.
+    readonly property bool attached: CosmicWindows.windows.some(w => w.workspace_active && !w.minimized && w.w > 0 && (w.maximized || w.x <= barWidth + margin + 12))
     readonly property var monitor: Brightness.getMonitorForScreen(Quickshell.screens[0])
 
     PanelWindow {
@@ -56,12 +60,30 @@ Scope {
         Glass {
             id: bar
 
-            x: root.margin
-            y: root.margin
-            width: root.barWidth
-            height: parent.height - root.margin * 2
-            radius: root.barWidth / 2
+            // 0 floating, 1 attached
+            property real a: root.attached ? 1 : 0
+
+            x: root.margin * (1 - a)
+            y: root.margin * (1 - a)
+            width: root.barWidth + root.margin * a
+            height: parent.height - root.margin * 2 * (1 - a)
+            radius: root.barWidth / 2 * (1 - a)
+            color: root.attached ? Theme.sheet : Theme.pane
+            shadow: a < 0.5
             shadowStrength: 0.7
+
+            Behavior on a {
+                Anim { duration: Theme.normal }
+            }
+
+            // the seam against the window, once attached
+            Rectangle {
+                anchors.right: parent.right
+                width: 1
+                height: parent.height
+                color: Theme.divider
+                opacity: bar.a
+            }
 
             WheelHandler {
                 id: wheel
