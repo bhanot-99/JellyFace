@@ -29,6 +29,7 @@ Scope {
         DriftApps;
         DeepFocus;
         Power;
+        LastMedia;
         console.info("drift: loaded");
     }
 

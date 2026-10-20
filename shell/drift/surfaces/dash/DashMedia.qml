@@ -1,24 +1,39 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Shapes
 import Quickshell
 import Quickshell.Services.Mpris
+import M3Shapes
+import Jellyface.Config
 import Jellyface.Services
+import qs.components.effects
 import qs.services
 import qs.drift
 import qs.drift.components
 
-// Dashboard tab 2 — Media: the cover with a live visualiser under it, the track, a seek bar, the controls (shuffle,
-// previous, play, next, repeat), the players to choose from, and synced lyrics (click a line to jump there).
+// Dashboard tab 2 — Media: Classic's player in Drift's look. Pastel shapes drift behind it while something plays; the
+// cover turns inside a ring of visualiser bars; title, artist and album; a wavy progress bar; shuffle, previous, a
+// big play button, next and repeat; synced lyrics (click a line to jump there) and the player to control.
+// When the player has closed, the last track stays here ("Last played"), and play opens its app again.
 // Space plays or pauses, ←/→ skip.
 Item {
     id: root
 
     readonly property var player: Players.active
-    readonly property bool hasLength: !!player && player.length > 0 && player.length < 2147483647
+    readonly property bool live: !!player
+    readonly property bool playing: !!player?.isPlaying
+    readonly property bool hasLength: live ? player.length > 0 && player.length < 2147483647 : LastMedia.length > 0
+    readonly property real length: live ? player.length : LastMedia.length
+    readonly property real position: live ? player.position : LastMedia.position
+    readonly property string title: live ? player.trackTitle || LastMedia.title : LastMedia.title
+    readonly property string artist: live ? player.trackArtist : LastMedia.artist
+    readonly property string album: live ? player.trackAlbum : LastMedia.album
+    readonly property string art: live ? Players.getArtUrl(player) || (player.trackTitle === LastMedia.title ? LastMedia.art : "") : LastMedia.art
+    readonly property bool empty: !live && !LastMedia.known
 
     implicitWidth: 820
-    implicitHeight: 360
+    implicitHeight: 340
 
     function move(dx: int, dy: int): void {
         if (dx < 0)
@@ -28,21 +43,25 @@ Item {
     }
 
     function press(): void {
-        player?.togglePlaying();
+        if (live)
+            player.togglePlaying();
+        else
+            LastMedia.resume();
     }
 
     function time(s: real): string {
         s = Math.max(0, Math.floor(s));
-        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+        const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), sec = String(s % 60).padStart(2, "0");
+        return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
     }
 
-    // the visualiser and the position only run while this tab is on screen
+    // the visualiser and the position only run while this tab is on screen and something plays
     ServiceRef {
-        service: root.visible && root.player?.isPlaying ? Audio.cava : null
+        service: root.visible && root.playing ? Audio.cava : null
     }
 
     Timer {
-        running: root.visible && !!root.player?.isPlaying
+        running: root.visible && root.playing
         interval: 500
         repeat: true
         triggeredOnStart: true
@@ -53,264 +72,444 @@ Item {
     readonly property var _lyrics: {
         if (!visible)
             return null;
-        const p = player;
-        if (p)
-            Lyrics.setTrack(p.trackArtist, p.trackTitle, p.trackAlbum, p.length);
+        if (title)
+            Lyrics.setTrack(artist ?? "", title, album ?? "", length);
         else
             Lyrics.clearTrack();
         return null;
     }
 
+    // ── drifting pastel shapes behind everything ──
+    Item {
+        id: shapes
+
+        readonly property list<int> pool: [MaterialShape.Circle, MaterialShape.Cookie4Sided, MaterialShape.Cookie6Sided, MaterialShape.Cookie9Sided, MaterialShape.Sunny, MaterialShape.SoftBurst, MaterialShape.Pentagon, MaterialShape.Gem, MaterialShape.Arch, MaterialShape.Pill, MaterialShape.Fan, MaterialShape.Oval]
+        readonly property list<color> tints: [Theme.lilac, Theme.ice, Theme.rose, Theme.peach, Theme.sage]
+
+        anchors.fill: parent
+        anchors.margins: -20
+        clip: true
+        opacity: 0.45
+
+        Repeater {
+            id: drifters
+
+            model: 12
+
+            MaterialShape {
+                id: drifter
+
+                required property int index
+                property real vx: (6 + Math.random() * 12) * (Math.random() < 0.5 ? -1 : 1)
+                property real vy: (6 + Math.random() * 12) * (Math.random() < 0.5 ? -1 : 1)
+                property real vr: -10 + Math.random() * 20
+
+                implicitSize: 40 + index * 8
+                shape: shapes.pool[index % shapes.pool.length]
+                color: shapes.tints[index % shapes.tints.length]
+                opacity: 0.45
+                rotation: Math.random() * 360
+                // spread out once the tab has a size (placed at 0 x 0 they all piled up in a corner)
+                property bool placed
+                function place(): void {
+                    if (placed || shapes.width <= 0)
+                        return;
+                    x = Math.random() * (shapes.width - implicitSize);
+                    y = Math.random() * (shapes.height - implicitSize);
+                    placed = true;
+                }
+                Component.onCompleted: place()
+                Connections {
+                    function onWidthChanged(): void {
+                        drifter.place();
+                    }
+
+                    target: shapes
+                }
+            }
+        }
+
+        FrameAnimation {
+            running: root.visible && root.playing
+            onTriggered: {
+                for (let i = 0; i < drifters.count; i++) {
+                    const s = drifters.itemAt(i);
+                    if (!s)
+                        continue;
+                    s.x += s.vx * frameTime;
+                    s.y += s.vy * frameTime;
+                    s.rotation += s.vr * frameTime;
+                    if (s.x + s.width < 0)
+                        s.x = shapes.width;
+                    else if (s.x > shapes.width)
+                        s.x = -s.width;
+                    if (s.y + s.height < 0)
+                        s.y = shapes.height;
+                    else if (s.y > shapes.height)
+                        s.y = -s.height;
+                }
+            }
+        }
+    }
+
+    // ── nothing ever played ──
     Column {
-        visible: !root.player
+        visible: root.empty
         anchors.centerIn: parent
         spacing: 10
 
-        Icon {
+        MaterialShape {
             anchors.horizontalCenter: parent.horizontalCenter
-            name: "music_off"
-            size: 44
-            color: Theme.textMuted
+            implicitSize: 96
+            shape: MaterialShape.ClamShell
+            color: Theme.accentSoft
+
+            Icon {
+                anchors.centerIn: parent
+                name: "queue_music"
+                size: 40
+                color: Theme.accent
+            }
         }
 
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Nothing is playing"
-            size: Theme.heading
+            text: "Nothing playing"
+            size: Theme.title
+            font.weight: Font.DemiBold
+        }
+
+        Label {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: "Play something for it to show up here!"
             secondary: true
         }
     }
 
-    // ── cover and visualiser ──
+    // ── the cover inside a ring of visualiser bars ──
     Item {
-        id: coverBox
+        id: disc
 
-        visible: !!root.player
-        width: 250
+        readonly property int bars: GlobalConfig.services.visualiserBars
+        readonly property real cx: width / 2
+        readonly property real cy: height / 2
+        readonly property real reach: (width - cover.width) / 2 - 10
+
+        visible: !root.empty
+        width: 262
         height: parent.height
 
-        Rectangle {
-            id: cover
+        Shape {
+            anchors.fill: parent
+            preferredRendererType: Shape.CurveRenderer
+            data: rays.instances
+        }
 
-            width: 250
-            height: 250
-            radius: 28
-            color: Theme.lilac
-            clip: true
+        Variants {
+            id: rays
 
-            Image {
-                anchors.fill: parent
-                source: root.player ? Players.getArtUrl(root.player) : ""
-                sourceSize: Qt.size(500, 500)
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-            }
+            model: Array.from({
+                length: disc.bars
+            }, (_, i) => i)
 
-            Icon {
-                anchors.centerIn: parent
-                visible: !root.player || !Players.getArtUrl(root.player)
-                name: "album"
-                size: 72
-                color: Qt.rgba(1, 1, 1, 0.8)
+            ShapePath {
+                id: ray
+
+                required property int modelData
+                readonly property real value: root.playing ? Math.max(0.02, Math.min(1, Audio.cava.values[modelData] ?? 0)) : 0.02
+                readonly property real angle: modelData * 2 * Math.PI / disc.bars
+                readonly property real edge: {
+                    coverShape.rotation; // follow the turning cover
+                    return coverShape.distanceAtAngle(modelData * 360 / disc.bars + 90) + 8 + strokeWidth / 2;
+                }
+                readonly property real cos: Math.cos(angle)
+                readonly property real sin: Math.sin(angle)
+
+                capStyle: ShapePath.RoundCap
+                strokeWidth: Math.max(2, 360 / disc.bars - 2)
+                strokeColor: Qt.alpha(Theme.accent, 0.35 + value * 0.65)
+                startX: disc.cx + edge * cos
+                startY: disc.cy + edge * sin
+
+                PathLine {
+                    x: disc.cx + (ray.edge + ray.value * disc.reach) * ray.cos
+                    y: disc.cy + (ray.edge + ray.value * disc.reach) * ray.sin
+                }
             }
         }
 
-        Row {
-            anchors.top: cover.bottom
-            anchors.topMargin: 18
-            anchors.horizontalCenter: cover.horizontalCenter
-            height: 70
-            spacing: 4
+        Item {
+            id: cover
 
-            Repeater {
-                model: 28
+            anchors.centerIn: parent
+            width: 176
+            height: 176
 
-                Rectangle {
-                    required property int index
-                    readonly property real v: root.player?.isPlaying ? Math.max(0.05, Math.min(1, Audio.cava.values[index] ?? 0)) : 0.05
+            Item {
+                id: coverMask
 
-                    anchors.bottom: parent.bottom
-                    width: 5
-                    height: Math.max(4, v * 70)
-                    radius: 2.5
-                    color: Theme.accent
-                    opacity: 0.45 + v * 0.55
+                anchors.fill: parent
+                layer.enabled: true
+                visible: false
 
-                    Behavior on height {
-                        Anim { duration: 90 }
+                MaterialShape {
+                    id: coverShape
+
+                    implicitSize: cover.width
+                    shape: MaterialShape.Cookie9Sided
+                    color: "white"
+
+                    // one turn in 23.5 s while playing; stops where it is when paused
+                    FrameAnimation {
+                        running: root.visible && root.playing
+                        onTriggered: coverShape.rotation = (coverShape.rotation - frameTime * 360 / 23.5) % 360
                     }
+                }
+            }
+
+            MaterialShape {
+                implicitSize: cover.width
+                rotation: coverShape.rotation
+                shape: MaterialShape.Cookie9Sided
+                color: Theme.lilac
+            }
+
+            Icon {
+                visible: art.status !== Image.Ready
+                anchors.centerIn: parent
+                name: root.live ? "art_track" : "history"
+                size: 64
+                color: "#FFFFFF"
+            }
+
+            Image {
+                id: art
+
+                anchors.fill: parent
+                source: root.art
+                sourceSize: Qt.size(380, 380)
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                opacity: status === Image.Ready ? 1 : 0
+                layer.enabled: true
+                layer.effect: Mask {
+                    maskSource: coverMask
+                }
+
+                Behavior on opacity {
+                    Anim {}
                 }
             }
         }
     }
 
-    // ── track, seek bar, controls, players ──
+    // ── the track and the controls ──
     Column {
-        id: info
+        id: details
 
-        visible: !!root.player
-        x: coverBox.width + 28
-        width: 290
-        spacing: 14
+        visible: !root.empty
+        x: disc.width + 14
+        anchors.verticalCenter: parent.verticalCenter
+        width: 344
+        spacing: 4
 
-        Column {
-            width: parent.width
-            spacing: 4
-
-            Kicker {
-                text: Players.getIdentity(root.player)
-            }
-
-            Label {
-                width: parent.width
-                text: root.player?.trackTitle || "Unknown title"
-                size: Theme.title
-                font.weight: Font.DemiBold
-                wrapMode: Text.Wrap
-                maximumLineCount: 2
-            }
-
-            Label {
-                width: parent.width
-                text: root.player?.trackArtist || "Unknown artist"
-                size: Theme.heading
-                secondary: true
-            }
-
-            Label {
-                visible: text !== ""
-                width: parent.width
-                text: root.player?.trackAlbum ?? ""
-                size: Theme.small
-                muted: true
-            }
+        Kicker {
+            text: root.live ? (root.playing ? `Now playing · ${Players.getIdentity(root.player)}` : `Paused · ${Players.getIdentity(root.player)}`) : `Last played · ${LastMedia.identity}`
         }
 
-        Column {
+        Label {
             width: parent.width
-            spacing: 4
+            text: root.title || "Unknown title"
+            size: Theme.title
+            font.weight: Font.DemiBold
+        }
 
-            Slider {
-                width: parent.width
-                enabled: root.hasLength && !!root.player?.canSeek
-                showBubble: true
-                bubbleText: root.time(shown * (root.player?.length ?? 0))
-                value: root.hasLength ? (root.player.position / root.player.length) : 0
-                onReleased: v => {
-                    if (root.player && root.hasLength)
-                        root.player.position = v * root.player.length;
-                }
-            }
+        Label {
+            width: parent.width
+            text: root.artist || "Unknown artist"
+            size: Theme.heading
+            secondary: true
+        }
 
-            Item {
-                width: parent.width
-                height: 16
+        Label {
+            width: parent.width
+            text: root.album || "Unknown album"
+            size: Theme.heading
+            color: Theme.accent
+        }
 
-                Label {
-                    text: root.time(root.player?.position ?? 0)
-                    size: Theme.caption + 1
-                    muted: true
-                }
-
-                Label {
-                    anchors.right: parent.right
-                    text: root.hasLength ? root.time(root.player.length) : "--:--"
-                    size: Theme.caption + 1
-                    muted: true
-                }
-            }
+        Item {
+            width: 1
+            height: 16
         }
 
         Row {
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 12
+            width: parent.width
+            spacing: 10
+
+            Label {
+                id: pos
+
+                anchors.verticalCenter: parent.verticalCenter
+                width: 44
+                horizontalAlignment: Text.AlignHCenter
+                text: root.time(seek.dragging ? seek.dragValue * root.length : root.position)
+                size: Theme.small
+                secondary: true
+            }
+
+            WavySlider {
+                id: seek
+
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width - 108
+                enabled: root.live && root.hasLength && !!root.player?.canSeek
+                flowing: root.playing
+                value: root.hasLength ? root.position / root.length : 0
+                onReleased: v => {
+                    if (root.player?.canSeek)
+                        root.player.position = v * root.length;
+                }
+            }
+
+            Label {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 44
+                horizontalAlignment: Text.AlignHCenter
+                text: root.hasLength ? root.time(root.length) : "--:--"
+                size: Theme.small
+                secondary: true
+            }
+        }
+
+        Item {
+            width: 1
+            height: 12
+        }
+
+        Row {
+            width: parent.width
+            spacing: 8
 
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
-                visible: !!root.player?.shuffleSupported
-                size: 36
+                size: 44
                 icon: "shuffle"
                 active: !!root.player?.shuffle
+                opacity: root.player?.shuffleSupported ? 1 : 0.4
+                enabled: !!root.player?.shuffleSupported
                 onClicked: root.player.shuffle = !root.player.shuffle
             }
 
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter
-                size: 44
+                size: 50
                 icon: "skip_previous"
-                onClicked: root.player?.previous()
+                opacity: root.player?.canGoPrevious ? 1 : 0.4
+                enabled: !!root.player?.canGoPrevious
+                onClicked: root.player.previous()
             }
 
-            IconButton {
+            // the big play button fills the space between, as on Classic's
+            Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                size: 58
-                icon: root.player?.isPlaying ? "pause" : "play_arrow"
-                active: true
-                onClicked: root.player?.togglePlaying()
-            }
+                width: parent.width - 44 * 2 - 50 * 2 - 8 * 4
+                height: 56
+                radius: root.playing ? 18 : 28
+                color: playArea.pressed ? Qt.darker(Theme.accent, 1.15) : Theme.accent
+                opacity: root.live || LastMedia.entry ? 1 : 0.4
 
-            IconButton {
-                anchors.verticalCenter: parent.verticalCenter
-                size: 44
-                icon: "skip_next"
-                onClicked: root.player?.next()
-            }
+                Behavior on radius {
+                    Anim {}
+                }
 
-            IconButton {
-                anchors.verticalCenter: parent.verticalCenter
-                visible: !!root.player?.loopSupported
-                size: 36
-                icon: root.player?.loopState === MprisLoopState.Track ? "repeat_one" : "repeat"
-                active: root.player ? root.player.loopState !== MprisLoopState.None : false
-                onClicked: root.player.loopState = root.player.loopState === MprisLoopState.None ? MprisLoopState.Playlist : root.player.loopState === MprisLoopState.Playlist ? MprisLoopState.Track : MprisLoopState.None
-            }
-        }
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 6
 
-        // more than one player: choose
-        Flow {
-            visible: Players.list.length > 1
-            width: parent.width
-            spacing: 6
-
-            Repeater {
-                model: Players.list
-
-                Pill {
-                    id: choice
-
-                    required property var modelData
-
-                    interactive: true
-                    active: modelData === root.player
-                    onClicked: Players.manualActive = modelData
+                    Icon {
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: root.playing ? "pause" : "play_arrow"
+                        size: 28
+                        filled: true
+                        color: "#FFFFFF"
+                    }
 
                     Label {
-                        text: Players.getIdentity(choice.modelData)
-                        size: Theme.small
+                        visible: !root.live
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Open"
+                        color: "#FFFFFF"
+                        font.weight: Font.DemiBold
                     }
+                }
+
+                MouseArea {
+                    id: playArea
+
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.press()
+                }
+            }
+
+            IconButton {
+                anchors.verticalCenter: parent.verticalCenter
+                size: 50
+                icon: "skip_next"
+                opacity: root.player?.canGoNext ? 1 : 0.4
+                enabled: !!root.player?.canGoNext
+                onClicked: root.player.next()
+            }
+
+            IconButton {
+                anchors.verticalCenter: parent.verticalCenter
+                size: 44
+                icon: root.player?.loopState === MprisLoopState.Track ? "repeat_one" : "repeat"
+                active: root.live && root.player.loopState !== MprisLoopState.None
+                opacity: root.player?.loopSupported ? 1 : 0.4
+                enabled: !!root.player?.loopSupported
+                onClicked: {
+                    const s = root.player.loopState;
+                    root.player.loopState = s === MprisLoopState.None ? MprisLoopState.Track : s === MprisLoopState.Track ? MprisLoopState.Playlist : MprisLoopState.None;
                 }
             }
         }
     }
 
-    // ── lyrics ──
+    // ── lyrics and the player ──
     Tile {
-        visible: !!root.player
-        anchors.right: parent.right
-        width: parent.width - info.x - info.width - 24
+        visible: !root.empty
+        x: details.x + details.width + 22
+        width: parent.width - x
         height: parent.height
         interactive: false
         clip: true
 
-        Kicker {
+        Row {
             x: 16
             y: 14
-            text: "Lyrics"
+            spacing: 8
+
+            Icon {
+                name: "lyrics"
+                size: 18
+                color: Theme.accent
+            }
+
+            Label {
+                text: "Lyrics"
+                font.weight: Font.DemiBold
+            }
         }
 
         Label {
             visible: !Lyrics.hasLyrics
             anchors.centerIn: parent
+            anchors.verticalCenterOffset: -16
+            width: parent.width - 40
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.Wrap
             text: Lyrics.loading ? "Looking for lyrics…" : "No lyrics for this track"
             secondary: true
         }
@@ -319,10 +518,10 @@ Item {
             id: lyrics
 
             visible: Lyrics.hasLyrics
-            x: 12
-            y: 38
-            width: parent.width - 24
-            height: parent.height - 50
+            x: 14
+            y: 44
+            width: parent.width - 28
+            height: parent.height - 44 - picker.height - 22
             clip: true
             model: Lyrics.lyrics
             spacing: 8
@@ -330,9 +529,11 @@ Item {
             preferredHighlightBegin: height * 0.35
             preferredHighlightEnd: height * 0.5
             highlightMoveDuration: 300
-            currentIndex: Lyrics.indexForTime(root.player?.position ?? 0)
+            currentIndex: Lyrics.indexForTime(root.position)
 
             delegate: Text {
+                id: line
+
                 required property string modelData
                 required property int index
                 readonly property bool now: index === lyrics.currentIndex
@@ -341,21 +542,91 @@ Item {
                 text: modelData || "♪"
                 wrapMode: Text.Wrap
                 font.family: Theme.font
-                font.pixelSize: now ? 17 : 14
+                font.pixelSize: now ? 16 : 13
                 font.weight: now ? Font.DemiBold : Font.Normal
                 color: now ? Theme.accent : Theme.textSecondary
-                opacity: now ? 1 : 0.7
-
-                Behavior on font.pixelSize {
-                    Anim { duration: Theme.fast }
-                }
+                opacity: now ? 1 : 0.75
 
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
                         if (root.player)
-                            root.player.position = Lyrics.timeForIndex(parent.index);
+                            root.player.position = Lyrics.timeForIndex(line.index);
+                    }
+                }
+            }
+        }
+
+        // the player being controlled; click to choose another (when there are several)
+        Pill {
+            id: picker
+
+            property bool open
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 12
+            height: 34
+            interactive: Players.list.length > 1
+            color: Theme.tile
+            onClicked: open = !open
+
+            Icon {
+                anchors.verticalCenter: parent.verticalCenter
+                name: root.live ? "graphic_eq" : "music_off"
+                size: 16
+                color: Theme.accent
+            }
+
+            Label {
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.live ? Players.getIdentity(root.player) : "No players"
+                size: Theme.small
+                font.weight: Font.Medium
+                width: Math.min(implicitWidth, 150)
+            }
+
+            Icon {
+                visible: Players.list.length > 1
+                anchors.verticalCenter: parent.verticalCenter
+                name: picker.open ? "expand_more" : "expand_less"
+                size: 16
+            }
+        }
+
+        Glass {
+            visible: picker.open && Players.list.length > 1
+            anchors.horizontalCenter: picker.horizontalCenter
+            anchors.bottom: picker.top
+            anchors.bottomMargin: 6
+            width: 200
+            height: choices.implicitHeight + 12
+            radius: 16
+            color: Theme.sheet
+            shadowStrength: 0.6
+
+            Column {
+                id: choices
+
+                x: 6
+                y: 6
+                width: parent.width - 12
+
+                Repeater {
+                    model: Players.list
+
+                    ListRow {
+                        required property var modelData
+
+                        width: choices.width
+                        rowHeight: 34
+                        icon: modelData === root.player ? "check" : "music_note"
+                        title: Players.getIdentity(modelData)
+                        onClicked: {
+                            Players.manualActive = modelData;
+                            picker.open = false;
+                        }
                     }
                 }
             }
