@@ -5,7 +5,7 @@
   "living": true,
   "transparency": 0.5,
   "frost": 0.7,
-  "dock": "always",
+  "dock": "autohide",
   "bar": "full",
   "focusMinutes": 25,
   "cosmicSync": false

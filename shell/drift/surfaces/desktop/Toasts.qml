@@ -28,7 +28,7 @@ Scope {
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
         anchors.top: true
         anchors.right: true
-        margins.top: 44
+        margins.top: 10
         margins.right: 10
         implicitWidth: 380
         implicitHeight: stack.implicitHeight + 40

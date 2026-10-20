@@ -7,7 +7,7 @@ import qs.services
 import qs.drift
 import qs.drift.components
 
-// Control Center (Super+C, or the status pill). A grid of glass tiles:
+// Control Center (Super+C, or a status icon on the side bar, which opens its page). A grid of glass tiles:
 //   Wi-Fi / Bluetooth · Focus · volume and brightness · quick actions and battery · now playing · notifications
 // Clicking a tile (or Enter on it) grows it, from where it sits, into its detail view; ‹ or Esc folds it back.
 // Keyboard: arrows move the focus ring between tiles (left/right adjust a slider), Enter opens, Esc goes back/closes.
@@ -178,14 +178,14 @@ Surface {
         id: sheet
 
         anchors.top: parent.top
-        anchors.topMargin: 46
-        anchors.right: parent.right
-        anchors.rightMargin: 10
+        anchors.topMargin: 10
+        anchors.left: parent.left
+        anchors.leftMargin: 78 // beside the side bar
         width: root.sheetWidth
         height: (root.page !== "" ? Math.max(grid.implicitHeight, detail.fullHeight) : grid.implicitHeight) + root.pad * 2
         color: Theme.sheet
         scale: 0.96 + 0.04 * root.progress
-        transformOrigin: Item.TopRight
+        transformOrigin: Item.TopLeft
 
         Behavior on height {
             Anim { duration: Theme.slow }

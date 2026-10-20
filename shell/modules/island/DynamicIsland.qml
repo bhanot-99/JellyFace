@@ -60,16 +60,16 @@ Scope {
     readonly property int positionPollInterval: 500
 
     // --- Color Palette (D10) ---
-    readonly property color colBg: "#000000"
-    readonly property color colTextPrimary: "#FFFFFF"
-    readonly property color colTextSecondary: "#98989D"
-    readonly property color colTextTertiary: "#8E8E93"
-    readonly property color colEqGreen: "#30D158"
-    readonly property color colAccentPink: "#FA586A"
-    readonly property color colTimer: "#FF9F0A"
-    readonly property color colDanger: "#FF453A"
-    readonly property color colScrubTrack: "#38383A"
-    readonly property color colArtBg: "#1C1C1E"
+    property color colBg: "#000000"
+    property color colTextPrimary: "#FFFFFF"
+    property color colTextSecondary: "#98989D"
+    property color colTextTertiary: "#8E8E93"
+    property color colEqGreen: "#30D158"
+    property color colAccentPink: "#FA586A"
+    property color colTimer: "#FF9F0A"
+    property color colDanger: "#FF453A"
+    property color colScrubTrack: "#38383A"
+    property color colArtBg: "#1C1C1E"
 
     // --- Media ---
     readonly property MprisPlayer player: Players.active
@@ -86,7 +86,9 @@ Scope {
     readonly property ScreenState activeScreenState: ShellState.forScreen(win.screen) ?? ShellState.forActive()
     readonly property bool dashboardOpen: activeScreenState?.dashboard ?? false
     readonly property bool appDrawerOpen: JellyPanel.open
-    readonly property bool suppressed: dashboardOpen || appDrawerOpen
+    // set by an interface that covers the top centre with something of its own (Drift's Today)
+    property bool hidden: false
+    readonly property bool suppressed: dashboardOpen || appDrawerOpen || hidden
 
     // --- Transient system activity ("mute" | "volume" | "charge" | "") like iPhone's silent-mode / charging pills ---
     property string hud: ""
@@ -796,7 +798,7 @@ Scope {
                             Layout.preferredHeight: 52
                             source: root.artUrl
                             fallback: "album"
-                            fallbackColor: Qt.rgba(1, 1, 1, 0.4)
+                            fallbackColor: Qt.alpha(root.colTextPrimary, 0.4)
                             fallbackSize: 26
                         }
 
@@ -831,7 +833,7 @@ Scope {
                             width: 28
                             height: 28
                             radius: 14
-                            color: Qt.rgba(1, 1, 1, 0.10)
+                            color: Qt.alpha(root.colTextPrimary, 0.10)
                             Layout.alignment: Qt.AlignVCenter
 
                             MaterialIcon {
@@ -1178,7 +1180,7 @@ Scope {
                         Layout.alignment: Qt.AlignTop
                         source: root.notifData.icon
                         fallback: "notifications"
-                        fallbackColor: Qt.rgba(1, 1, 1, 0.6)
+                        fallbackColor: Qt.alpha(root.colTextPrimary, 0.6)
                         fallbackSize: 22
                     }
 
@@ -1578,7 +1580,7 @@ Scope {
                 height: 22
                 source: root.notifData.icon
                 fallback: "notifications"
-                fallbackColor: Qt.rgba(1, 1, 1, 0.6)
+                fallbackColor: Qt.alpha(root.colTextPrimary, 0.6)
                 fallbackSize: 13
             }
 
@@ -1605,7 +1607,7 @@ Scope {
         property string icon: ""
         property int pointSize: 20
         property color color: root.colTextPrimary
-        property color activeColor: "#FFFFFF"
+        property color activeColor: root.colTextPrimary
 
         signal clicked
 

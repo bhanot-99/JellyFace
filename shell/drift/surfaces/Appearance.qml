@@ -638,7 +638,7 @@ Surface {
 
                 Heading {
                     kicker: "Personalization · dock & bar"
-                    title: "Dock & top bar"
+                    title: "Dock & side bar"
                     sub: "Keep them — or go keyboard-only."
                 }
 
@@ -650,8 +650,8 @@ Surface {
 
                 Segmented {
                     width: parent.width
-                    options: ["always", "autohide", "off"]
-                    labels: ["Always", "Auto-hide", "Off"]
+                    options: ["autohide", "always", "off"]
+                    labels: ["Auto-hide", "Always", "Off"]
                     accentFill: true
                     current: DriftConfig.dock
                     onPicked: o => DriftConfig.set("dock", o)
@@ -659,7 +659,7 @@ Surface {
 
                 Label {
                     topPadding: Theme.s5
-                    text: "Top bar"
+                    text: "Side bar"
                     font.weight: Font.Medium
                     bottomPadding: Theme.s2
                 }

@@ -16,8 +16,8 @@ Singleton {
     property bool living: true // wallpaper colours follow the time of day
     property real transparency: 0.5 // 0 = solid glass, 1 = as clear as it gets
     property real frost: 0.7 // 0 = no blur behind the glass, 1 = full frost
-    property string dock: "always" // always | autohide | off
-    property string bar: "full" // full | minimal
+    property string dock: "autohide" // autohide (away while a window is on the desk) | always | off
+    property string bar: "full" // the side bar: full | minimal
     property int focusMinutes: 25
     property bool cosmicSync: false // COSMIC's own apps follow light/dark (scripts/drift-cosmic.sh)
 

@@ -7,7 +7,7 @@ import qs.services
 import qs.drift
 import qs.drift.components
 
-// Today (click the time): the date, a month calendar with a dot under every day that has something on it
+// Today (rest on the top edge, like Classic's dashboard, or click the clock): the date, a month calendar with a dot under every day that has something on it
 // (your calendars and holidays, from scripts/agenda.py), what is on the chosen day, what's up next, the weather and
 // what is playing. Scroll or the arrows change the month; ←/→ move the chosen day.
 Surface {
@@ -81,14 +81,13 @@ Surface {
         id: sheet
 
         anchors.top: parent.top
-        anchors.topMargin: 46
-        anchors.right: parent.right
-        anchors.rightMargin: 10
+        anchors.topMargin: 10
+        anchors.horizontalCenter: parent.horizontalCenter
         width: 740
         height: Math.max(left.implicitHeight, right.implicitHeight) + 40
         color: Theme.sheet
         scale: 0.96 + 0.04 * root.progress
-        transformOrigin: Item.TopRight
+        transformOrigin: Item.Top
 
         MouseArea {
             anchors.fill: parent

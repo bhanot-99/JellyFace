@@ -6,7 +6,7 @@ import qs.drift
 import qs.drift.components
 
 // Focus: Do Not Disturb, a Deep Focus session of 25, 50 or 90 minutes (notifications wait, the dock and bar step
-// aside, a timer runs in the top bar), and keeping the screen awake.
+// aside, a timer runs on the side bar), and keeping the screen awake.
 ListPage {
     id: root
 

@@ -40,7 +40,7 @@ Scope {
         PanelWindow {
             id: win
 
-            readonly property list<Item> surfaces: [gallery, cc, command, keys, today, session, appearance, hints, desks, clipboard]
+            readonly property list<Item> surfaces: [gallery, cc, command, keys, today, session, appearance, hints, desks, clipboard, panel]
 
             visible: root.shown
             screen: Quickshell.screens[0]
@@ -53,6 +53,13 @@ Scope {
             anchors.left: true
             anchors.right: true
             color: "transparent"
+            // the side bar stays clickable underneath (a status icon switches Control Center's page, as Classic's
+            // pop-outs did); the keyboard stays here
+            mask: Region {
+                x: 68
+                width: win.width - 68
+                height: win.height
+            }
 
             BackgroundEffect.blurRegion: Theme.blur ? blur : null
 
@@ -112,6 +119,10 @@ Scope {
 
                 ClipboardCarousel {
                     id: clipboard
+                }
+
+                RightPanel {
+                    id: panel
                 }
             }
         }

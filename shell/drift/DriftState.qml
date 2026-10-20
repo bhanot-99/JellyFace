@@ -9,6 +9,7 @@ import qs.services
 //   cc          Control Center              command   command bar        hints   window hints
 //   desks       desk (workspace) overview    clipboard clipboard history  today   calendar, weather, media
 //   appearance  Drift settings               keys      keyboard sheet     session power menu
+//   panel       the right panel (notifications and quick toggles)
 // Shortcuts reach it through `jellyface ipc drift toggle <name>`, which writes to the socket below from the host (a few
 // ms) instead of a `quickshell ipc` call through the container (about 230 ms).
 Singleton {
@@ -22,7 +23,7 @@ Singleton {
     // text the command bar opens with (`jellyface ipc drift search <text>`)
     property string commandText: ""
 
-    readonly property var surfaces: ["cc", "command", "hints", "desks", "clipboard", "today", "appearance", "keys", "session", "gallery"]
+    readonly property var surfaces: ["cc", "command", "hints", "desks", "clipboard", "today", "appearance", "keys", "session", "gallery", "panel"]
 
     function toggle(name: string): void {
         if (open === name)
@@ -126,9 +127,9 @@ Singleton {
         return ({
                 launcher: "command",
                 dashboard: "today",
-                sidebar: "cc",
+                sidebar: "panel",
                 session: "session",
-                utilities: "cc"
+                utilities: "panel"
             })[drawer] ?? drawer;
     }
 

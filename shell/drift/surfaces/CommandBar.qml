@@ -72,7 +72,7 @@ Surface {
         {title: "Accent color", sub: "Appearance", icon: "colors", keys: "accent colour color", run: () => root.appearance("accent")},
         {title: "Wallpaper", sub: "Appearance", icon: "wallpaper", keys: "wallpaper background desktop", run: () => root.appearance("wallpaper")},
         {title: "Glass", sub: "Transparency and frost", icon: "blur_on", keys: "glass blur transparency frost", run: () => root.appearance("glass")},
-        {title: "Dock & top bar", sub: "Appearance", icon: "dock_to_bottom", keys: "dock bar top panel hide", run: () => root.appearance("dock")},
+        {title: "Dock & side bar", sub: "Appearance", icon: "dock_to_bottom", keys: "dock bar side panel hide", run: () => root.appearance("dock")},
         {title: "Keyboard shortcuts", sub: "Every Drift shortcut", icon: "keyboard", keys: "keyboard shortcuts keys hotkeys", run: () => DriftState.show("keys")},
         {title: "Wi-Fi", sub: "Control Center", icon: "wifi", keys: "wifi wi-fi network internet wireless", run: () => root.cc("wifi")},
         {title: "Bluetooth", sub: "Control Center", icon: "bluetooth", keys: "bluetooth devices headphones pair", run: () => root.cc("bluetooth")},

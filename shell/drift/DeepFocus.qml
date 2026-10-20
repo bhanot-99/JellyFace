@@ -5,8 +5,8 @@ import Quickshell
 import qs.services
 
 // Deep Focus (Super+Shift+F, the same `jellyface ipc focus toggle` as Classic's focus mode): Do Not Disturb and the
-// screen kept awake (services/FocusMode), plus a timer of DriftConfig.focusMinutes in the top bar while the dock and
-// the rest of the bar step aside. When the time is up, focus ends with a notification.
+// screen kept awake (services/FocusMode), plus a timer of DriftConfig.focusMinutes on the side bar while the dock
+// steps aside. When the time is up, focus ends with a notification.
 Singleton {
     id: root
 
