@@ -35,7 +35,7 @@ put_files() {
     install -m 755 "$here/heal.sh"   "$JFG_LIB/heal";    install -m 755 "$here/heal.sh"   "$JFG_PRISTINE/heal"
     install -m 644 "$here/common.sh" "$JFG_LIB/common.sh"; install -m 644 "$here/common.sh" "$JFG_PRISTINE/common.sh"
     rm -rf "$JFG_OPT/qml" "$JFG_PRISTINE/qml"; mkdir -p "$JFG_OPT/qml"
-    cp "$here/shell.qml" "$here/Panels.qml" "$JFG_OPT/qml/"; cp -a "$JFG_OPT/qml" "$JFG_PRISTINE/qml"
+    cp "$here/shell.qml" "$here/Panels.qml" "$here/QuillScreen.qml" "$JFG_OPT/qml/"; cp -a "$JFG_OPT/qml" "$JFG_PRISTINE/qml"
     echo "$owner" > "$JFG_PRISTINE/owner"
     # sudoers: validate BEFORE it goes live (a bad file would break sudo for everyone)
     cp "$here/sudoers" "$JFG_PRISTINE/sudoers"

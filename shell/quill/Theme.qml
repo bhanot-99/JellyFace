@@ -39,6 +39,15 @@ Singleton {
 
     onDarkChanged: syncCosmic()
 
+    // the login screen (greeter/QuillScreen.qml) draws Quill's look with your theme and accent: hand it the new ones
+    // once quill.json has been written
+    Timer {
+        id: greeterSync
+
+        interval: 1500
+        onTriggered: Quickshell.execDetached(["distrobox-host-exec", Quickshell.shellPath("../scripts/greeter.sh"), "stage"])
+    }
+
     Connections {
         function onCosmicSyncChanged(): void {
             root.syncCosmic();
@@ -51,6 +60,16 @@ Singleton {
 
         function onWindowGapsChanged(): void {
             root.syncGaps();
+        }
+
+        function onThemeChanged(): void {
+            if (QuillConfig.loaded)
+                greeterSync.restart();
+        }
+
+        function onAccentChanged(): void {
+            if (QuillConfig.loaded)
+                greeterSync.restart();
         }
 
         target: QuillConfig

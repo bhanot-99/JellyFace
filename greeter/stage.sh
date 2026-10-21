@@ -24,7 +24,19 @@ face=""
 for f in "$HOME/.face" "/var/lib/AccountsService/icons/$USER"; do [ -f "$f" ] && { face="$f"; break; }; done
 [ -n "$face" ] && cp "$face" "$out/face.png"
 
-printf '{"user": "%s", "session": "start-cosmic"}\n' "$USER" > "$out/greeter.json"
+# the interface you chose (`jellyface ui`): Quill draws the login screen in its own look, with your theme and accent
+. "$here/scripts/lib.sh"
+python3 -I - "$out/greeter.json" "$USER" "$(jf_ui)" "$JF_CONFIG_DIR/quill.json" <<'PY'
+import json, sys
+out, user, ui, qpath = sys.argv[1:5]
+try:
+    q = json.load(open(qpath))
+except (OSError, ValueError):
+    q = {}
+json.dump({"user": user, "session": "start-cosmic", "ui": ui,
+           "quill": {"theme": q.get("theme", "light"), "accent": q.get("accent", "indigo")}}, open(out, "w"))
+PY
+cp "$here"/shell/quill/assets/fonts/Inter.ttf "$here"/shell/quill/assets/fonts/JetBrainsMono.ttf "$out/" 2>/dev/null || true
 
 # Lock-screen extras: the no-notifications dino, the fetch logo, window manager name, and the last known weather
 cp "$here"/shell/assets/google-sans-flex/*.ttf "$out/gsf.ttf" 2>/dev/null || true

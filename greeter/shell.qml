@@ -18,6 +18,10 @@ ShellRoot {
 
     property string user: ""
     property string sessionCmd: "start-cosmic"
+    // which interface you chose (`jellyface ui`): "quill" draws the login screen in Quill UI's look (QuillScreen.qml)
+    property string ui: "classic"
+    property var quill: ({})
+    readonly property alias powerProc: power
     property var c: ({})
     property string error: ""
     property bool busy: false
@@ -84,6 +88,8 @@ ShellRoot {
 
     FileView {
         path: root.dataDir + "/greeter.json"
+        // read before the first frame, so the screen never flashes the other interface's look
+        blockLoading: true
         onLoaded: {
             try {
                 const j = JSON.parse(text());
@@ -91,6 +97,8 @@ ShellRoot {
                     root.user = j.user;
                 if (j.session)
                     root.sessionCmd = j.session;
+                root.ui = j.ui === "quill" ? "quill" : "classic";
+                root.quill = j.quill || {};
             } catch (e) {}
         }
     }
@@ -318,6 +326,16 @@ ShellRoot {
         running: !root.testMode
         onTriggered: alive.running = true
     }
+
+    Component {
+        id: quillContent
+
+        QuillScreen {
+            g: root
+        }
+    }
+
+    readonly property Component content: ui === "quill" ? quillContent : screenContent
 
     Component {
         id: screenContent
@@ -932,7 +950,7 @@ ShellRoot {
     Loader {
         active: !root.testMode
         source: "Panels.qml"
-        onLoaded: item.content = screenContent
+        onLoaded: item.content = Qt.binding(() => root.content)
     }
 
     FloatingWindow {
@@ -940,7 +958,7 @@ ShellRoot {
         visible: root.testMode
         implicitWidth: Number(Quickshell.env("JF_GREETER_W")) || 900
         implicitHeight: Number(Quickshell.env("JF_GREETER_H")) || 700
-        Loader { id: testView; focus: true; anchors.fill: parent; sourceComponent: screenContent }
+        Loader { id: testView; focus: true; anchors.fill: parent; sourceComponent: root.content }
     }
 
     // Test hooks (only honoured in test mode): type a password by itself, and/or save a screenshot then quit.

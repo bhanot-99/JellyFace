@@ -36,6 +36,11 @@ os.replace(tmp, path)
 PY
 }
 
+# the login screen follows the interface (greeter/QuillScreen.qml or Classic's); nothing to do unless it is installed
+sync_greeter() {
+    [ -w /var/lib/jellyface-greeter/data ] && "$JF_ROOT/greeter/stage.sh" /var/lib/jellyface-greeter/data >/dev/null 2>&1 || true
+}
+
 restart_shell() {
     if ! pgrep -f "$JF_QS_RE" >/dev/null; then
         log "the shell is not running; it will start in $1 next time"
@@ -59,11 +64,13 @@ case "$want" in
         [ -e "$JF_CONFIG_DIR/quill.json" ] || cp "$JF_ROOT/config/quill.json" "$JF_CONFIG_DIR/quill.json"
         printf 'quill\n' > "$JF_UI_FILE"
         shortcuts add
+        sync_greeter
         log "interface: Quill UI (Super+Space command bar, Super+C Control Center, Super+E window hints, Super+W or Super+D desks, Super+P appearance, Super+Shift+/ shortcuts)"
         restart_shell "Quill UI" ;;
     classic)
         printf 'classic\n' > "$JF_UI_FILE" 2>/dev/null || true
         shortcuts remove
+        sync_greeter
         "$JF_ROOT/scripts/quill-cosmic.sh" gaps restore || warn "could not restore COSMIC's window gaps"
         log "interface: Classic"
         restart_shell Classic ;;
