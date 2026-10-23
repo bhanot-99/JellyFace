@@ -24,7 +24,8 @@ Scope {
     readonly property bool covered: CosmicWindows.windows.some(w => w.workspace_active && !w.minimized)
     property bool edge // the cursor is on the bottom edge
     property int menuIndex: -1
-    readonly property bool wanted: mode !== "off" && !DeepFocus.active && !CosmicWindows.fullscreen && (mode === "always" || !covered || edge || hover.hovered || menuIndex >= 0)
+    readonly property bool hovered: hover.hovered || menuHover.hovered
+    readonly property bool wanted: mode !== "off" && !DeepFocus.active && !CosmicWindows.fullscreen && (mode === "always" || !covered || edge || hovered || menuIndex >= 0)
     property bool shown: wanted
 
     readonly property int icon: 44
@@ -58,13 +59,13 @@ Scope {
 
     Connections {
         function onHoveredChanged(): void {
-            if (hover.hovered)
+            if (root.hovered)
                 menuTimer.stop();
             else if (root.menuIndex >= 0)
                 menuTimer.restart();
         }
 
-        target: hover
+        target: root
     }
 
     Connections {
@@ -125,14 +126,6 @@ Scope {
             BlurRegion { pane: menu.visible ? menu.body : null }
         }
 
-        Item {
-            anchors.fill: parent
-
-            HoverHandler {
-                id: hover
-            }
-        }
-
         Glass {
             id: capsule
 
@@ -144,6 +137,12 @@ Scope {
             height: root.slot + root.pad * 2
             radius: height / 2
             shadowStrength: 0.8
+
+            // on the capsule, not a sibling under it: an icon's MouseArea takes the hover, and a handler outside its
+            // parents then thought the pointer had left, so an auto-hidden dock bobbed down and up under the cursor
+            HoverHandler {
+                id: hover
+            }
 
             Behavior on lift {
                 Anim {
@@ -302,6 +301,10 @@ Scope {
             height: menuCol.implicitHeight + 12
             x: Math.max(8, Math.min(parent.width - width - 8, anchorX - width / 2))
             y: capsule.y - height - 10
+
+            HoverHandler {
+                id: menuHover
+            }
 
             Behavior on opacity {
                 Anim { duration: Theme.fast }

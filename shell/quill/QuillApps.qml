@@ -21,6 +21,9 @@ Singleton {
     property var hostIds: null
 
     function entryOf(app: var): var {
+        // read the app list so a binding that calls this looks again once the entries are scanned: at startup the
+        // lookup finds nothing, and the dock's names fell back to raw app ids for good
+        void DesktopEntries.applications.values;
         return app?.id ? DesktopEntries.heuristicLookup(app.id) : null;
     }
 
